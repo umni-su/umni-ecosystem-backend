@@ -1,0 +1,8 @@
+database/source/*.db
+database/source/*.sql
+database/source/*.sqlite
+.env
+.env.production
+.env.development
+alembic.ini
+.venv

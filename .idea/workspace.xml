@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="0fc734fe-06fb-4ab5-8e60-ec3ddc485659" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources/421c4420-1aa1-4a44-b55a-5e0ad0f6e2e7.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources/421c4420-1aa1-4a44-b55a-5e0ad0f6e2e7/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/umni-ecosystem-backend.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/auth/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/configuration/configuration.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/crypto/crypto.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/crypto/hasher.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/ecosystem.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/filesystem/storage.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/filesystem/upload_validator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/logger.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/classes/storages/filesystem.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/config/configuration.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/database/database.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/database/migrations/README" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/database/migrations/env.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/database/migrations/script.py.mako" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/database/source/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/configuration.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/device.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/device_network_interfaces.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/mixins/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/mixins/created_updated.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/sensor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/sensor_history.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/entities/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/device_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/device_netif.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/sensor_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/repositories/base_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/repositories/device_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/repositories/sensor_history_repository.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/account.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/auth_check.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/init.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/install.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/mqtt.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/success.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/unauthenticated_response.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/responses/user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/auth.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/cameras.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/devices.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/initialize.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/install.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/sensors.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/routes/settings.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/base_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/base_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_ai_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_cnf_ai_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_cnf_dio_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_cnf_ow_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_cnf_rf_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_dio_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_ntc_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_ow_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_register_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_rf_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/messages/mqtt_sensor_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_ai_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_cnf_ai_ntc_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_cnf_ntc_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_cnf_ow_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_dio_cnf_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_dio_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_dio_port_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_netif_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_ntc_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_ow_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_register_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_rf_item_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/models/mqtt_systeminfo_model.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/mqtt_service.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/topics/mqtt_sensor_type_enum.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/topics/mqtt_topic.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/mqtt/topics/mqtt_topic_enum.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2yJPy4RW5LtwIuqoZUJpaNy1iHH" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Develop/Projects/Python/opennvr&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.linters.eslint&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;
+    ]
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Develop\Projects\Python\umni-ecosystem-backend\models" />
+      <recent name="C:\Develop\Projects\Python\umni-ecosystem-backend\database" />
+      <recent name="C:\Develop\Projects\Python\umni-ecosystem-backend\models\mixins" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-50da183f06c8-2887949eec09-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-233.13135.95" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="0fc734fe-06fb-4ab5-8e60-ec3ddc485659" name="Changes" comment="" />
+      <created>1749549954089</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1749549954089</updated>
+      <workItem from="1749549963773" duration="11651000" />
+      <workItem from="1749574605135" duration="6889000" />
+      <workItem from="1749618873129" duration="23048000" />
+      <workItem from="1749707191084" duration="11751000" />
+      <workItem from="1749794846806" duration="25945000" />
+      <workItem from="1749883535454" duration="22127000" />
+      <workItem from="1749971775924" duration="31941000" />
+      <workItem from="1750053067377" duration="18612000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

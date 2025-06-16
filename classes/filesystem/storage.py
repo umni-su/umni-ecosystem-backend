@@ -1,0 +1,2 @@
+class StorageBase:
+    path: str
