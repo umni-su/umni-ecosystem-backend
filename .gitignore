@@ -6,3 +6,4 @@ database/source/*.sqlite
 .env.development
 alembic.ini
 .venv
+.idea
