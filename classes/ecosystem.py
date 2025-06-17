@@ -5,6 +5,9 @@ import classes.crypto.crypto as crypto
 import services.mqtt.mqtt_service as m
 from .configuration.configuration import EcosystemDatabaseConfiguration
 
+from classes.storages.device_storage import device_storage
+from .logger import logger
+
 
 class Ecosystem:
     config: EcosystemDatabaseConfiguration | None
@@ -25,10 +28,10 @@ class Ecosystem:
         while not Ecosystem.installed:
             Ecosystem.config.reread()
             Ecosystem.installed = self.config.is_installed()
-            print(f'Ecosystem is not installed. [{time.time()}] Try again after 3 sec...')
+            logger.warn(f'Ecosystem is not installed. [{time.time()}] Try again after 3 sec...')
             time.sleep(3)
         Ecosystem.installed = True
-        print('Ecosystem starting, case installed...')
+        logger.info('Ecosystem starting, case installed...')
         self.run_services()
 
     def run_services(self):

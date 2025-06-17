@@ -32,7 +32,7 @@ class UploadValidator:
         size = self.file.size / pow(1024, 2)
         if max_mb is None:
             max_mb = MAX_UPLOAD_SIZE
-        if size <= MAX_UPLOAD_SIZE:
+        if size >= MAX_UPLOAD_SIZE:
             self.errors.append(f'File must be less or equal {max_mb} MB')
         return self
 
@@ -45,3 +45,4 @@ class UploadValidator:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=self.errors,
             )
+        self.errors = []

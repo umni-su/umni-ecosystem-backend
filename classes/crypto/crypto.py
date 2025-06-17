@@ -1,4 +1,6 @@
 from cryptography.fernet import Fernet
+
+from classes.logger import logger
 from entities.configuration import ConfigurationKeys
 import classes.ecosystem as eco
 import database.database as db
@@ -10,7 +12,7 @@ class Crypto:
     @staticmethod
     def init():
         Crypto.load_key()
-        print('Init crypto module...')
+        logger.info('Init crypto module...')
 
     @staticmethod
     def load_key():

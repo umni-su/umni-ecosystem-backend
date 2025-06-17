@@ -1,7 +1,9 @@
 from fastapi import UploadFile
 from sqlmodel import select, col
 
-from classes.filesystem.upload_validator import UploadValidator
+from classes.logger import logger
+from classes.storages.device_storage import device_storage
+from classes.storages.upload_validator import UploadValidator
 from entities.device import Device
 from models.device_model import DeviceUpdateModel
 from repositories.base_repository import BaseRepository
@@ -37,10 +39,20 @@ class DeviceRepository(BaseRepository):
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):
         with cls.query() as sess:
-            device = next(cls.get_device(device_id))
-            validator = UploadValidator(cover)
-            validator.is_image().max_size(5).validate()
-            sess.add(device)
-            sess.commit()
-            sess.refresh(device)
-            yield device
+            try:
+                device = next(cls.get_device(device_id))
+                photo = device_storage.cover_upload(
+                    folder=str(device.id),
+                    file=cover,
+                    as_name='cover'
+                )
+                device.photo = photo
+                sess.add(device)
+                validator = UploadValidator(cover)
+                validator.is_image().max_size(5).validate()
+                sess.add(device)
+                sess.commit()
+                sess.refresh(device)
+                yield device
+            except Exception as e:
+                logger.err(e)
