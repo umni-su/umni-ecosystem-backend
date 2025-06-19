@@ -17,7 +17,12 @@ class Crypto:
     @staticmethod
     def load_key():
         key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY)
-        if key.value is None:
+        create: bool = False
+        if key is None:
+            create = True
+        elif key.value is None:
+            create = True
+        if create:
             # create key
             f_key = Fernet.generate_key()
             str_key_to_db = f_key.hex()
@@ -25,7 +30,7 @@ class Crypto:
             db.session.add(key)
             db.session.commit()
             db.session.refresh(key)
-        Crypto.key = key.value
+            Crypto.key = key.value
         return bytes.fromhex(key.value)
 
     @staticmethod

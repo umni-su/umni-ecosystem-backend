@@ -49,19 +49,21 @@ class MqttSensorMessage(BaseMessage):
                                 MqttSensorTypeEnum.NTC,
                                 MqttSensorTypeEnum.DS18B20,
                             ]
-                            delta = datetime.datetime.now() - last.created_at
+                            delta = datetime.datetime.now() - last.created
+                            print(last.created, datetime.datetime.now())
                             trigger = int(
                                 eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT).value)
                             Logger.debug(f'{last.id} {last.sensor_id} Delta is {delta.seconds / 60}')
                             # Not check delta if relays inputs and buttons rf 433
-
                         if (delta is None or (delta.seconds / 60 >= trigger)) or (sensor.type not in delta_types):
                             history = SensorHistory()
                             history.value = sensor.value
                             sensor.history.append(history)
                             session.commit()
+                            session.refresh(history)
 
-                            Logger.info(f"{self.identifier} -> {self.sensor_value()}")
+                            Logger.info(
+                                f"ID#{history.id}, type:{sensor.type}: {self.identifier} -> {self.sensor_value()}")
                     except Exception as e:
                         Logger.err(e)
 

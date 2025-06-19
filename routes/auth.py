@@ -29,7 +29,7 @@ def check_auth(
 
 @auth.post("/login", response_model=Token)
 def login(
-        body: Annotated[UserLoginForm, Depends(), Body()],
+        body: Annotated[UserLoginForm, Depends(), Form()],
         response: Response
 
 ):

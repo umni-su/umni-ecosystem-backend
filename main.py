@@ -13,6 +13,7 @@ import database.database as db
 
 from config.configuration import configuration
 from classes.ecosystem import Ecosystem
+from routes.sensors import sensors
 
 
 # fastapi dev .\main.py
@@ -43,6 +44,7 @@ app.include_router(auth)
 app.include_router(initialize)
 app.include_router(install)
 app.include_router(devices)
+app.include_router(sensors)
 
 
 # @app.middleware("http")

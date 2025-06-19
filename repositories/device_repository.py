@@ -42,9 +42,8 @@ class DeviceRepository(BaseRepository):
             try:
                 device = next(cls.get_device(device_id))
                 photo = device_storage.cover_upload(
-                    folder=str(device.id),
-                    file=cover,
-                    as_name='cover'
+                    device=device,
+                    file=cover
                 )
                 device.photo = photo
                 sess.add(device)
@@ -55,4 +54,4 @@ class DeviceRepository(BaseRepository):
                 sess.refresh(device)
                 yield device
             except Exception as e:
-                logger.err(e)
+                logger.error(e)

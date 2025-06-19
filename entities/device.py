@@ -5,14 +5,14 @@ from sqlmodel import SQLModel, Field, Relationship
 from entities.mixins.created_updated import TimeStampMixin
 
 from typing import TYPE_CHECKING
+from entities.mixins.id_column import IdColumnMixin
 
 if TYPE_CHECKING:
     from entities.device_network_interfaces import DeviceNetworkInterface
     from entities.sensor import Sensor
 
 
-class DeviceBase(SQLModel):
-    id: int | None = Field(default=None, primary_key=True)
+class DeviceBase:
     name: str = Field(index=True, unique=True)
     title: str | None = Field(nullable=True)
     description: str | None = Field(nullable=True)
@@ -26,7 +26,7 @@ class DeviceBase(SQLModel):
     last_sync: datetime | None = Field(nullable=True)
 
 
-class Device(DeviceBase, TimeStampMixin, table=True):
+class Device(TimeStampMixin, DeviceBase, IdColumnMixin, table=True):
     __tablename__ = 'devices'
     sensors: list["Sensor"] = Relationship(back_populates="device")
     network_interfaces: list["DeviceNetworkInterface"] = Relationship(back_populates="device")

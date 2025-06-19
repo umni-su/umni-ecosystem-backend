@@ -1,6 +1,7 @@
 from enum import StrEnum
 from sqlmodel import Field, SQLModel
 from .mixins.created_updated import TimeStampMixin
+from entities.mixins.id_column import IdColumnMixin
 
 
 class ConfigurationKeys(StrEnum):
@@ -17,8 +18,10 @@ class ConfigurationKeys(StrEnum):
     MQTT_PASSWORD = 'mqtt.password',
 
 
-class ConfigurationEntity(SQLModel, TimeStampMixin, table=True):
-    __tablename__ = 'configuration'
-    id: int | None = Field(default=None, primary_key=True)
+class ConfigurationEntityBase:
     key: ConfigurationKeys = Field(index=True)
     value: str | None = Field(index=True, nullable=True)
+
+
+class ConfigurationEntity(TimeStampMixin, ConfigurationEntityBase, IdColumnMixin, table=True):
+    __tablename__ = 'configuration'

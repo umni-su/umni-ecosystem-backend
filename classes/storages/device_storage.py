@@ -1,8 +1,7 @@
 import os
-import numpy as np
 import cv2
 from fastapi import UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response
 from classes.storages.storage import StorageBase
 from entities.device import Device
 
@@ -19,8 +18,8 @@ class DeviceStorage(StorageBase):
         return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
 
     @classmethod
-    def cover_upload(cls, device: Device, file: UploadFile, width: int):
-        cls.upload_file(
+    def cover_upload(cls, device: Device, file: UploadFile):
+        return cls.upload_file(
             folder=str(device.id),
             file=file,
             as_name='cover'
