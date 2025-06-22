@@ -7,6 +7,7 @@ from classes.storages.filesystem import Filesystem
 
 # IMPORT MODELS #
 
+from entities.storage import StorageEntity
 from entities.user import UserEntity
 from entities.configuration import ConfigurationEntity
 from entities.device import Device

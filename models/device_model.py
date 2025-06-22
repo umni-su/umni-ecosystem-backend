@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from fastapi import UploadFile, File
 from pydantic import BaseModel
 
 from models.device_netif import DeviceNetif

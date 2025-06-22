@@ -1,17 +1,11 @@
+from datetime import datetime
+from typing import Union
+
 from classes.charts.chart_type import ChartType
-from models.sensor_history_model import SensorHistoryChartModel
+from pydantic import BaseModel
 
 
-class ChartSeries:
-    name: str
-    type: ChartType
-    showSymbol: bool = True
-    data: list[SensorHistoryChartModel]
-
-    def __init__(self, data: list[SensorHistoryChartModel]):
-        self.data = data
-        # print(data)
-        # for d in data:
-        #     print(d.created)
-        #     # value = SensorHistoryChartModel.model_validate(d)
-        #     # data.append(value)
+class ChartSeries(BaseModel):
+    name: str | None = None
+    type: ChartType = ChartType.LINE
+    data: list[list[Union[str | datetime | int | float], Union[str, int | float]]] = []

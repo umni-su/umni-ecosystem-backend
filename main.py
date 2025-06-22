@@ -4,16 +4,19 @@ from fastapi import FastAPI
 from starlette.websockets import WebSocket
 
 from classes.logger import Logger
+from routes.storages import storages
 from routes.auth import auth
 from routes.devices import devices
 from routes.install import install
 from routes.initialize import initialize
+from routes.configuration import conf
 
 import database.database as db
 
 from config.configuration import configuration
 from classes.ecosystem import Ecosystem
 from routes.sensors import sensors
+from routes.systeminfo import systeminfo
 
 
 # fastapi dev .\main.py
@@ -40,11 +43,14 @@ app = FastAPI(
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
+app.include_router(conf)
 app.include_router(auth)
 app.include_router(initialize)
 app.include_router(install)
 app.include_router(devices)
 app.include_router(sensors)
+app.include_router(storages)
+app.include_router(systeminfo)
 
 
 # @app.middleware("http")

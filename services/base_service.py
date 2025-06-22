@@ -2,6 +2,8 @@ import time
 import classes.ecosystem as eco
 from threading import Thread
 
+from classes.logger import Logger
+
 
 class BaseService:
     name: str
@@ -18,7 +20,7 @@ class BaseService:
 
     def run_while(self):
         while not self.installed:
-            print(f'Trying to start service {self.name}')
+            Logger.info(f'Trying to start service {self.name}')
             self.installed = eco.Ecosystem.is_installed()
             time.sleep(3)
         self.run()

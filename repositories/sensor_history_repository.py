@@ -1,7 +1,9 @@
-from sqlmodel import select, col
+from datetime import datetime
 
+from sqlmodel import select, col
 from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
+from models.sensor_history_model import SearchHistoryModel
 from repositories.base_repository import BaseRepository
 
 
@@ -19,9 +21,16 @@ class SensorHistoryRepository(BaseRepository):
             ).first()
 
     @classmethod
-    def get_sensor_history(cls, sensor_id: int):
+    def get_sensor_history(cls, sensor_id: int, body: SearchHistoryModel):
         with cls.query() as sess:
-            sensor = sess.exec(
-                select(Sensor).where(Sensor.id == sensor_id)
-            ).first()
-            yield sensor.history
+            start: datetime = body.range[0]
+            end: datetime = body.range[1]
+            query = select(SensorHistory).where(
+                SensorHistory.sensor_id == sensor_id
+            ).where(
+                col(SensorHistory.created).between(
+                    start, end
+                )
+            )
+            history = sess.exec(query)
+            yield history

@@ -12,3 +12,8 @@ class SensorHistoryModel(BaseModel):
 class SensorHistoryChartModel(BaseModel):
     value: str
     created: datetime
+
+
+class SearchHistoryModel(BaseModel):
+    id: int
+    range: list[datetime, datetime]

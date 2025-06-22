@@ -5,4 +5,4 @@ class BaseChart:
     series: list[ChartSeries] = []
 
     def __init__(self):
-        pass
+        self.series = []

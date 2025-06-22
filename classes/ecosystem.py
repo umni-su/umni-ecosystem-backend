@@ -2,17 +2,16 @@ import time
 from threading import Thread
 import classes.crypto.crypto as crypto
 
-import services.mqtt.mqtt_service as m
-from .configuration.configuration import EcosystemDatabaseConfiguration
+from classes.configuration.configuration import EcosystemDatabaseConfiguration
 
-from classes.storages.device_storage import device_storage
-from .logger import logger
+from classes.logger import logger
+from services.service_runner import ServiceRunner
 
 
 class Ecosystem:
     config: EcosystemDatabaseConfiguration | None
     installed: bool = False
-    mqtt: m.MqttService | None
+    runner: ServiceRunner | None = None
 
     def __init__(self):
         Ecosystem.config = EcosystemDatabaseConfiguration()
@@ -32,10 +31,7 @@ class Ecosystem:
             time.sleep(3)
         Ecosystem.installed = True
         logger.info('Ecosystem starting, case installed...')
-        self.run_services()
-
-    def run_services(self):
-        self.mqtt = m.MqttService()
+        self.runner = ServiceRunner()
 
     @staticmethod
     def is_installed():
