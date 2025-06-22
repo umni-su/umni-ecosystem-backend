@@ -13,6 +13,6 @@ systeminfo = APIRouter(
 )
 
 
-@systeminfo.get('', response_model=list[SysteminfoModel])
+@systeminfo.get('', response_model=SysteminfoModel)
 def get_systeminfo(user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)], ):
-    return SysteminfoService.history
+    return SysteminfoService.info

@@ -20,7 +20,7 @@ class SysteminfoService(BaseService):
     net: NetUsageModel
     cpu: float = 0.0
     daemon: Daemon = None
-    history: list[SysteminfoModel] = []
+    info: SysteminfoModel | None = None
 
     def run(self):
         Logger.debug('Hi from systeminfo')
@@ -32,15 +32,12 @@ class SysteminfoService(BaseService):
             self.get_memory_stat()
             self.get_cpu_stat()
             self.get_net_stat()
-            if len(self.history) >= 50:
-                self.history.pop(0)
-            self.history.append(
-                SysteminfoModel(
-                    disks=self.drives,
-                    net=self.net,
-                    memory=self.memory,
-                    cpu=self.cpu
-                )
+
+            SysteminfoService.info = SysteminfoModel(
+                disks=self.drives,
+                net=self.net,
+                memory=self.memory,
+                cpu=self.cpu
             )
 
             time.sleep(1)
