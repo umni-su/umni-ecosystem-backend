@@ -15,6 +15,7 @@ from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.camera import CameraEntity
+from entities.location import LocationEntity
 
 fn = os.path.join(configuration.db_dir, configuration.db_source)
 filename = f"{fn}"

@@ -11,14 +11,16 @@ class CameraEntityBase:
     name: str = Field(nullable=False)
     active: bool = Field(default=True)
     storage_id: int = Field(nullable=False, foreign_key="storages.id")
+    location_id: int = Field(nullable=False, foreign_key="locations.id")
     record: bool = Field(default=False)
     record_duration: int = Field(default=5)
     delete_after: CameraDeleteAfterEnum | None = Field(default=None, nullable=True)
+    cover: None | str = Field(nullable=True, default=None)
 
 
 class CameraEntityConnection:
     protocol: CameraProtocolEnum | None = Field(default=None, nullable=True)
-    ip: str = Field(nullable=False)
+    ip: str | None = Field(nullable=True)
     port: int = Field(nullable=False)
     username: str | None = Field(nullable=True, default=None)
     password: str | None = Field(nullable=True, default=None)

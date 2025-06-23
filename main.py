@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from starlette.websockets import WebSocket
 
 from classes.logger import Logger
+from routes.cameras import cameras
 from routes.storages import storages
 from routes.auth import auth
 from routes.devices import devices
@@ -51,6 +52,7 @@ app.include_router(devices)
 app.include_router(sensors)
 app.include_router(storages)
 app.include_router(systeminfo)
+app.include_router(cameras)
 
 
 # @app.middleware("http")
