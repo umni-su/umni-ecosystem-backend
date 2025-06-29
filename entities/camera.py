@@ -1,5 +1,5 @@
-from entities.enums.camera_delete_after_enum import CameraDeleteAfterEnum
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
+from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 from sqlmodel import SQLModel, Field, Relationship
@@ -11,11 +11,14 @@ class CameraEntityBase:
     name: str = Field(nullable=False)
     active: bool = Field(default=True)
     storage_id: int = Field(nullable=False, foreign_key="storages.id")
-    location_id: int = Field(nullable=False, foreign_key="locations.id")
+    location_id: int | None = Field(nullable=True, foreign_key="locations.id")
     record: bool = Field(default=False)
+    record_mode: CameraRecordTypeEnum = Field(nullable=True, default=CameraRecordTypeEnum.DETECTION_VIDEO)
     record_duration: int = Field(default=5)
-    delete_after: CameraDeleteAfterEnum | None = Field(default=None, nullable=True)
+    delete_after: int | None = Field(default=None, nullable=True)
     cover: None | str = Field(nullable=True, default=None)
+    fps: int | None = Field(nullable=True)
+    scale: float | None = Field(nullable=True)
 
 
 class CameraEntityConnection:
@@ -35,4 +38,7 @@ class CameraEntity(
     IdColumnMixin,
     table=True):
     __tablename__ = 'cameras'
-    storage: StorageEntity | None = Relationship(back_populates="cameras")
+    storage: StorageEntity | None = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="cameras"
+    )

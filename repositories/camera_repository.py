@@ -1,12 +1,66 @@
+from classes.crypto.crypto import Crypto
+from classes.logger import Logger
 from entities.camera import CameraEntity
+from entities.enums.camera_protocol_enum import CameraProtocolEnum
+from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from repositories.base_repository import BaseRepository
 from sqlmodel import select
+
+from repositories.storage_repository import StorageRepository
+
+from pydantic import TypeAdapter
 
 
 class CameraRepository(BaseRepository):
     @classmethod
     def get_cameras(cls):
         with cls.query() as sess:
-            return sess.exec(
+            cameras = sess.exec(
                 select(CameraEntity)
             ).all()
+            return cameras
+        # cameras = TypeAdapter(list[CameraModelWithRelations]).dump_python(cameras)
+        # return TypeAdapter(list[CameraModelWithRelations]).validate_python(cameras)
+
+    @classmethod
+    def get_camera(cls, camera_id: int):
+        with cls.query() as sess:
+            return sess.exec(
+                select(CameraEntity).where(CameraEntity.id == camera_id)
+            ).first()
+
+    @classmethod
+    def add_camera(cls, model: CameraBaseModel):
+        camera = cls.prepare_camera(model, CameraEntity())
+        with cls.query() as sess:
+            sess.add(camera)
+            sess.commit()
+            sess.refresh(camera)
+            return camera
+
+    @classmethod
+    def prepare_camera(cls, model: CameraBaseModel, target: CameraEntity):
+        camera = CameraEntity()
+        try:
+            storage = StorageRepository.get_storage(model.storage_id)
+            camera.storage = storage
+            camera.name = model.name
+            camera.active = model.active
+            camera.record = model.record
+            camera.record_duration = model.record_duration
+            camera.delete_after = model.delete_after
+            camera.username = model.username
+            if model.protocol is not CameraProtocolEnum.USB:
+                camera.ip = model.ip
+                camera.port = model.port
+            camera.protocol = model.protocol
+            if model.password is not None:
+                camera.password = Crypto.encrypt(model.password)
+            else:
+                model.password = None
+            camera.primary = model.primary
+            camera.secondary = model.secondary
+            return camera
+
+        except Exception as e:
+            Logger.err(e)

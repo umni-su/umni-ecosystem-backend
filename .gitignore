@@ -7,3 +7,4 @@ database/source/*.sqlite
 alembic.ini
 .venv
 .idea
+out

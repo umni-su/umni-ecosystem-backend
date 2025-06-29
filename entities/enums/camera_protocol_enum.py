@@ -2,5 +2,8 @@ from enum import StrEnum
 
 
 class CameraProtocolEnum(StrEnum):
-    RTSP = 'rtsp'
-    USB = 'usb'
+    RTSP = 'RTSP'
+    RTMP = 'RTMP'
+    HTTP = 'HTTP'
+    HTTPS = 'HTTPS'
+    USB = 'USB'

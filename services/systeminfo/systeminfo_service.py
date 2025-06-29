@@ -6,6 +6,7 @@ from services.base_service import BaseService
 import psutil
 
 from services.systeminfo.models.all_memory_model import AllMemoryModel
+from services.systeminfo.models.cpu_model import CpuModel
 from services.systeminfo.models.disk_usage_model import DiskUsage
 from services.systeminfo.models.drive_model import DriveModel
 from services.systeminfo.models.memory_stat_model import MemoryModel
@@ -18,12 +19,14 @@ class SysteminfoService(BaseService):
     drives: list[DriveModel] = []
     memory: AllMemoryModel = AllMemoryModel()
     net: NetUsageModel
-    cpu: float = 0.0
+    cpu: CpuModel = CpuModel()
     daemon: Daemon = None
     info: SysteminfoModel | None = None
 
     def run(self):
         Logger.debug('Hi from systeminfo')
+        self.memory.swap = MemoryModel()
+        self.memory.virtual = MemoryModel()
         self.daemon = Daemon(self.collect_systeminfo)
 
     def collect_systeminfo(self):
@@ -51,7 +54,10 @@ class SysteminfoService(BaseService):
 
     @classmethod
     def get_cpu_stat(cls):
-        cls.cpu = psutil.cpu_percent(interval=1)
+        cls.cpu.last = psutil.cpu_percent(interval=1)
+        if len(cls.cpu.values) > 30:
+            cls.cpu.values.pop(0)
+        cls.cpu.values.append(cls.cpu.last)
 
     @classmethod
     def get_net_stat(cls):
@@ -71,18 +77,22 @@ class SysteminfoService(BaseService):
     def get_memory_stat(cls):
         ram = psutil.virtual_memory()
         swap = psutil.swap_memory()
-        cls.memory.swap = MemoryModel(
-            total=swap.total,
-            used=swap.used,
-            free=swap.free,
-            percent=swap.percent
-        )
-        cls.memory.virtual = MemoryModel(
-            total=ram.total,
-            used=ram.used,
-            free=ram.free,
-            percent=ram.percent
-        )
+        cls.memory.swap.total = swap.total
+        cls.memory.swap.used = swap.used
+        cls.memory.swap.free = swap.free
+        cls.memory.swap.percent = swap.percent
+
+        cls.memory.virtual.total = ram.total
+        cls.memory.virtual.used = ram.used
+        cls.memory.virtual.free = ram.free
+        cls.memory.virtual.percent = ram.percent
+
+        if len(cls.memory.virtual.values) > 30:
+            cls.memory.virtual.values.pop(0)
+        if len(cls.memory.swap.values) > 30:
+            cls.memory.swap.values.pop(0)
+        cls.memory.virtual.values.append(ram.percent)
+        cls.memory.swap.values.append(swap.percent)
 
     '''
     Gets disks and disk usage

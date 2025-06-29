@@ -13,13 +13,7 @@ class DeviceStorage(StorageBase):
 
     @classmethod
     def get_cover(cls, ent: Union[Device | Sensor], width: int):
-        img = cv2.imread(os.path.abspath(ent.photo), cv2.IMREAD_UNCHANGED)
-        h, w, channels = img.shape
-        scale = width / w
-        resized = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        success, im = cv2.imencode('.jpg', resized)
-        headers = {'Content-Disposition': f'inline; filename="{ent.id}.jpg"'}
-        return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
+        return cls.image_response(os.path.abspath(ent.photo), width)
 
     @classmethod
     def cover_response(cls, device: Device, width: int):

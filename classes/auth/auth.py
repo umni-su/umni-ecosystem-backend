@@ -1,7 +1,11 @@
 from datetime import timezone, datetime, timedelta
 from typing import Annotated
 import jwt
-from fastapi import HTTPException, Depends, Response, status
+from fastapi import (
+    HTTPException, Depends, Cookie, Query,
+    Response, WebSocket, WebSocketException,
+    status
+)
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from pydantic import BaseModel
@@ -117,6 +121,56 @@ class Auth:
         # if current_user.disabled:
         #     raise HTTPException(status_code=400, detail="Inactive user")
         return current_user
+
+    @staticmethod
+    def validate_token(
+            token: Annotated[str | None, Query()] = None
+    ):
+        auth_exception: HTTPException = HTTPException(
+            status_code=403,
+            detail='You are not authorize'
+        )
+        try:
+            key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            payload = jwt.decode(token, key, algorithms=[ALGORITHM])
+            username: str = payload.get("sub")
+            if username is None:
+                raise auth_exception
+            token_data = TokenData(username=username)
+        except InvalidTokenError:
+            raise auth_exception
+        user = Auth.get_user(username=token_data.username)
+        if user is None:
+            raise auth_exception
+        return user
+
+    @staticmethod
+    async def validate_ws_token(
+            websocket: WebSocket,
+            session: Annotated[str | None, Cookie()] = None,
+            token: Annotated[str | None, Query()] = None,
+    ):
+        if session is None and token is None:
+            raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+        try:
+            key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            payload = jwt.decode(token, key, algorithms=[ALGORITHM])
+            username: str = payload.get("sub")
+            if username is None:
+                raise WebSocketException(
+                    code=status.WS_1008_POLICY_VIOLATION
+                )
+            token_data = TokenData(username=username)
+        except InvalidTokenError:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION
+            )
+        user = Auth.get_user(username=token_data.username)
+        if user is None:
+            raise WebSocketException(
+                code=status.WS_1008_POLICY_VIOLATION
+            )
+        return user
 
 
 class Token(BaseModel):

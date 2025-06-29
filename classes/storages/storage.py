@@ -1,7 +1,8 @@
 import os.path
 from classes.logger import logger
 from classes.storages.filesystem import Filesystem
-from fastapi import UploadFile
+from fastapi import UploadFile, Response
+import cv2
 
 
 class StorageBase:
@@ -59,3 +60,14 @@ class StorageBase:
     @classmethod
     def exists(cls, path: str):
         return Filesystem.exists(path)
+
+    @classmethod
+    def image_response(cls, path: str, width: int = 200):
+        img = cv2.imread(os.path.abspath(path), cv2.IMREAD_UNCHANGED)
+        name = os.path.basename(path)
+        h, w, channels = img.shape
+        scale = width / w
+        resized = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+        success, im = cv2.imencode('.jpg', resized)
+        headers = {'Content-Disposition': f'inline; filename="{name}"'}
+        return Response(im.tobytes(), headers=headers, media_type='image/jpeg')

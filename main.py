@@ -1,9 +1,14 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
+
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from starlette.websockets import WebSocket
 
+from classes.auth.auth import Auth
 from classes.logger import Logger
+from entities.user import UserEntity
+from responses.user import UserResponseOut
 from routes.cameras import cameras
 from routes.storages import storages
 from routes.auth import auth
@@ -18,6 +23,7 @@ from config.configuration import configuration
 from classes.ecosystem import Ecosystem
 from routes.sensors import sensors
 from routes.systeminfo import systeminfo
+from routes.websockets import websockets
 
 
 # fastapi dev .\main.py
@@ -53,24 +59,7 @@ app.include_router(sensors)
 app.include_router(storages)
 app.include_router(systeminfo)
 app.include_router(cameras)
-
-
-# @app.middleware("http")
-# async def add_process_time_header(request: Request, call_next):
-#     start_time = time.perf_counter()
-#     response = await call_next(request)
-#     process_time = time.perf_counter() - start_time
-#     response.headers["X-Process-Time"] = str(process_time)
-#     return response
-
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Message text was: {data}")
-
+app.include_router(websockets)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

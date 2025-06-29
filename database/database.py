@@ -7,15 +7,7 @@ from classes.storages.filesystem import Filesystem
 
 # IMPORT MODELS #
 
-from entities.storage import StorageEntity
-from entities.user import UserEntity
-from entities.configuration import ConfigurationEntity
-from entities.device import Device
-from entities.sensor import Sensor
-from entities.sensor_history import SensorHistory
-from entities.device_network_interfaces import DeviceNetworkInterface
-from entities.camera import CameraEntity
-from entities.location import LocationEntity
+import database.entities_imports
 
 fn = os.path.join(configuration.db_dir, configuration.db_source)
 filename = f"{fn}"

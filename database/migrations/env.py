@@ -1,4 +1,3 @@
-import os.path
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -8,7 +7,14 @@ from alembic import context
 
 from config.configuration import configuration
 
-from entities.user import UserEntity
+'''
+Create migration
+alembic revision --autogenerate -m "Update cameras"
+Run migration
+alembic upgrade head   
+'''
+
+import database.entities_imports
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -48,9 +54,9 @@ def run_migrations_offline() -> None:
 
     # https://dev.to/mchawa/sqlmodel-alembic-tutorial-gc8
     # https://dev.to/mchawa/sqlmodel-alembic-tutorial-gc8
-    path = os.path.join(configuration.db_dir, configuration.db_source)
-    url = f"{path}"
-    url = config.get_main_option("sqlalchemy.url")
+    url = f'sqlite:///{configuration.db_dir}{configuration.db_source}'
+
+    # url = config.get_main_option("sqlalchemy.url")
     naming_convention = {
         "ix": "ix_%(table_name)s_%(column_0_label)s",  # Added table_name for more uniqueness
         "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -78,9 +84,17 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    # connectable = engine_from_config(
+    #     config.get_section(config.config_ini_section, {}),
+    #     prefix="sqlalchemy.",
+    #     poolclass=pool.NullPool,
+    # )
+    url = f'sqlite:///{configuration.db_dir}{configuration.db_source}'
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+        {
+            'url': url
+        },
+        prefix="",
         poolclass=pool.NullPool,
     )
 
