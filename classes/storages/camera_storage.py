@@ -39,3 +39,42 @@ class CameraStorage(StorageBase):
             camera.cover
         )
         return cls.image_response(path, width)
+
+    @classmethod
+    def camera_path(cls, camera: CameraEntity):
+        return os.path.join(
+            camera.storage.path,
+            str(camera.id)
+        )
+
+    @classmethod
+    def video_path(cls, camera: CameraEntity):
+        return os.path.join(
+            cls.camera_path(camera),
+            'recordings',
+            'stream'
+        )
+
+    @classmethod
+    def screenshots_path(cls, camera: CameraEntity):
+        return os.path.join(
+            cls.camera_path(camera),
+            'screenshots',
+            'stream'
+        )
+
+    @classmethod
+    def video_detections_path(cls, camera: CameraEntity):
+        return os.path.join(
+            cls.camera_path(camera),
+            'recordings',
+            'motions'
+        )
+
+    @classmethod
+    def screenshots_detections_path(cls, camera: CameraEntity):
+        return os.path.join(
+            cls.camera_path(camera),
+            'screenshots',
+            'motions'
+        )

@@ -19,8 +19,6 @@ class CameraRepository(BaseRepository):
                 select(CameraEntity)
             ).all()
             return cameras
-        # cameras = TypeAdapter(list[CameraModelWithRelations]).dump_python(cameras)
-        # return TypeAdapter(list[CameraModelWithRelations]).validate_python(cameras)
 
     @classmethod
     def get_camera(cls, camera_id: int):

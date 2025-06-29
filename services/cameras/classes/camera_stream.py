@@ -8,6 +8,7 @@ import numpy as np
 from classes.crypto.crypto import Crypto
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
+from classes.storages.filesystem import Filesystem
 from classes.thread.Daemon import Daemon
 from classes.websockets.messages.ws_message_detection import WebsocketMessageDetectionStart, \
     WebsocketMessageDetectionEnd
@@ -55,6 +56,8 @@ class CameraStream:
     screen_interval: int = 30
     screen_timer: float = 0
 
+    writer: cv2.VideoWriter | None = None
+
     def __init__(self, camera: CameraEntity):
         self.prepare_link(camera=camera)
         self.set_camera(camera=camera)
@@ -83,8 +86,19 @@ class CameraStream:
         self.camera = camera
         self.id = camera.id
 
-    def take_screenshot(self):
-        pass
+    def date_filename(self):
+        return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
+
+    def take_screenshot(self) -> bool:
+        path = CameraStorage.screenshots_path(self.camera)
+        filename = '.'.join([self.date_filename(), 'jpg'])
+        if not Filesystem.exists(path):
+            Filesystem.mkdir(path_or_filename=path, recursive=True)
+        full_filename = os.path.join(path, filename)
+        return cv2.imwrite(
+            filename=full_filename,
+            img=self.original
+        )
 
     def try_capture(self):
         if self.camera.active:
@@ -125,29 +139,68 @@ class CameraStream:
     def is_video_mode(self):
         return self.camera.record_mode == CameraRecordTypeEnum.VIDEO
 
+    def create_writer(self):
+        # Get frame width and height
+        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+
+        # Define the codec and create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        path = CameraStorage.video_path(self.camera)
+        if not Filesystem.exists(path):
+            Filesystem.mkdir(path)
+        filename = '.'.join([
+            self.date_filename(), 'mp4'
+        ])
+        full_path = os.path.join(
+            path,
+            filename
+        )
+        self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
+
     def loop_frames(self):
         while self.camera.active:
-            if self.is_record_permanent() and self.time_part_start == 0:
-                self.time_part_start = time.time()
-                Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
-            now = time.time()
 
             # Set transient motion detected as false
             self.transient_movement_flag = False
 
             # Read frame
             ret, frame = self.cap.read()
-            self.original = frame
-
-            elapsed = now - self.screen_timer
-            if elapsed > self.screen_interval:
-                CameraStorage.upload_cover(self.camera, self.original)
-                self.screen_timer = now
-
             # If there's an error in capturing
             if not ret:
                 print("CAPTURE ERROR")
                 continue
+
+            self.original = frame
+
+            if self.is_record_permanent() and self.time_part_start == 0:
+                self.time_part_start = time.time()
+                # If mode is screenshot
+                if self.is_screenshots_mode():
+                    # take motion detection screenshot
+                    self.take_screenshot()
+                # If mode is video
+                elif self.is_video_mode():
+                    if isinstance(self.writer, cv2.VideoWriter):
+                        # Destroy old writer
+                        self.writer.release()
+                        self.writer = None
+
+                        # Create video writer
+                    self.create_writer()
+                Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
+
+            if isinstance(self.writer, cv2.VideoWriter):
+                if self.writer.isOpened():
+                    self.writer.write(self.original)
+
+            now = time.time()
+            elapsed = now - self.screen_timer
+
+            if elapsed > self.screen_interval:
+                CameraStorage.upload_cover(self.camera, self.original)
+                self.screen_timer = now
 
             if self.time_elapsed > 1. / self.fps:
                 self.time_prev = time.time()
@@ -248,39 +301,12 @@ class CameraStream:
                 record_part_diff = time.time() - self.time_part_start
                 if record_part_diff > self.camera.record_duration * 60:
                     self.time_part_start = 0
+                    self.writer.release()
+                    self.writer = None
                     Logger.debug(f'Camera {self.camera.name} end record video part')
                 # text = "No Movement Detected"
 
-            # Print the text on the screen, and display the raw and processed video
-            # feeds
-            # cv2.putText(
-            #     img=self.resized,
-            #     text=str(text),
-            #     org=(10, 35),
-            #     fontFace=self.font,
-            #     fontScale=0.75,
-            #     color=(255, 255, 255),
-            #     thickness=2,
-            #     lineType=cv2.LINE_AA
-            # )
-
-            # For if you want to show the individual video frames
-            #    cv2.imshow("frame", frame)
-            #    cv2.imshow("delta", frame_delta)
-
-            # Convert the frame_delta to color for splicing
-            # frame_delta = cv2.cvtColor(frame_delta, cv2.COLOR_GRAY2BGR)
-
-            # Splice the two video frames together to make one long horizontal one
-            # cv2.imshow(f"cam {self.camera.id}", self.resized)
-
-            # Interrupt trigger by pressing q to quit the open CV program
-
-            # ch = cv2.waitKey(delay_ms)
-            # if ch & 0xFF == ord('q'):
-            #     break
         # Cleanup when closed
-
         cv2.waitKey(10)
         # cv2.destroyAllWindows()
         # if isinstance(self.cap, cv2.VideoCapture):
