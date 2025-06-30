@@ -2,7 +2,8 @@ from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, Column
+from sqlalchemy.sql import false
 
 from entities.storage import StorageEntity
 
@@ -19,6 +20,7 @@ class CameraEntityBase:
     cover: None | str = Field(nullable=True, default=None)
     fps: int | None = Field(nullable=True)
     scale: float | None = Field(nullable=True)
+    alerts: bool = Field(sa_column=Column(nullable=False, server_default=false()))
 
 
 class CameraEntityConnection:

@@ -24,11 +24,20 @@ def get_cameras(
     return camera_list
 
 
-@cameras.post('')
+@cameras.post('', response_model=CameraModelWithRelations)
 def get_cameras(
         model: CameraBaseModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         camera: CameraBaseModel = Depends(CameraRepository.add_camera)
+):
+    return camera
+
+
+@cameras.put('/{camera_id}', response_model=CameraModelWithRelations)
+def get_cameras(
+        model: CameraBaseModel,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        camera: CameraBaseModel = Depends(CameraRepository.update_camera)
 ):
     return camera
 

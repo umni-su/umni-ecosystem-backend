@@ -37,14 +37,27 @@ class CameraRepository(BaseRepository):
             return camera
 
     @classmethod
+    def update_camera(cls, model: CameraBaseModel):
+        with cls.query() as sess:
+            cam = cls.get_camera(model.id)
+            camera = cls.prepare_camera(model, cam)
+            sess.add(camera)
+            sess.commit()
+            sess.refresh(camera)
+            return camera
+
+    @classmethod
     def prepare_camera(cls, model: CameraBaseModel, target: CameraEntity):
-        camera = CameraEntity()
+        camera = target
         try:
             storage = StorageRepository.get_storage(model.storage_id)
-            camera.storage = storage
+            if camera.storage != storage:
+                camera.storage = storage
             camera.name = model.name
             camera.active = model.active
+            camera.alerts = model.active
             camera.record = model.record
+            camera.record_mode = model.record_mode
             camera.record_duration = model.record_duration
             camera.delete_after = model.delete_after
             camera.username = model.username

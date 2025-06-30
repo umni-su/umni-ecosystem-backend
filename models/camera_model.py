@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
+from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.storage_model import StorageModel
 
 
@@ -9,8 +10,10 @@ class CameraBaseModel(BaseModel):
     storage_id: int
     name: str
     active: bool = True
+    alerts: bool = True
     record: bool = False
     record_duration: int | None = None
+    record_mode: CameraRecordTypeEnum | None = None
     delete_after: int | None = None
     cover: str | None = None
     protocol: CameraProtocolEnum
