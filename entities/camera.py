@@ -15,7 +15,7 @@ class CameraEntityBase:
     location_id: int | None = Field(nullable=True, foreign_key="locations.id")
     record: bool = Field(default=False)
     record_mode: CameraRecordTypeEnum = Field(nullable=True, default=CameraRecordTypeEnum.DETECTION_VIDEO)
-    record_duration: int = Field(default=5)
+    record_duration: int | None = Field(sa_column=Column(nullable=True, default=None))
     delete_after: int | None = Field(default=None, nullable=True)
     cover: None | str = Field(nullable=True, default=None)
     fps: int | None = Field(nullable=True)

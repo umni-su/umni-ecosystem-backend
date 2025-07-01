@@ -22,7 +22,7 @@ class StorageRepository(BaseRepository):
     @classmethod
     def get_storages(cls):
         with cls.query() as sess:
-            yield sess.exec(
+            return sess.exec(
                 select(StorageEntity)
             ).all()
 

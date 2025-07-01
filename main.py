@@ -24,6 +24,7 @@ from classes.ecosystem import Ecosystem
 from routes.sensors import sensors
 from routes.systeminfo import systeminfo
 from routes.websockets import websockets
+from services.cameras.cameras_service import CamerasService
 
 
 # fastapi dev .\main.py
@@ -36,6 +37,9 @@ async def lifespan(app: FastAPI):
     Logger.info('Generator lifespan at start of app')
     yield
     # Clean up the ML entities and release the resources
+    for stream in CamerasService.streams:
+        stream.opened = False
+        Logger.warn(f'Force stop camera {stream.camera.name} stream')
     Logger.info('Finish lifespan at end of app')
 
 

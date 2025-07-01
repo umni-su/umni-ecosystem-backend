@@ -21,6 +21,7 @@ from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 
 class CameraStream:
     id: int
+    opened: bool = True
     camera: CameraEntity
     cap: cv2.VideoCapture | None = None
     link: str | int | None = None
@@ -88,6 +89,7 @@ class CameraStream:
         CameraStream.link = url
 
     def set_camera(self, camera: CameraEntity):
+        # stop writer
         self.camera = camera
         self.id = camera.id
 
@@ -121,12 +123,12 @@ class CameraStream:
             self.stop_capture()
         else:
             if self.cap is None:
-                # self.cap = cv2.VideoCapture(self.link)
-                self.cap = cv2.VideoCapture(0)
-                Logger.info(f'[{self.camera.name}] Create capture')
+                self.cap = cv2.VideoCapture(self.link)
+                # self.cap = cv2.VideoCapture(0)
+                Logger.info(f'[{self.camera.name}] Create capture on link {self.link}')
 
             elif not self.cap.isOpened():
-                self.cap = cv2.VideoCapture(0)
+                self.cap = cv2.VideoCapture(self.link)
                 self.daemon = None
                 Logger.info(f'[{self.camera.name}] Restart capture')
 
@@ -152,6 +154,11 @@ class CameraStream:
     def is_detection_mode(self):
         return self.is_screenshot_detection_mode() or self.is_video_detection_mode()
 
+    def destroy_writer(self):
+        if isinstance(self.writer, cv2.VideoWriter):
+            self.writer.release()
+            self.writer = None
+
     def create_writer(self, path: str):
         # Get frame width and height
         frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -173,7 +180,7 @@ class CameraStream:
 
     def loop_frames(self):
         first_run: bool = True
-        while self.camera.active:
+        while self.camera.active or self.opened:
             if self.silence_timer is 0:
                 self.silence_timer = time.time()
             # Set transient motion detected as false
@@ -195,12 +202,8 @@ class CameraStream:
                     self.take_screenshot(CameraStorage.screenshots_path(self.camera))
                 # If mode is video
                 elif self.is_video_mode():
-                    if isinstance(self.writer, cv2.VideoWriter):
-                        # Destroy old writer
-                        self.writer.release()
-                        self.writer = None
-
-                        # Create video writer
+                    self.destroy_writer()
+                    # Create video writer
                     self.create_writer(CameraStorage.video_path(self.camera))
                 Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
 
@@ -291,9 +294,7 @@ class CameraStream:
                             message=f'[{self.camera.name}] Reset movement counter'
                         )
                         # Stop writer
-                        if isinstance(self.writer, cv2.VideoWriter):
-                            self.writer.release()
-                            self.writer = None
+                        self.destroy_writer()
                         Logger.warn(message.message)
                         WebSockets.send_broadcast(message)
 
@@ -304,8 +305,7 @@ class CameraStream:
                 record_part_diff = time.time() - self.time_part_start
                 if record_part_diff > self.camera.record_duration * 60:
                     self.time_part_start = 0
-                    self.writer.release()
-                    self.writer = None
+                    self.destroy_writer()
                     Logger.debug(f'Camera {self.camera.name} end record video part')
                 # text = "No Movement Detected"
 
@@ -313,13 +313,17 @@ class CameraStream:
         cv2.waitKey(10)
         # cv2.destroyAllWindows()
         # if isinstance(self.cap, cv2.VideoCapture):
-        self.cap.release()
+        self.destroy_writer()
+        self.stop_capture()
         Logger.warn(f'[{self.camera.name}] Stop stream')
 
     def generate_frames(self):
         cap = self.cap
+        if not isinstance(cap, cv2.VideoCapture):
+            Logger.err(f'Camera {self.camera.name} cap is not open')
+            return
         if not cap.isOpened():
-            print("Error: Could not open RTSP stream.")
+            Logger.err(f"Camera {self.camera.name} could not open RTSP stream.")
             return
         time_prev = 0
         fps = 15

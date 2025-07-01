@@ -9,6 +9,7 @@ class BaseService:
     name: str
     thread: Thread | None
     installed: bool = False
+    running: bool = True
 
     def __init__(self):
         self.installed = eco.Ecosystem.is_installed()
@@ -20,7 +21,7 @@ class BaseService:
 
     def run_while(self):
         while not self.installed:
-            Logger.info(f'Trying to start service {self.name}')
+            Logger.debug(f'Trying to start service {self.name}')
             self.installed = eco.Ecosystem.is_installed()
             time.sleep(3)
         self.run()
