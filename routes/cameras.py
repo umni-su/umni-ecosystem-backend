@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from classes.auth.auth import Auth
 from classes.storages.camera_storage import CameraStorage
@@ -9,6 +9,7 @@ from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from repositories.camera_repository import CameraRepository
 from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
+from starlette.exceptions import HTTPException
 
 cameras = APIRouter(
     prefix='/cameras',
@@ -70,4 +71,7 @@ def get_camera_stream(
                 content=stream.generate_frames(),
                 media_type='multipart/x-mixed-replace; boundary=frame'
             )
-    return None
+    raise HTTPException(
+        status_code=422,
+        detail='Stream can not be open'
+    )

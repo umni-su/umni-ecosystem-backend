@@ -2,10 +2,10 @@ import os
 import database.database as db
 import cv2
 
+from classes.logger import Logger
 from classes.storages.filesystem import Filesystem
 from classes.storages.storage import StorageBase
 from entities.camera import CameraEntity
-from fastapi import Response
 
 
 class CameraStorage(StorageBase):
@@ -24,11 +24,14 @@ class CameraStorage(StorageBase):
             Filesystem.mkdir(os.path.dirname(image_path))
         if cv2.imwrite(image_path, frame):
             with db.get_separate_session() as sess:
-                camera.cover = rel_path
-                sess.add(camera)
-                sess.commit()
-                sess.refresh(camera)
-                return camera
+                try:
+                    camera.cover = rel_path
+                    sess.add(camera)
+                    sess.commit()
+                    sess.refresh(camera)
+                    return camera
+                except Exception as e:
+                    Logger.err(e)
 
         return None
 

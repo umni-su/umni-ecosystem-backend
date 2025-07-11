@@ -189,7 +189,7 @@ class CameraStream:
             ret, frame = self.cap.read()
             # If there's an error in capturing
             if not ret:
-                print("CAPTURE ERROR")
+                Logger.err(f"Camera {self.camera.name} capture error!")
                 continue
 
             self.original = frame
@@ -330,15 +330,18 @@ class CameraStream:
 
         while True:
             time_elapsed = time.time() - time_prev
-            if time_elapsed > 1. / fps:
-                time_prev = time.time()
-                # Process the frame with OpenCV (optional)
-                # processed_frame = your_opencv_processing_function(frame)
+            # if time_elapsed > 1. / fps:
+            time_prev = time.time()
+            # Process the frame with OpenCV (optional)
+            # processed_frame = your_opencv_processing_function(frame)
 
-                ret, buffer = cv2.imencode('.jpg', self.resized)  # Encode frame as JPEG
-                if not ret:
-                    continue
+            ret, buffer = cv2.imencode('.jpg', self.resized)  # Encode frame as JPEG
+            if not ret:
+                continue
 
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-            continue
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+            # continue
+
+    def save_event(self):
+        pass

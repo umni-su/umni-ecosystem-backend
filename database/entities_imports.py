@@ -5,5 +5,10 @@ from entities.device import Device
 from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
 from entities.device_network_interfaces import DeviceNetworkInterface
+
 from entities.camera import CameraEntity
+from entities.camera_area import CameraAreaEntity
+from entities.camera_event import CameraEventEntity
+
 from entities.location import LocationEntity
+from entities.notification import NotificationEntity

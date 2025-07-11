@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
+from models.camera_area_model import CameraAreaBaseModel
 from models.storage_model import StorageModel
 
 
@@ -27,4 +28,5 @@ class CameraBaseModel(BaseModel):
 
 class CameraModelWithRelations(CameraBaseModel):
     # location:
-    storage: StorageModel | None = None
+    storage: StorageModel | None = None,
+    areas: list[CameraAreaBaseModel] | None = None

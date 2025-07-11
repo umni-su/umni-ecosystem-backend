@@ -1,11 +1,15 @@
+from entities.storage import StorageEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 from sqlmodel import Field, Relationship, Column
 from sqlalchemy.sql import false
+from typing import TYPE_CHECKING
 
-from entities.storage import StorageEntity
+if TYPE_CHECKING:
+    from entities.camera_area import CameraAreaEntity
+    from entities.camera_event import CameraEventEntity
 
 
 class CameraEntityBase:
@@ -44,3 +48,11 @@ class CameraEntity(
         sa_relationship_kwargs=dict(lazy="subquery"),
         back_populates="cameras"
     )
+
+    areas: list["CameraAreaEntity"] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="camera")
+
+    events: list["CameraEventEntity"] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="camera")
