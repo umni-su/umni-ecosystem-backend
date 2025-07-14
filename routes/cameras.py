@@ -1,11 +1,16 @@
 from typing import Annotated
 
+import cv2
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
+from starlette.responses import Response
+
 from classes.auth.auth import Auth
 from classes.storages.camera_storage import CameraStorage
 from entities.camera import CameraEntity
+from models.camera_area_model import CameraAreaBaseModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
+from repositories.area_repository import CameraAreaRepository
 from repositories.camera_repository import CameraRepository
 from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
@@ -51,13 +56,15 @@ def get_cameras(
     return camera
 
 
-@cameras.get('/{camera_id}/cover/{width}')
-def get_cameras(
-        width: int,
+@cameras.get('/{camera_id}/cover')
+def get_camera_cover(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         camera: CameraEntity = Depends(CameraRepository.get_camera)
 ):
-    return CameraStorage.get_cover(camera, width)
+    stream = CamerasService.find_stream_by_camera(camera)
+    success, im = cv2.imencode('.jpg', stream.resized)
+    headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
+    return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
 
 
 @cameras.get('/{camera_id}/stream')
@@ -75,3 +82,14 @@ def get_camera_stream(
         status_code=422,
         detail='Stream can not be open'
     )
+
+
+@cameras.post('/{camera_id}/areas')
+def save_camera_areas(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        areas: list[CameraAreaBaseModel],
+        camera: CameraEntity = Depends(CameraRepository.get_camera),
+):
+    saved_areas = CameraAreaRepository.save_areas_data(areas, camera)
+
+    return saved_areas

@@ -8,6 +8,8 @@ from sqlmodel import Field, Relationship, Column
 from sqlalchemy.types import JSON, Boolean
 from sqlalchemy.sql import false
 
+from models.camera_area_model import CameraAreaPoint
+
 if TYPE_CHECKING:
     from entities.camera_event import CameraEventEntity
 
@@ -17,7 +19,7 @@ class CameraAreaEntityBase:
     name: str = Field(nullable=False)
     priority: EventPriorityEnum = Field(nullable=False, default=EventPriorityEnum.ALERT)
     active: bool = Field(sa_column=Column(Boolean, nullable=False, server_default=false()))
-    points: list[(int, int)] = Field(sa_column=Column(JSON, nullable=True))
+    points: list[CameraAreaPoint] = Field(sa_column=Column(JSON, nullable=True))
     color: str = Field(nullable=False, default='#2D90B869')
 
 

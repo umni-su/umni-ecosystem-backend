@@ -214,7 +214,7 @@ class CameraStream:
                 CameraStorage.upload_cover(self.camera, self.original)
                 self.screen_timer = now
             # Resize and save a greyscale version of the image
-            self.resized = imutils.resize(self.original, width=450)
+            self.resized = imutils.resize(self.original, width=640)
 
             # If writer is opened - write frames to storage
             if isinstance(self.writer, cv2.VideoWriter):

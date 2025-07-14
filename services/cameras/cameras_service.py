@@ -14,7 +14,8 @@ class CamerasService(BaseService):
     checking_thread: Daemon | None = None
     daemon: Daemon | None = None
 
-    def find_stream_by_camera(self, camera: CameraEntity):
+    @classmethod
+    def find_stream_by_camera(cls, camera: CameraEntity):
         for stream in CamerasService.streams:
             if stream.id == camera.id:
                 return stream
@@ -24,7 +25,7 @@ class CamerasService(BaseService):
         while True:
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:
-                current_stream = self.find_stream_by_camera(camera=cam)
+                current_stream = CamerasService.find_stream_by_camera(camera=cam)
                 if isinstance(current_stream, CameraStream):
                     current_stream.set_camera(camera=cam)
                     current_stream.try_capture()
