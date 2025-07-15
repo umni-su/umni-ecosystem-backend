@@ -2,7 +2,6 @@ import time
 from classes.logger import Logger
 from classes.thread.Daemon import Daemon
 from entities.camera import CameraEntity
-from models.camera_model import CameraModelWithRelations
 from repositories.camera_repository import CameraRepository
 from services.base_service import BaseService
 from services.cameras.classes.camera_stream import CameraStream

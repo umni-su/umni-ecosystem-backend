@@ -8,8 +8,6 @@ from sqlmodel import select
 
 from repositories.storage_repository import StorageRepository
 
-from pydantic import TypeAdapter
-
 
 class CameraRepository(BaseRepository):
     @classmethod

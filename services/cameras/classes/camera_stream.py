@@ -17,10 +17,12 @@ from entities.camera import CameraEntity
 import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
+from services.cameras.classes.roi_tracker import ROITracker
 
 
 class CameraStream:
     id: int
+    tracker: ROITracker | None = None
     opened: bool = True
     camera: CameraEntity
     cap: cv2.VideoCapture | None = None
@@ -92,6 +94,8 @@ class CameraStream:
         # stop writer
         self.camera = camera
         self.id = camera.id
+        if isinstance(self.tracker, ROITracker):
+            self.tracker.update_all_rois(self.camera.areas)
 
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -179,6 +183,30 @@ class CameraStream:
         self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
 
     def loop_frames(self):
+        self.tracker = ROITracker(self.camera)
+        while self.camera.active or self.opened:
+            # Read frame
+            ret, frame = self.cap.read()
+            # If there's an error in capturing
+            if not ret:
+                Logger.err(f"Camera {self.camera.name} capture error!")
+                continue
+
+            self.original = frame
+            self.resized = imutils.resize(self.original, width=640)
+            frame_copy = self.resized.copy()
+
+            changes = self.tracker.detect_changes(frame_copy)
+            __frame = self.tracker.draw_rois(frame_copy, changes)
+            cv2.imshow(f"ROI Tracker {self.camera.id}", __frame)
+
+            cv2.waitKey(1)
+        cv2.destroyAllWindows()
+        self.destroy_writer()
+        self.stop_capture()
+        Logger.warn(f'[{self.camera.name}] Stop stream')
+
+    def loop_frames_old(self):
         first_run: bool = True
         while self.camera.active or self.opened:
             if self.silence_timer is 0:
