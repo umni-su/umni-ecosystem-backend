@@ -13,7 +13,6 @@ from models.camera_area_model import CameraAreaBaseModel
 class CameraAreaRepository(BaseRepository):
     @classmethod
     def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: CameraEntity):
-        print(areas)
         with cls.query() as session:
             for __area in areas:
                 area = CameraAreaEntity()
@@ -34,14 +33,14 @@ class CameraAreaRepository(BaseRepository):
                     else:
                         area.options = None
 
-                    print(area)
-
                     try:
                         session.add(area)
                         session.commit()
+                        session.refresh(area)
+                        session.refresh(camera)
+                        return camera.areas
                     except Exception as e:
                         Logger.err(e)
-            return camera.areas
 
     @classmethod
     def get_area(cls, area_id: int) -> CameraAreaEntity:
