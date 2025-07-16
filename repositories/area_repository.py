@@ -13,9 +13,9 @@ from models.camera_area_model import CameraAreaBaseModel
 class CameraAreaRepository(BaseRepository):
     @classmethod
     def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: CameraEntity):
+        print(areas)
         with cls.query() as session:
             for __area in areas:
-                print(__area.name)
                 area = CameraAreaEntity()
                 if __area.id is not None:
                     area = cls.get_area(__area.id)
@@ -28,6 +28,13 @@ class CameraAreaRepository(BaseRepository):
                     area.color = __area.color
                     area.priority = __area.priority
                     area.points = __area.points
+
+                    if __area.options is not None:
+                        area.options = __area.options.model_dump()
+                    else:
+                        area.options = None
+
+                    print(area)
 
                     try:
                         session.add(area)

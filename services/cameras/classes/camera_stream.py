@@ -17,7 +17,7 @@ from entities.camera import CameraEntity
 import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
-from services.cameras.classes.roi_tracker import ROITracker
+from services.cameras.classes.roi_tracker import ROITracker, ROIDetectionEvent, ROIRecordEvent
 
 
 class CameraStream:
@@ -71,6 +71,33 @@ class CameraStream:
         self.set_camera(camera=camera)
         self.try_capture()
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
+
+    @staticmethod
+    def handle_motion_start(event: ROIDetectionEvent):
+        message = WebsocketMessageDetectionStart(
+            camera_id=event.camera.id,
+            message=f'[{event.camera.name}] Motion detected at {event.timestamp}',
+        )
+        WebSockets.send_broadcast(message)
+        Logger.debug(f"[{event.timestamp}] Начало движения в {event.roi.name}. Время: {event.timestamp}")
+
+    @staticmethod
+    def handle_motion_end(event: ROIDetectionEvent):
+        message = WebsocketMessageDetectionEnd(
+            camera_id=event.camera.id,
+            message=f'[{event.camera.name}] Reset movement counter'
+        )
+        WebSockets.send_broadcast(message)
+        Logger.debug(f"[{event.timestamp}] Конец движения в {event.roi.name}. Время: {event.timestamp}")
+
+    @staticmethod
+    def handle_recording_start(event: ROIRecordEvent):
+        Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
+
+    @staticmethod
+    def handle_recording_end(event: ROIRecordEvent):
+        Logger.debug(
+            f"[{event.timestamp}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
 
     @staticmethod
     def prepare_link(camera: CameraEntity, secondary: bool = False):
@@ -184,6 +211,13 @@ class CameraStream:
 
     def loop_frames(self):
         self.tracker = ROITracker(self.camera)
+        # Установка callback-функций
+        self.tracker.set_callbacks(
+            motion_start=CameraStream.handle_motion_start,
+            motion_end=CameraStream.handle_motion_end,
+            recording_start=CameraStream.handle_recording_start,
+            recording_end=CameraStream.handle_recording_end
+        )
         while self.camera.active or self.opened:
             # Read frame
             ret, frame = self.cap.read()

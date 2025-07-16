@@ -12,6 +12,8 @@ Create migration
 alembic revision --autogenerate -m "Update cameras"
 Run migration
 alembic upgrade head   
+
+alembic downgrade -1
 '''
 
 import database.entities_imports

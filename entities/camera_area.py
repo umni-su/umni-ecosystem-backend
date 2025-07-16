@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from entities.camera import CameraEntity
 from entities.enums.event_priority_enum import EventPriorityEnum
@@ -19,6 +19,7 @@ class CameraAreaEntityBase:
     active: bool = Field(sa_column=Column(Boolean, nullable=False, server_default=false()))
     points: list[list[int]] = Field(sa_column=Column(JSON, nullable=True))
     color: str = Field(nullable=False, default='#2D90B869')
+    options: Optional[dict] = Field(sa_column=Column(JSON, nullable=True))
 
 
 class CameraAreaEntity(TimeStampMixin, CameraAreaEntityBase, IdColumnMixin, table=True):
