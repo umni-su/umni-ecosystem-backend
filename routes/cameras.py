@@ -16,6 +16,8 @@ from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
 from starlette.exceptions import HTTPException
 
+from services.cameras.classes.wheather_detector import WeatherDetector, DayNightDetector
+
 cameras = APIRouter(
     prefix='/cameras',
     tags=['cameras']
@@ -63,6 +65,7 @@ def get_camera_cover(
 ):
     stream = CamerasService.find_stream_by_camera(camera)
     success, im = cv2.imencode('.jpg', stream.resized)
+    print(camera.name, WeatherDetector.detect_weather(stream.resized), DayNightDetector.is_night(stream.resized))
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
     return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
 

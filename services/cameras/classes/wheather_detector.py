@@ -37,37 +37,58 @@ class WeatherDetector:
     """Детектор погодных условий по изображению"""
 
     @staticmethod
+    def is_indoor(frame: np.ndarray) -> bool:
+        """
+        Определяет, находится ли камера в помещении
+        по анализу особенностей изображения
+        """
+        # 1. Проверка по наличию потолка/стен (геометрия)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50,
+                                minLineLength=100, maxLineGap=10)
+
+        if lines is not None and len(lines) > 5:  # Много линий - вероятно помещение
+            return True
+
+        # 2. Проверка по цветовому балансу (искусственное освещение)
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        avg_saturation = np.mean(hsv[:, :, 1])
+        if avg_saturation < 40:  # Низкая насыщенность - искусственный свет
+            return True
+
+        return False
+
+    @staticmethod
     def detect_weather(frame: np.ndarray) -> WeatherCondition:
-        """
-        Определяет текущие погодные условия
+        """Улучшенный алгоритм определения погоды"""
+        # Сначала проверяем, не в помещении ли мы
+        if WeatherDetector.is_indoor(frame):
+            return WeatherCondition.CLEAR
 
-        Args:
-            frame: Входной кадр видео
-
-        Returns:
-            WeatherCondition: Текущее погодное условие
-        """
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # 1. Детекция дождя/снега по текстуре изображения
-        edges = cv2.Canny(gray, 50, 150)
-        edge_density = np.sum(edges) / (frame.shape[0] * frame.shape[1])
-
-        if edge_density > 0.2:  # Высокая плотность краев - возможен дождь/снег
-            # Анализ гистограммы для различия дождя и снега
-            hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
-            white_pixels = np.sum(hist[200:]) / np.sum(hist)
-
-            if white_pixels > 0.3:
+        # 1. Проверка на снег по яркости и текстуре
+        bright_pixels = np.sum(gray > 200) / gray.size
+        if bright_pixels > 0.3:
+            edges = cv2.Canny(gray, 50, 150)
+            edge_density = np.sum(edges) / edges.size
+            if edge_density > 0.15:  # Снег имеет высокую плотность мелких деталей
                 return WeatherCondition.SNOW
-            else:
-                return WeatherCondition.RAIN
 
-        # 2. Детекция тумана по контрасту
+        # 2. Проверка на дождь
+        # Дождь создает вертикальные линии
+        sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+        sobel_y = np.abs(sobel_y)
+        vertical_lines = np.sum(sobel_y > 50) / sobel_y.size
+
+        if vertical_lines > 0.1:  # Много вертикальных градиентов
+            # Дополнительная проверка на динамику (нужна история кадров)
+            return WeatherCondition.RAIN
+
+        # 3. Проверка на туман по контрасту
         contrast = gray.std()
-        if contrast < 25:  # Низкий контраст - возможен туман
+        if contrast < 25 and bright_pixels < 0.1:  # Низкий контраст + нет пересветов
             return WeatherCondition.FOG
-
-        # 3. Детекция ветра требует анализа нескольких кадров (реализуется отдельно)
 
         return WeatherCondition.CLEAR

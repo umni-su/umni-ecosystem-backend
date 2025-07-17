@@ -24,7 +24,7 @@ class CameraStream:
     id: int
     tracker: ROITracker | None = None
     opened: bool = True
-    camera: CameraEntity
+    camera: CameraEntity | None = None
     cap: cv2.VideoCapture | None = None
     link: str | int | None = None
     # Number of frames to pass before changing the frame to compare the current
@@ -118,9 +118,13 @@ class CameraStream:
         CameraStream.link = url
 
     def set_camera(self, camera: CameraEntity):
-        # stop writer
+        if isinstance(self.camera, CameraEntity) and self.camera.record_mode != camera.record_mode:
+            # Stop writer
+            self.time_part_start = 0
+
         self.camera = camera
         self.id = camera.id
+
         if isinstance(self.tracker, ROITracker):
             self.tracker.update_all_rois(self.camera.areas)
 
@@ -210,6 +214,7 @@ class CameraStream:
         self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
 
     def loop_frames(self):
+        first_run: bool = True
         self.tracker = ROITracker(self.camera)
         # Установка callback-функций
         self.tracker.set_callbacks(
@@ -228,11 +233,54 @@ class CameraStream:
 
             self.original = frame
             self.resized = imutils.resize(self.original, width=640)
-            frame_copy = self.resized.copy()
 
-            changes = self.tracker.detect_changes(frame_copy)
-            __frame = self.tracker.draw_rois(frame_copy, changes)
-            cv2.imshow(f"ROI Tracker {self.camera.id}", __frame)
+            # Start permanent record or permanent screenshots
+            if self.is_record_permanent() and self.time_part_start == 0:
+                self.time_part_start = time.time()
+                # If mode is screenshot
+                if self.is_screenshots_mode():
+                    # take motion detection screenshot
+                    self.destroy_writer()
+                    self.take_screenshot(CameraStorage.screenshots_path(self.camera))
+                # If mode is video
+                elif self.is_video_mode():
+                    self.destroy_writer()
+                    # Create video writer
+                    self.create_writer(CameraStorage.video_path(self.camera))
+                Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
+
+            # Take cover
+            now = time.time()
+            elapsed = now - self.screen_timer
+
+            if elapsed > self.screen_interval:
+                CameraStorage.upload_cover(self.camera, self.original)
+                self.screen_timer = now
+            # End take cover
+
+            # If writer is opened - write frames to storage
+            if isinstance(self.writer, cv2.VideoWriter):
+                if self.writer.isOpened():
+                    self.writer.write(self.original)
+
+            pause = time.time() - self.silence_timer
+
+            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+
+                frame_copy = self.resized.copy()
+
+                changes = self.tracker.detect_changes(frame_copy)
+                __frame = self.tracker.draw_rois(frame_copy, changes)
+                cv2.imshow(f"Camera {self.camera.id}", __frame)
+
+            elif self.is_record_permanent():
+                record_part_diff = time.time() - self.time_part_start
+                cv2.imshow(f"Camera {self.camera.id}", self.resized)
+                if record_part_diff > self.camera.record_duration * 60:
+                    self.time_part_start = 0
+                    self.destroy_writer()
+                    Logger.debug(f'Camera {self.camera.name} end record video part')
+                # text = "No Movement Detected"
 
             cv2.waitKey(1)
         cv2.destroyAllWindows()

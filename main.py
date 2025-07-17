@@ -39,6 +39,7 @@ async def lifespan(app: FastAPI):
     # Clean up the ML entities and release the resources
     for stream in CamerasService.streams:
         stream.opened = False
+        stream.destroy_writer()
         Logger.warn(f'Force stop camera {stream.camera.name} stream')
     Logger.info('Finish lifespan at end of app')
 
