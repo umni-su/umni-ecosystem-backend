@@ -120,6 +120,7 @@ class CameraStream:
     def set_camera(self, camera: CameraEntity):
         if isinstance(self.camera, CameraEntity) and self.camera.record_mode != camera.record_mode:
             # Stop writer
+            self.destroy_writer()
             self.time_part_start = 0
 
         self.camera = camera
@@ -240,11 +241,9 @@ class CameraStream:
                 # If mode is screenshot
                 if self.is_screenshots_mode():
                     # take motion detection screenshot
-                    self.destroy_writer()
                     self.take_screenshot(CameraStorage.screenshots_path(self.camera))
                 # If mode is video
                 elif self.is_video_mode():
-                    self.destroy_writer()
                     # Create video writer
                     self.create_writer(CameraStorage.video_path(self.camera))
                 Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
