@@ -20,7 +20,7 @@ class CameraAreaRepository(BaseRepository):
                     area = cls.get_area(__area.id)
 
                 if area is not None:
-                    if area.camera_id != camera.id:
+                    if area.camera is None or area.camera.id != camera.id:
                         area.camera = camera
                     area.name = __area.name
                     area.active = __area.active
@@ -37,10 +37,11 @@ class CameraAreaRepository(BaseRepository):
                         session.add(area)
                         session.commit()
                         session.refresh(area)
-                        session.refresh(camera)
-                        return camera.areas
+                        # session.refresh(camera) -> raise sqlalchemy.exc.InvalidRequestError: Instance '<CameraEntity at 0x1fb0dbb8eb0>' is not persistent within this Session
                     except Exception as e:
                         Logger.err(e)
+
+            return camera.areas
 
     @classmethod
     def get_area(cls, area_id: int) -> CameraAreaEntity:

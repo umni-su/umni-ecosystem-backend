@@ -19,7 +19,7 @@ class CameraRepository(BaseRepository):
             return cameras
 
     @classmethod
-    def get_camera(cls, camera_id: int):
+    def get_camera(cls, camera_id: int) -> CameraEntity | None:
         with cls.query() as sess:
             return sess.exec(
                 select(CameraEntity).where(CameraEntity.id == camera_id)

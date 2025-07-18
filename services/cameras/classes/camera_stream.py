@@ -1,9 +1,12 @@
 import datetime
 import os
 import time
+from typing import Dict, Callable, List
 
 import imutils
 import numpy as np
+from numpy import ndarray
+from pydantic import BaseModel
 
 from classes.crypto.crypto import Crypto
 from classes.logger import Logger
@@ -17,7 +20,14 @@ from entities.camera import CameraEntity
 import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
-from services.cameras.classes.roi_tracker import ROITracker, ROIDetectionEvent, ROIRecordEvent
+from services.cameras.classes.camera_notifier import CameraNotifier
+from services.cameras.classes.roi_tracker import ROITracker, ROIRecordEvent
+
+
+class ScreenshotResultModel(BaseModel):
+    success: bool = False
+    directory: str
+    filename: str
 
 
 class CameraStream:
@@ -72,30 +82,10 @@ class CameraStream:
         self.try_capture()
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
-    @staticmethod
-    def handle_motion_start(event: ROIDetectionEvent):
-        message = WebsocketMessageDetectionStart(
-            camera_id=event.camera.id,
-            message=f'[{event.camera.name}] Motion detected at {event.timestamp}',
-        )
-        WebSockets.send_broadcast(message)
-        Logger.debug(f"[{event.timestamp}] Начало движения в {event.roi.name}. Время: {event.timestamp}")
-
-    @staticmethod
-    def handle_motion_end(event: ROIDetectionEvent):
-        message = WebsocketMessageDetectionEnd(
-            camera_id=event.camera.id,
-            message=f'[{event.camera.name}] Reset movement counter'
-        )
-        WebSockets.send_broadcast(message)
-        Logger.debug(f"[{event.timestamp}] Конец движения в {event.roi.name}. Время: {event.timestamp}")
-
-    @staticmethod
-    def handle_recording_start(event: ROIRecordEvent):
+    def handle_recording_start(self, event: ROIRecordEvent):
         Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
 
-    @staticmethod
-    def handle_recording_end(event: ROIRecordEvent):
+    def handle_recording_end(self, event: ROIRecordEvent):
         Logger.debug(
             f"[{event.timestamp}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
 
@@ -132,14 +122,26 @@ class CameraStream:
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
-    def take_screenshot(self, path: str) -> bool:
+    def take_screenshot(self, path: str, prefix: str | None = None, frame: cv2.Mat | ndarray | None = None):
+
         filename = '.'.join([self.date_filename(), 'jpg'])
+        if prefix is not None:
+            filename = '.'.join([prefix, filename])
+
         if not Filesystem.exists(path):
             Filesystem.mkdir(path_or_filename=path, recursive=True)
         full_filename = os.path.join(path, filename)
-        return cv2.imwrite(
+        _frame = self.original
+        if frame is not None:
+            _frame = frame
+        res = cv2.imwrite(
             filename=full_filename,
-            img=self.original
+            img=frame
+        )
+        return ScreenshotResultModel(
+            success=res,
+            directory=path,
+            filename=filename,
         )
 
     def try_capture(self):
@@ -216,13 +218,13 @@ class CameraStream:
 
     def loop_frames(self):
         first_run: bool = True
-        self.tracker = ROITracker(self.camera)
+        self.tracker = ROITracker(camera=self.camera)
         # Установка callback-функций
         self.tracker.set_callbacks(
-            motion_start=CameraStream.handle_motion_start,
-            motion_end=CameraStream.handle_motion_end,
-            recording_start=CameraStream.handle_recording_start,
-            recording_end=CameraStream.handle_recording_end
+            motion_start=CameraNotifier.handle_motion_start,
+            motion_end=CameraNotifier.handle_motion_end,
+            recording_start=self.handle_recording_start,
+            recording_end=self.handle_recording_end
         )
         while self.camera.active or self.opened:
             # Read frame

@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 from datetime import datetime
 from collections import deque
-from typing import List, Optional, Dict, Callable
+from typing import List, Optional, Dict, Callable, TYPE_CHECKING
+
 from pydantic import BaseModel, Field, field_validator
 
 from classes.logger import Logger
@@ -488,7 +489,8 @@ class ROITracker:
                 self.recording_start_time = None
                 self.triggered = False
 
-    def draw_rois(self, frame: np.ndarray, changes: List[ROIDetectionEvent] = None) -> np.ndarray:
+    def draw_rois(self, frame: np.ndarray, changes: List[ROIDetectionEvent] = None,
+                  roi_id: int | None = None) -> np.ndarray:
         """
         Отрисовка ROI и изменений на кадре
 
@@ -501,17 +503,21 @@ class ROITracker:
         """
         overlay = frame.copy()
 
+        _exit = False
+
         for roi in self.rois:
+            if _exit:
+                continue
+            if roi_id is not None:
+                if roi.id == roi_id:
+                    _exit = True
             pts = np.array(roi.points, np.int32)
             color = (0, 0, 255) if roi.id in self.active_movements else roi.bgr_color
 
             cv2.fillPoly(overlay, [pts], color)
-            cv2.polylines(overlay, [pts], True, (0, 255, 0), 1)
-
-            # status = "ACTIVE" if roi.id in self.active_movements else "READY"
-            # cv2.putText(overlay, f"{roi.name} [{status}]",
-            #             (pts[0][0], pts[0][1] - 10),
-            #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            thickness = 3 if roi.id in self.active_movements else 1
+            border = (0, 255, 255) if roi.id in self.active_movements else (0, 255, 0)
+            cv2.polylines(overlay, [pts], True, border, thickness)
 
         cv2.addWeighted(overlay, 0.3, frame, 0.7, 0, frame)
 
@@ -521,9 +527,9 @@ class ROITracker:
                     x, y, w, h = obj["bbox"]
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 255), 2)
 
-        status_text = f"Recording: {'ON' if self.recording else 'OFF'}"
-        cv2.putText(frame, status_text, (10, 20),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        # status_text = f"Recording: {'ON' if self.recording else 'OFF'}"
+        # cv2.putText(frame, status_text, (10, 20),
+        #             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         return frame
 

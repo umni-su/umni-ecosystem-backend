@@ -76,7 +76,7 @@ def get_camera_stream(
         camera: CameraEntity = Depends(CameraRepository.get_camera)
 ):
     for stream in CamerasService.streams:
-        if stream.id == camera.id:
+        if stream.id == camera.id and stream.opened:
             return StreamingResponse(
                 content=stream.generate_frames(),
                 media_type='multipart/x-mixed-replace; boundary=frame'
