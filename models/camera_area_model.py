@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
@@ -13,4 +13,4 @@ class CameraAreaBaseModel(BaseModel):
     active: bool = True
     color: str | None = None
     points: list[list[int]] | None = None
-    options: Optional[ROISettings] = Field(default_factory=ROISettings)
+    options: Optional[ROISettings] = Field(default=ROISettings)

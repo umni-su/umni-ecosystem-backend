@@ -36,7 +36,6 @@ class CameraAreaRepository(BaseRepository):
                     try:
                         session.add(area)
                         session.commit()
-                        session.refresh(area)
                         # session.refresh(camera) -> raise sqlalchemy.exc.InvalidRequestError: Instance '<CameraEntity at 0x1fb0dbb8eb0>' is not persistent within this Session
                     except Exception as e:
                         Logger.err(e)

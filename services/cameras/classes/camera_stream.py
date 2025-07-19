@@ -1,14 +1,14 @@
 import datetime
 import os
 import time
-from typing import Dict, Callable, List
+from typing import TYPE_CHECKING
 
 import imutils
 import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
 
-from classes.crypto.crypto import Crypto
+import classes.crypto.crypto as crypto
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
@@ -21,7 +21,11 @@ import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from services.cameras.classes.camera_notifier import CameraNotifier
-from services.cameras.classes.roi_tracker import ROITracker, ROIRecordEvent
+
+from services.cameras.classes.roi_tracker import ROITracker
+
+if TYPE_CHECKING:
+    from services.cameras.classes.roi_tracker import ROIRecordEvent
 
 
 class ScreenshotResultModel(BaseModel):
@@ -82,10 +86,10 @@ class CameraStream:
         self.try_capture()
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
-    def handle_recording_start(self, event: ROIRecordEvent):
+    def handle_recording_start(self, event: "ROIRecordEvent"):
         Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
 
-    def handle_recording_end(self, event: ROIRecordEvent):
+    def handle_recording_end(self, event: "ROIRecordEvent"):
         Logger.debug(
             f"[{event.timestamp}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
 
@@ -93,7 +97,7 @@ class CameraStream:
     def prepare_link(camera: CameraEntity, secondary: bool = False):
         userinfo = ''
         if camera.username is not None and camera.password is not None:
-            password = Crypto.decrypt(camera.password)
+            password = crypto.Crypto.decrypt(camera.password)
             userinfo = f'{camera.username}:{password}@'
         stream = camera.primary
         if secondary:
@@ -243,7 +247,9 @@ class CameraStream:
                 # If mode is screenshot
                 if self.is_screenshots_mode():
                     # take motion detection screenshot
-                    self.take_screenshot(CameraStorage.screenshots_path(self.camera))
+                    res = CameraStorage.take_screenshot(self.camera, self.original)
+                    Logger.debug(
+                        f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
                 # If mode is video
                 elif self.is_video_mode():
                     # Create video writer
@@ -270,7 +276,7 @@ class CameraStream:
 
                 frame_copy = self.resized.copy()
 
-                changes = self.tracker.detect_changes(frame_copy)
+                changes = self.tracker.detect_changes(frame_copy, self.original)
                 __frame = self.tracker.draw_rois(frame_copy, changes)
                 cv2.imshow(f"Camera {self.camera.id}", __frame)
 

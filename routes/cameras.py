@@ -6,11 +6,13 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import Response
 
 from classes.auth.auth import Auth
-from classes.storages.camera_storage import CameraStorage
 from entities.camera import CameraEntity
+from entities.camera_event import CameraEventEntity
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
+from models.pagination_model import PaginatedResponse, PageParams
 from repositories.area_repository import CameraAreaRepository
+from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_repository import CameraRepository
 from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
@@ -87,7 +89,7 @@ def get_camera_stream(
     )
 
 
-@cameras.post('/{camera_id}/areas')
+@cameras.post('/{camera_id}/areas', response_model=list[CameraAreaBaseModel])
 def save_camera_areas(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         areas: list[CameraAreaBaseModel],
@@ -96,3 +98,13 @@ def save_camera_areas(
     saved_areas = CameraAreaRepository.save_areas_data(areas, camera)
 
     return saved_areas
+
+
+@cameras.post('/{camera_id}/events')
+def save_camera_areas(
+        params: PageParams,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        events: list[PaginatedResponse[CameraEventEntity], Depends(CameraEventsRepository.get_events)],
+        camera: CameraEntity = Depends(CameraRepository.get_camera),
+):
+    return events

@@ -1,8 +1,8 @@
-from classes.crypto.crypto import Crypto
+import classes.crypto.crypto as crypto
 from classes.logger import Logger
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
-from models.camera_model import CameraBaseModel, CameraModelWithRelations
+from models.camera_model import CameraBaseModel
 from repositories.base_repository import BaseRepository
 from sqlmodel import select
 
@@ -64,7 +64,7 @@ class CameraRepository(BaseRepository):
                 camera.port = model.port
             camera.protocol = model.protocol
             if model.password is not None:
-                camera.password = Crypto.encrypt(model.password)
+                camera.password = crypto.Crypto.encrypt(model.password)
             else:
                 model.password = None
             camera.primary = model.primary

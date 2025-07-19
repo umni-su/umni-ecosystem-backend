@@ -4,9 +4,10 @@ import cv2
 import numpy as np
 from datetime import datetime
 from collections import deque
-from typing import List, Optional, Dict, Callable, TYPE_CHECKING
+from typing import List, Optional, Dict, Callable, Any
 
-from pydantic import BaseModel, Field, field_validator
+from numpy import ndarray
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from classes.logger import Logger
 from entities.camera import CameraEntity
@@ -100,6 +101,8 @@ class ROIEvent(BaseModel):
 class ROIDetectionEvent(ROIEvent):
     roi: ROI
     changes: list[dict]
+    frame: ndarray
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ROIRecordEvent(ROIEvent):
@@ -122,6 +125,8 @@ class ROITracker:
     """
 
     def __init__(self, camera: CameraEntity):
+        self.resized_frame = None
+        self.original_frame = None
         self.rois = []
         self.camera = camera
 
@@ -260,10 +265,19 @@ class ROITracker:
 
         return True
 
-    def detect_changes(self, current_frame: np.ndarray) -> List[ROIDetectionEvent]:
+    def set_original_frame(self, frame: np.ndarray):
+        self.original_frame = frame.copy()
+
+    def set_resized_frame(self, frame: np.ndarray):
+        self.resized_frame = frame.copy()
+
+    def detect_changes(self, current_frame: np.ndarray, original_frame: np.ndarray) -> List[ROIDetectionEvent]:
         """Улучшенная детекция с защитой от ложных срабатываний"""
         if not self.is_frame_valid(current_frame):
             return []
+
+        self.set_original_frame(original_frame)
+        self.set_resized_frame(current_frame)
 
         # Подготовка кадра
         gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
@@ -318,7 +332,8 @@ class ROITracker:
                             roi=roi,
                             camera=self.camera,
                             changes=changes,
-                            timestamp=datetime.now()
+                            timestamp=datetime.now(),
+                            frame=self.draw_rois(self.resized_frame)
                         )
                     )
 
@@ -371,7 +386,8 @@ class ROITracker:
                             roi=self.get_roi(roi_id),
                             camera=self.camera,
                             changes=[],
-                            timestamp=now
+                            timestamp=now,
+                            frame=self.draw_rois(self.resized_frame)
                         )
                         self._trigger_motion_start(event)
                         Logger.info(f"[{self.camera.name}]🏃‍♂️ Подтверждено движение в ROI {roi_id}")
@@ -397,7 +413,8 @@ class ROITracker:
                         roi=self.get_roi(roi_id),
                         camera=self.camera,
                         changes=[],
-                        timestamp=now
+                        timestamp=now,
+                        frame=self.draw_rois(self.resized_frame)
                     )
                     self._trigger_motion_end(event)
 

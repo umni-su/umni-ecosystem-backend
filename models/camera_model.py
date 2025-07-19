@@ -28,5 +28,5 @@ class CameraBaseModel(BaseModel):
 
 class CameraModelWithRelations(CameraBaseModel):
     # location:
-    storage: StorageModel | None = None,
+    storage: StorageModel | None = None
     areas: list[CameraAreaBaseModel] | None = None
