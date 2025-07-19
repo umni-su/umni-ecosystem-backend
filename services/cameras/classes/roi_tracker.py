@@ -102,6 +102,7 @@ class ROIDetectionEvent(ROIEvent):
     roi: ROI
     changes: list[dict]
     frame: ndarray
+    original: ndarray
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
@@ -333,7 +334,8 @@ class ROITracker:
                             camera=self.camera,
                             changes=changes,
                             timestamp=datetime.now(),
-                            frame=self.draw_rois(self.resized_frame)
+                            frame=self.draw_rois(self.resized_frame),
+                            original=self.original_frame
                         )
                     )
 
@@ -387,7 +389,8 @@ class ROITracker:
                             camera=self.camera,
                             changes=[],
                             timestamp=now,
-                            frame=self.draw_rois(self.resized_frame)
+                            frame=self.draw_rois(self.resized_frame),
+                            original=self.original_frame
                         )
                         self._trigger_motion_start(event)
                         Logger.info(f"[{self.camera.name}]🏃‍♂️ Подтверждено движение в ROI {roi_id}")
@@ -414,7 +417,8 @@ class ROITracker:
                         camera=self.camera,
                         changes=[],
                         timestamp=now,
-                        frame=self.draw_rois(self.resized_frame)
+                        frame=self.draw_rois(self.resized_frame),
+                        original=self.original_frame
                     )
                     self._trigger_motion_end(event)
 

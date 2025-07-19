@@ -54,18 +54,23 @@ class CameraStorage(StorageBase):
         return datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
     @classmethod
-    def take_detection_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None):
+    def take_detection_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None,
+                                  prefix: str = None):
         path = cls.screenshots_detections_path(camera)
-        return cls._save_camera_image(path, frame)
+        return cls._save_camera_image(path, frame, prefix)
 
     @classmethod
-    def take_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None):
+    def take_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None, prefix: str = None):
         path = cls.screenshots_path(camera)
-        return cls._save_camera_image(path, frame)
+        return cls._save_camera_image(path, frame, prefix)
 
     @classmethod
-    def _save_camera_image(cls, path: str, frame: cv2.Mat | ndarray | None = None):
-        filename = '.'.join([cls.date_filename(), 'jpg'])
+    def _save_camera_image(cls, path: str, frame: cv2.Mat | ndarray | None = None, prefix: str = None):
+
+        if prefix:
+            filename = '.'.join([prefix, cls.date_filename(), 'jpg'])
+        else:
+            filename = '.'.join([cls.date_filename(), 'jpg'])
         if not Filesystem.exists(path):
             Filesystem.mkdir(path_or_filename=path, recursive=True)
         path = os.path.join(

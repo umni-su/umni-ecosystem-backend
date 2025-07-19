@@ -104,7 +104,8 @@ def save_camera_areas(
 def save_camera_areas(
         params: PageParams,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        events: list[PaginatedResponse[CameraEventEntity], Depends(CameraEventsRepository.get_events)],
-        camera: CameraEntity = Depends(CameraRepository.get_camera),
+        camera: Annotated[CameraEntity, Depends(CameraRepository.get_camera)],
+
 ):
+    events = CameraEventsRepository.get_events(params, camera)
     return events

@@ -1,8 +1,10 @@
 import os.path
 from datetime import datetime
+from math import ceil
 from typing import TYPE_CHECKING
 
-from sqlmodel import select
+from sqlalchemy import func
+from sqlmodel import select, col
 
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
@@ -25,7 +27,8 @@ class CameraEventsRepository(BaseRepository):
             if isinstance(area, CameraAreaEntity):
                 try:
                     camera = area.camera
-                    screenshot = CameraStorage.take_detection_screenshot(camera, model.frame)
+                    screenshot = CameraStorage.take_detection_screenshot(camera, model.frame, 'R')
+                    original = CameraStorage.take_detection_screenshot(camera, model.original, 'O')
                     event = CameraEventEntity()
                     event.camera = camera
                     event.area = area
@@ -33,6 +36,7 @@ class CameraEventsRepository(BaseRepository):
                     event.action = model.event
                     event.type = camera.record_mode
                     event.screenshot = os.path.join(screenshot.directory, screenshot.filename)
+                    event.file = os.path.join(original.directory, original.filename)
 
                     # Taking screenshot
                     # screenshot = stream.take_screenshot(
@@ -73,18 +77,19 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_events(cls, params: PageParams, camera: "CameraEntity"):
+        print(params)
         with cls.query() as sess:
             # Получаем общее количество дочерних элементов
             total = sess.exec(
-                select(CameraEventEntity).where(CameraEventEntity.camera.id == camera.id)
-            ).count()
+                select(func.count(col(CameraEventEntity.id))).where(CameraEventEntity.camera_id == camera.id)
+            ).first()
 
             # Вычисляем количество страниц
-            pages = (total + params.size - 1)
+            pages = ceil(total / params.size) if params.size else 0
 
             items = sess.exec(
                 select(CameraEventEntity)
-                .where(CameraEventEntity.camera.id == camera.id)
+                .where(CameraEventEntity.camera_id == camera.id)
                 .offset((params.page - 1) * params.size)
                 .limit(params.size)
             ).all()
