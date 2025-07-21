@@ -284,8 +284,14 @@ class CameraStream:
             # If there's an error in capturing
             if not ret:
                 Logger.err(f"Camera {self.camera.name} capture error!")
-                self.opened = False
-                break
+                self.destroy_writer()
+                self.cap.release()
+                time.sleep(2)
+                self.try_capture()
+
+                for _ in range(5):  # Пробуем несколько раз
+                    ret, frame = self.cap.read()
+                    if ret: break
 
             self.original = frame
             self.resized = imutils.resize(self.original, width=640)
