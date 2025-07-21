@@ -96,14 +96,14 @@ class ROIEvent(BaseModel):
     event: ROIEventType
     camera: CameraEntity
     timestamp: datetime
+    frame: ndarray
+    original: ndarray
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ROIDetectionEvent(ROIEvent):
     roi: ROI
     changes: list[dict]
-    frame: ndarray
-    original: ndarray
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ROIRecordEvent(ROIEvent):
@@ -147,7 +147,7 @@ class ROITracker:
         self.threshold = 25
         self.blur_size = 3
         self.morph_size = 2
-        self.recording_extension = 3
+        self.recording_extension = 5
 
         # Защита от ложных срабатываний
         self.last_valid_frame = None
@@ -487,7 +487,9 @@ class ROITracker:
                     event=ROIEventType.MOTION_START,
                     rois=rois,
                     camera=self.camera,
-                    timestamp=now
+                    timestamp=now,
+                    frame=self.resized_frame,
+                    original=self.original_frame
                 )
                 self._trigger_recording_start(event)
 
@@ -501,7 +503,9 @@ class ROITracker:
                     event=ROIEventType.MOTION_START,
                     camera=self.camera,
                     timestamp=now,
-                    duration=duration
+                    duration=duration,
+                    frame=self.resized_frame,
+                    original=self.original_frame
                 )
                 self._trigger_recording_end(event)
 

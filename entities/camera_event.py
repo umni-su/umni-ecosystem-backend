@@ -7,7 +7,7 @@ from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 from sqlmodel import Field, Relationship
 
-from services.cameras.classes.roi_tracker import ROIEvent, ROIEventType
+from services.cameras.classes.roi_tracker import ROIEventType
 
 
 class CameraEventBase:

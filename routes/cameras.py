@@ -9,6 +9,7 @@ from classes.auth.auth import Auth
 from entities.camera import CameraEntity
 from entities.camera_event import CameraEventEntity
 from models.camera_area_model import CameraAreaBaseModel
+from models.camera_event_model import CameraEventModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from models.pagination_model import PaginatedResponse, PageParams
 from repositories.area_repository import CameraAreaRepository
@@ -66,6 +67,8 @@ def get_camera_cover(
         camera: CameraEntity = Depends(CameraRepository.get_camera)
 ):
     stream = CamerasService.find_stream_by_camera(camera)
+    if stream is None:
+        raise HTTPException(status_code=404)
     success, im = cv2.imencode('.jpg', stream.resized)
     print(camera.name, WeatherDetector.detect_weather(stream.resized), DayNightDetector.is_night(stream.resized))
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
@@ -100,7 +103,7 @@ def save_camera_areas(
     return saved_areas
 
 
-@cameras.post('/{camera_id}/events')
+@cameras.post('/{camera_id}/events', response_model=PaginatedResponse[CameraEventModel])
 def save_camera_areas(
         params: PageParams,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
@@ -109,3 +112,17 @@ def save_camera_areas(
 ):
     events = CameraEventsRepository.get_events(params, camera)
     return events
+
+
+@cameras.get('/events/{event_id}/preview')
+def get_camera_area_preview(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        event: Annotated[CameraEventModel, Depends(CameraEventsRepository.get_event)],
+
+):
+    frame = cv2.imread(event.screenshot, cv2.IMREAD_UNCHANGED)
+    success, im = cv2.imencode(ext='.jpg', img=frame)
+    if success:
+        headers = {'Content-Disposition': f'inline; filename="{event.id}"'}
+        return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
+    return None

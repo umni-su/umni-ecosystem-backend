@@ -1,14 +1,8 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Depends
-from starlette.websockets import WebSocket
-
-from classes.auth.auth import Auth
+from fastapi import FastAPI
 from classes.logger import Logger
-from entities.user import UserEntity
-from responses.user import UserResponseOut
 from routes.cameras import cameras
 from routes.storages import storages
 from routes.auth import auth

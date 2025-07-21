@@ -1,8 +1,11 @@
+import os
 import traceback
 from threading import Thread
 from typing import Callable, Any, TYPE_CHECKING
+import database.database as db
 
 from classes.logger import Logger
+from classes.storages.camera_storage import CameraStorage
 from classes.websockets.messages.ws_message_detection import (
     WebsocketMessageDetectionStart,
     WebsocketMessageDetectionEnd
@@ -12,6 +15,7 @@ from repositories.camera_events_repository import CameraEventsRepository
 
 if TYPE_CHECKING:
     from entities.camera_event import CameraEventEntity
+    from services.cameras.classes.camera_stream import CameraStream
     from services.cameras.classes.roi_tracker import ROIDetectionEvent, ROIRecordEvent, ROI
 
 
@@ -24,44 +28,48 @@ class CameraNotifier:
     events: list["CameraEventEntity"] = []
 
     @staticmethod
-    def handle_motion_start(event: "ROIDetectionEvent"):
+    def handle_motion_start(event: "ROIDetectionEvent", stream: "CameraStream"):
         """Обрабатывает начало движения в зоне интереса (ROI).
         Запускает уведомление в отдельном потоке.
 
         Args:
             event (ROIDetectionEvent): Событие обнаружения движения
+            stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_start, event)
+        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_start, event, stream)
 
     @staticmethod
-    def handle_motion_end(event: "ROIDetectionEvent"):
+    def handle_motion_end(event: "ROIDetectionEvent", stream: "CameraStream"):
         """Обрабатывает окончание движения в зоне интереса (ROI).
         Запускает уведомление в отдельном потоке.
 
         Args:
             event (ROIDetectionEvent): Событие окончания движения
+            stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_end, event)
+        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_end, event, stream)
 
     @staticmethod
-    def handle_recording_start(event: "ROIRecordEvent"):
+    def handle_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):
         """Обрабатывает начало записи с камеры.
         Запускает уведомление в отдельном потоке.
 
         Args:
             event (ROIRecordEvent): Событие начала записи
+            stream:
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_start, event)
+        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_start, event, stream)
 
     @staticmethod
-    def handle_recording_end(event: "ROIRecordEvent"):
+    def handle_recording_end(event: "ROIRecordEvent", stream: "CameraStream"):
         """Обрабатывает окончание записи с камеры.
         Запускает уведомление в отдельном потоке.
 
         Args:
             event (ROIRecordEvent): Событие окончания записи
+            stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_end, event)
+        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_end, event, stream)
 
     @staticmethod
     def _find_alert_by_roi(roi: "ROI"):
@@ -70,30 +78,43 @@ class CameraNotifier:
                 return event
 
     @staticmethod
-    def _on_motion_start(event: "ROIDetectionEvent"):
+    def _on_motion_start(event: "ROIDetectionEvent", stream: "CameraStream"):
         """Отправляет уведомление о начале движения через WebSocket и логирует событие.
 
         Args:
             event (ROIDetectionEvent): Событие обнаружения движения
         """
+        # Срабатывает только, если режим камеры - изображения определения движения
         try:
-            created_event = CameraEventsRepository.add_event(event)
+            if stream.is_screenshot_detection_mode():
+                created_event = CameraEventsRepository.add_event(event)
+                with db.get_separate_session() as sess:
+                    screenshot = CameraStorage.take_detection_screenshot(created_event.camera, event.frame, 'R')
+                    created_event.screenshot = os.path.join(screenshot.directory, screenshot.filename)
 
-            CameraNotifier.events.append(created_event)
+                    # Обновляем оригинал файла только если событие - скриншот движения
+                    original = CameraStorage.take_detection_screenshot(created_event.camera, event.original, 'O')
+                    created_event.file = os.path.join(original.directory, original.filename)
 
-            message = WebsocketMessageDetectionStart(
-                camera_id=created_event.camera.id,
-                message=f'[{created_event.camera.name}] Motion detected at {created_event.start}',
-            )
-            WebSockets.send_broadcast(message)
+                    sess.add(created_event)
+                    sess.commit()
+                    sess.refresh(created_event)
 
-            Logger.debug(
-                f"[ID#{created_event.id}] Начало движения в {created_event.area.name}. Время: {created_event.start}")
+                CameraNotifier.events.append(created_event)
+
+                message = WebsocketMessageDetectionStart(
+                    camera_id=created_event.camera.id,
+                    message=f'[{created_event.camera.name}] Motion detected at {created_event.start}',
+                )
+                WebSockets.send_broadcast(message)
+
+                Logger.debug(
+                    f"[ID#{created_event.id}] Начало движения в {created_event.area.name}. Время: {created_event.start}")
         except Exception as e:
             Logger.err(f"Error adding motion event with message: {e}")
 
     @staticmethod
-    def _on_motion_end(event: "ROIDetectionEvent"):
+    def _on_motion_end(event: "ROIDetectionEvent", stream: "CameraStream"):
         """Отправляет уведомление об окончании движения через WebSocket и логирует событие.
 
         Args:
@@ -115,23 +136,51 @@ class CameraNotifier:
             CameraNotifier.events.remove(found_event)
 
     @staticmethod
-    def _on_recording_start(event: "ROIRecordEvent"):
+    def _on_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):
         """Логирует факт начала записи с камеры.
 
         Args:
             event (ROIRecordEvent): Событие начала записи
         """
-        Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
+        if stream.is_video_detection_mode():
+            created_event = CameraEventsRepository.add_event(event)
+
+            stream.destroy_writer()
+            stream.create_writer(CameraStorage.video_detections_path(stream.camera))
+
+            with db.get_separate_session() as sess:
+                screenshot = CameraStorage.take_detection_screenshot(created_event.camera, event.frame, 'R')
+                created_event.screenshot = os.path.join(screenshot.directory, screenshot.filename)
+                created_event.file = stream.writer_file
+                sess.add(created_event)
+                sess.commit()
+                sess.refresh(created_event)
+
+            CameraNotifier.events.append(created_event)
+
+            Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
 
     @staticmethod
-    def _on_recording_end(event: "ROIRecordEvent"):
+    def _on_recording_end(event: "ROIRecordEvent", stream: "CameraStream"):
         """Логирует факт окончания записи с камеры, включая продолжительность записи.
 
         Args:
             event (ROIRecordEvent): Событие окончания записи
         """
-        Logger.debug(
-            f"[{event.timestamp}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
+        if stream.is_video_detection_mode():
+            for _event in CameraNotifier.events:
+                if stream.writer_file == _event.file:
+                    found_event = _event
+                    if found_event is not None:
+                        with db.get_separate_session() as sess:
+                            found_event.action = event.event
+                            CameraEventsRepository.update_event_end(found_event)
+                            stream.destroy_writer()
+                            sess.add(found_event)
+                            sess.commit()
+                            sess.refresh(found_event)
+                            Logger.debug(
+                                f"[{found_event.end}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
 
     @staticmethod
     def _notify_in_thread(target: Callable, *args: Any, **kwargs: Any) -> None:
@@ -147,7 +196,9 @@ class CameraNotifier:
 
         def wrapped_target():
             try:
-                target(*args, **kwargs)
+                # Если передан один аргумент и это кортеж - распаковываем его
+                actual_args = args[0] if len(args) == 1 and isinstance(args[0], tuple) else args
+                target(*actual_args, **kwargs)
             except Exception as e:
                 error_msg = (
                     f"Ошибка в потоке уведомлений: {str(e)}\n"

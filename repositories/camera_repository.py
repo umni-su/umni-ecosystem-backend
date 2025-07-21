@@ -1,3 +1,5 @@
+import os
+
 import classes.crypto.crypto as crypto
 from classes.logger import Logger
 from entities.camera import CameraEntity

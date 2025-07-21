@@ -25,32 +25,32 @@ class ScreenshotResultModel(BaseModel):
 class CameraStorage(StorageBase):
     @classmethod
     def upload_cover(cls, camera: "CameraEntity", frame: cv2.Mat):
-        cls.path = camera.storage.path
-        rel_path = os.path.join(
-            str(camera.id),
-            'cover.jpg'
-        )
-        image_path = os.path.join(
-            cls.path,
-            rel_path
-        )
-        if not cls.exists(os.path.dirname(image_path)):
-            Filesystem.mkdir(os.path.dirname(image_path))
-        if cv2.imwrite(image_path, frame):
-            with db.get_separate_session() as sess:
-                try:
+        with db.get_separate_session() as sess:
+            try:
+                cls.path = camera.storage.path
+                rel_path = os.path.join(
+                    str(camera.id),
+                    'cover.jpg'
+                )
+                image_path = os.path.join(
+                    cls.path,
+                    rel_path
+                )
+                if not cls.exists(os.path.dirname(image_path)):
+                    Filesystem.mkdir(os.path.dirname(image_path))
+                if cv2.imwrite(image_path, frame):
                     camera.cover = rel_path
-                    sess.add(camera)
+                    # sess.add(camera)
                     sess.commit()
-                    sess.refresh(camera)
-                    return camera
-                except Exception as e:
-                    Logger.err(e)
+                return camera
+            except Exception as e:
+                Logger.err(e)
+                raise e
 
         return None
 
     @classmethod
-    def date_filename(self):
+    def date_filename(cls):
         return datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
     @classmethod
@@ -73,8 +73,9 @@ class CameraStorage(StorageBase):
             filename = '.'.join([cls.date_filename(), 'jpg'])
         if not Filesystem.exists(path):
             Filesystem.mkdir(path_or_filename=path, recursive=True)
+        _dir = path
         path = os.path.join(
-            path,
+            _dir,
             filename
         )
         res = cv2.imwrite(
@@ -83,7 +84,7 @@ class CameraStorage(StorageBase):
         )
         return ScreenshotResultModel(
             success=res,
-            directory=path,
+            directory=_dir,
             filename=filename,
         )
 

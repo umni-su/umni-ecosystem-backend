@@ -13,19 +13,23 @@ from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
 from classes.thread.Daemon import Daemon
-from classes.websockets.messages.ws_message_detection import WebsocketMessageDetectionStart, \
-    WebsocketMessageDetectionEnd
-from classes.websockets.websockets import WebSockets
 from entities.camera import CameraEntity
 import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from services.cameras.classes.camera_notifier import CameraNotifier
+from services.cameras.classes.roi_tracker import ROIDetectionEvent
 
 from services.cameras.classes.roi_tracker import ROITracker
 
 if TYPE_CHECKING:
     from services.cameras.classes.roi_tracker import ROIRecordEvent
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+    "transport_protocol;tcp"
+    "video_codec;h264"
+)
+os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "debug"  # Вывод подробных логов
 
 
 class ScreenshotResultModel(BaseModel):
@@ -81,17 +85,23 @@ class CameraStream:
     writer: cv2.VideoWriter | None = None
 
     def __init__(self, camera: CameraEntity):
+        self.writer_file: str | None = None
         self.prepare_link(camera=camera)
         self.set_camera(camera=camera)
         self.try_capture()
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
+    def handle_motion_start(self, event: "ROIDetectionEvent"):
+        CameraNotifier.handle_motion_start(event, self)
+
+    def handle_motion_end(self, event: "ROIDetectionEvent"):
+        CameraNotifier.handle_motion_end(event, self)
+
     def handle_recording_start(self, event: "ROIRecordEvent"):
-        Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
+        CameraNotifier.handle_recording_start(event, self)
 
     def handle_recording_end(self, event: "ROIRecordEvent"):
-        Logger.debug(
-            f"[{event.timestamp}] Завершена запись с {event.camera.name}. Длительность: {event.duration:.2f} сек")
+        CameraNotifier.handle_recording_end(event, self)
 
     @staticmethod
     def prepare_link(camera: CameraEntity, secondary: bool = False):
@@ -108,14 +118,39 @@ class CameraStream:
         proto = ''
         if camera.protocol is not None:
             proto = camera.protocol
-        url = f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
+        url = (
+            f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
+            "?transport=tcp&"
+            "buffer_size=4194304&"  # Увеличение до 4 МБ (для 4K потоков)
+            "analyzeduration=20000000&"  # 20 сек анализа для сложных потоков
+            "probesize=20000000&"  # Максимальный анализ
+            "fflags=+genpts+discardcorrupt+nobuffer+flush_packets&"
+            "flags=+low_delay+autobsf&"  # Автоматическая битстрим-фильтрация
+            "strict=experimental&"
+            "use_wallclock_as_timestamps=1&"
+            "skip_loop_filter=all&"
+            "reconnect_at_eof=1&"
+            "reconnect_streamed=1&"
+            "reconnect_delay_max=5&"
+            "timeout=5000000&"  # Таймаут 5 сек
+            "max_delay=500000"  # Максимальная задержка пакетов
+        )
         CameraStream.link = url
 
     def set_camera(self, camera: CameraEntity):
-        if isinstance(self.camera, CameraEntity) and self.camera.record_mode != camera.record_mode:
-            # Stop writer
-            self.destroy_writer()
-            self.time_part_start = 0
+        if isinstance(self.camera, CameraEntity):
+            if self.link != self.prepare_link(
+                    camera=camera,
+                    secondary=False
+            ):
+                # camera url update
+                # stop capture
+                # recreate capture
+                pass
+            if self.camera.record_mode != camera.record_mode:
+                # Stop writer
+                self.destroy_writer()
+                self.time_part_start = 0
 
         self.camera = camera
         self.id = camera.id
@@ -165,12 +200,17 @@ class CameraStream:
             self.stop_capture()
         else:
             if self.cap is None:
-                self.cap = cv2.VideoCapture(self.link)
+                self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
+                # Настройки таймаутов
+                self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
+                self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
                 # self.cap = cv2.VideoCapture(0)
                 Logger.info(f'[{self.camera.name}] Create capture on link {self.link}')
 
             elif not self.cap.isOpened():
-                self.cap = cv2.VideoCapture(self.link)
+                self.cap.release()
+                self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
+                self.destroy_writer()
                 self.daemon = None
                 Logger.info(f'[{self.camera.name}] Restart capture')
 
@@ -200,6 +240,7 @@ class CameraStream:
         if isinstance(self.writer, cv2.VideoWriter):
             self.writer.release()
             self.writer = None
+            self.writer_file = None
 
     def create_writer(self, path: str):
         # Get frame width and height
@@ -208,16 +249,18 @@ class CameraStream:
         fps = int(self.cap.get(cv2.CAP_PROP_FPS))
 
         # Define the codec and create VideoWriter object
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
         if not Filesystem.exists(path):
             Filesystem.mkdir(path)
         filename = '.'.join([
-            self.date_filename(), 'mp4'
+            self.date_filename(), 'mkv'
         ])
         full_path = os.path.join(
             path,
             filename
         )
+        self.writer_file = full_path
         self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
 
     def loop_frames(self):
@@ -225,18 +268,24 @@ class CameraStream:
         self.tracker = ROITracker(camera=self.camera)
         # Установка callback-функций
         self.tracker.set_callbacks(
-            motion_start=CameraNotifier.handle_motion_start,
-            motion_end=CameraNotifier.handle_motion_end,
+            motion_start=self.handle_motion_start,
+            motion_end=self.handle_motion_end,
             recording_start=self.handle_recording_start,
             recording_end=self.handle_recording_end
         )
         while self.camera.active or self.opened:
             # Read frame
-            ret, frame = self.cap.read()
+            ret: bool = False
+            frame: ndarray | cv2.Mat = None
+            for _ in range(5):  # Пробуем несколько раз
+                ret, frame = self.cap.read()
+                if ret: break
+
             # If there's an error in capturing
             if not ret:
                 Logger.err(f"Camera {self.camera.name} capture error!")
-                continue
+                self.opened = False
+                break
 
             self.original = frame
             self.resized = imutils.resize(self.original, width=640)
@@ -268,7 +317,12 @@ class CameraStream:
             # If writer is opened - write frames to storage
             if isinstance(self.writer, cv2.VideoWriter):
                 if self.writer.isOpened():
-                    self.writer.write(self.original)
+                    try:
+                        self.writer.write(self.original)
+                    except Exception as e:
+                        self.destroy_writer()
+                        self.cap.release()
+                        Logger.err(e)
 
             pause = time.time() - self.silence_timer
 
@@ -289,147 +343,13 @@ class CameraStream:
                     Logger.debug(f'Camera {self.camera.name} end record video part')
                 # text = "No Movement Detected"
 
-            cv2.waitKey(1)
+            cv2.waitKey(3)
+
+        # Restart capture on error
+        if self.camera.active:
+            time.sleep(1)
+            self.try_capture()
         cv2.destroyAllWindows()
-        self.destroy_writer()
-        self.stop_capture()
-        Logger.warn(f'[{self.camera.name}] Stop stream')
-
-    def loop_frames_old(self):
-        first_run: bool = True
-        while self.camera.active or self.opened:
-            if self.silence_timer is 0:
-                self.silence_timer = time.time()
-            # Set transient motion detected as false
-            self.transient_movement_flag = False
-            # Read frame
-            ret, frame = self.cap.read()
-            # If there's an error in capturing
-            if not ret:
-                Logger.err(f"Camera {self.camera.name} capture error!")
-                continue
-
-            self.original = frame
-
-            if self.is_record_permanent() and self.time_part_start == 0:
-                self.time_part_start = time.time()
-                # If mode is screenshot
-                if self.is_screenshots_mode():
-                    # take motion detection screenshot
-                    self.take_screenshot(CameraStorage.screenshots_path(self.camera))
-                # If mode is video
-                elif self.is_video_mode():
-                    self.destroy_writer()
-                    # Create video writer
-                    self.create_writer(CameraStorage.video_path(self.camera))
-                Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
-
-            now = time.time()
-            elapsed = now - self.screen_timer
-
-            if elapsed > self.screen_interval:
-                CameraStorage.upload_cover(self.camera, self.original)
-                self.screen_timer = now
-            # Resize and save a greyscale version of the image
-            self.resized = imutils.resize(self.original, width=640)
-
-            # If writer is opened - write frames to storage
-            if isinstance(self.writer, cv2.VideoWriter):
-                if self.writer.isOpened():
-                    self.writer.write(self.original)
-
-            pause = time.time() - self.silence_timer
-            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
-                first_run = False
-                # Detection start
-                gray = cv2.cvtColor(self.resized, cv2.COLOR_BGR2GRAY)
-                # Blur it to remove camera noise (reducing false positives)
-                gray = cv2.GaussianBlur(gray, (21, 21), 0)
-                # If the first frame is nothing, initialise it
-                if self.first_frame is None:
-                    self.first_frame = gray
-                self.delay_counter += 1
-                # Otherwise, set the first frame to compare as the previous frame
-                # But only if the counter reaches the appriopriate value
-                # The delay is to allow relatively slow motions to be counted as large
-                # motions if they're spread out far enough
-                if self.delay_counter > self.frames_skip:
-                    self.delay_counter = 0
-                    self.first_frame = self.next_frame
-                # Set the next frame to compare (the current frame)
-                self.next_frame = gray
-                # Compare the two frames, find the difference
-                frame_delta = cv2.absdiff(self.first_frame, self.next_frame)
-                thresh: cv2.Mat | int | np.ndarray | None = cv2.threshold(frame_delta, 50, 255, cv2.THRESH_BINARY)[1]
-                # Fill in holes via dilate(), and find contours of the thesholds
-                thresh = cv2.dilate(thresh, None, iterations=2)
-                cnts, _ = cv2.findContours(
-                    image=thresh.copy(),
-                    mode=cv2.RETR_EXTERNAL,
-                    method=cv2.CHAIN_APPROX_SIMPLE
-                )
-                # loop over the contours
-                for c in cnts:
-                    # Save the coordinates of all found contours
-                    (x, y, w, h) = cv2.boundingRect(c)
-                    # If the contour is too small, ignore it, otherwise, there's transient
-                    # movement
-                    # TODO учет пропорций ширины и высоты
-                    if cv2.contourArea(c) > self.detection_size and (w / h > 0.9 or h / w > 0.9):
-                        self.transient_movement_flag = True
-                        # Draw a rectangle around big enough movements
-                        cv2.rectangle(self.resized, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                # The moment something moves momentarily, reset the persistent
-                # movement timer.
-                if self.transient_movement_flag is True:
-                    self.movement_persistent_flag = True
-                    self.movement_persistent_counter = self.detection_persistent
-                # As long as there was a recent transient movement, say a movement
-                # was detected
-                if self.movement_persistent_counter > 0:
-                    if not self.movement_detected:
-                        self.movement_detected = True
-                        # motion was detected, if record_mode was given, start record
-                        if self.camera.record_mode == CameraRecordTypeEnum.DETECTION_VIDEO:
-                            # Start VideoWriter
-                            self.create_writer(CameraStorage.video_detections_path(self.camera))
-                        elif self.camera.record_mode == CameraRecordTypeEnum.DETECTION_SCREENSHOTS:
-                            # Save only screenshot
-                            self.take_screenshot(CameraStorage.screenshots_detections_path(self.camera))
-                        message = WebsocketMessageDetectionStart(
-                            camera_id=self.camera.id,
-                            message=f'[{self.camera.name}] Motion detected at {datetime.datetime.now()}',
-                        )
-                        Logger.warn(message.message)
-                        WebSockets.send_broadcast(message)
-                    self.movement_persistent_counter -= 1
-                else:
-                    if self.movement_detected:
-                        self.movement_detected = False
-                        message = WebsocketMessageDetectionEnd(
-                            camera_id=self.camera.id,
-                            message=f'[{self.camera.name}] Reset movement counter'
-                        )
-                        # Stop writer
-                        self.destroy_writer()
-                        Logger.warn(message.message)
-                        WebSockets.send_broadcast(message)
-
-                        self.silence_timer = 0
-                # Detection end
-
-            elif self.is_record_permanent():
-                record_part_diff = time.time() - self.time_part_start
-                if record_part_diff > self.camera.record_duration * 60:
-                    self.time_part_start = 0
-                    self.destroy_writer()
-                    Logger.debug(f'Camera {self.camera.name} end record video part')
-                # text = "No Movement Detected"
-
-        # Cleanup when closed
-        cv2.waitKey(10)
-        # cv2.destroyAllWindows()
-        # if isinstance(self.cap, cv2.VideoCapture):
         self.destroy_writer()
         self.stop_capture()
         Logger.warn(f'[{self.camera.name}] Stop stream')
