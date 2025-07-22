@@ -33,7 +33,7 @@ class ServiceRunner:
                         service_instance: BaseService = service_class()
                         self.services.append(service_instance)
                     except Exception as e:
-                        Logger.err(e)
+                        Logger.err(f"ServiceRunner __init__ {e}")
 
     def get_service_class_name(self, name: str):
         __name__ = ''

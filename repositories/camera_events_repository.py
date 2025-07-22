@@ -57,21 +57,20 @@ class CameraEventsRepository(BaseRepository):
 
                 return event
             except Exception as e:
-                Logger.err(e)
+                Logger.err(f"update_event_end error - {e}")
 
     @classmethod
     def get_event(cls, event_id: int):
         with cls.query() as sess:
-            return sess.exec(
-                select(CameraEventEntity).where(CameraEventEntity.id == event_id)
-            ).first()
+            return sess.get(CameraEventEntity, event_id)
 
     @classmethod
     def get_events(cls, params: PageParams, camera: "CameraEntity"):
         with cls.query() as sess:
             # Получаем общее количество дочерних элементов
             total = sess.exec(
-                select(func.count(col(CameraEventEntity.id))).where(CameraEventEntity.camera_id == camera.id)
+                select(func.count(col(CameraEventEntity.id)))
+                .where(CameraEventEntity.camera_id == camera.id)
             ).first()
 
             # Вычисляем количество страниц

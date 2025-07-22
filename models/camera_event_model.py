@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_area_model import CameraAreaModel
+from models.camera_recording import CameraRecordingBaseModel
+from services.cameras.classes.roi_tracker import ROIEventType
 
 
 class CameraEventPost(BaseModel):
@@ -14,14 +16,16 @@ class CameraEventPost(BaseModel):
     end: datetime | None = Field(default=None)
 
 
-class CameraEventRelations(BaseModel):
+class CameraEventModelRelations(BaseModel):
     area: CameraAreaModel | None = None
+    recording: CameraRecordingBaseModel | None = None
 
 
-class CameraEventModel(CameraEventRelations):
+class CameraEventModel(CameraEventModelRelations):
     id: int
-    screenshot: str
-    file: str | None = None
+    resized: str
+    original: str | None = None
+    action: ROIEventType | None
     type: CameraRecordTypeEnum | None
     start: datetime | None = Field(default=None)
     end: datetime | None = Field(default=None)

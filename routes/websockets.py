@@ -61,5 +61,5 @@ async def get_cameras(
                 Logger.debug(f'[WebSocketDisconnect] Client {user.username} disconnects')
             except Exception as e:
                 await websocket.close(code=1001)
-                Logger.err(e)
+                Logger.err(f"@get_cameras err {e}")
             print('While end')

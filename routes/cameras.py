@@ -120,7 +120,7 @@ def get_camera_area_preview(
         event: Annotated[CameraEventModel, Depends(CameraEventsRepository.get_event)],
 
 ):
-    frame = cv2.imread(event.screenshot, cv2.IMREAD_UNCHANGED)
+    frame = cv2.imread(event.resized, cv2.IMREAD_UNCHANGED)
     success, im = cv2.imencode(ext='.jpg', img=frame)
     if success:
         headers = {'Content-Disposition': f'inline; filename="{event.id}"'}

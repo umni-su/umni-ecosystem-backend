@@ -4,7 +4,6 @@ import time
 from typing import TYPE_CHECKING
 
 import imutils
-import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
 
@@ -81,14 +80,16 @@ class CameraStream:
     path: str
     screen_interval: int = 30
     screen_timer: float = 0
+    path: str | None = None
 
     writer: cv2.VideoWriter | None = None
 
     def __init__(self, camera: CameraEntity):
+        self.capture_error = None
         self.writer_file: str | None = None
         self.prepare_link(camera=camera)
         self.set_camera(camera=camera)
-        self.try_capture()
+        self.create_capture()
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
     def handle_motion_start(self, event: "ROIDetectionEvent"):
@@ -120,20 +121,20 @@ class CameraStream:
             proto = camera.protocol
         url = (
             f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
-            "?transport=tcp&"
-            "buffer_size=4194304&"  # Увеличение до 4 МБ (для 4K потоков)
-            "analyzeduration=20000000&"  # 20 сек анализа для сложных потоков
-            "probesize=20000000&"  # Максимальный анализ
-            "fflags=+genpts+discardcorrupt+nobuffer+flush_packets&"
-            "flags=+low_delay+autobsf&"  # Автоматическая битстрим-фильтрация
-            "strict=experimental&"
-            "use_wallclock_as_timestamps=1&"
-            "skip_loop_filter=all&"
-            "reconnect_at_eof=1&"
-            "reconnect_streamed=1&"
-            "reconnect_delay_max=5&"
-            "timeout=5000000&"  # Таймаут 5 сек
-            "max_delay=500000"  # Максимальная задержка пакетов
+            # "?transport=tcp&"
+            # "buffer_size=4194304&"  # Увеличение до 4 МБ (для 4K потоков)
+            # "analyzeduration=20000000&"  # 20 сек анализа для сложных потоков
+            # "probesize=20000000&"  # Максимальный анализ
+            # "fflags=+genpts+discardcorrupt+nobuffer+flush_packets&"
+            # "flags=+low_delay+autobsf&"  # Автоматическая битстрим-фильтрация
+            # "strict=experimental&"
+            # "use_wallclock_as_timestamps=1&"
+            # "skip_loop_filter=all&"
+            # "reconnect_at_eof=1&"
+            # "reconnect_streamed=1&"
+            # "reconnect_delay_max=5&"
+            # "timeout=5000000&"  # Таймаут 5 сек
+            # "max_delay=500000"  # Максимальная задержка пакетов
         )
         CameraStream.link = url
 
@@ -190,33 +191,38 @@ class CameraStream:
                 self.cap.release()
                 self.create_capture()
                 Logger.err('Retrying in 3 seconds...')
+                print(self.daemon.thread.is_alive())
                 time.sleep(3)
-            if self.daemon is None:
-                self.daemon = Daemon(self.loop_frames)
+            # if self.daemon is None:
+            Logger.info(f"🎉 [{self.camera.name} Start capture again]")
+            self.daemon = Daemon(self.loop_frames)
         return self
 
     def create_capture(self):
-        if not self.camera.active:
-            self.stop_capture()
-        else:
-            if self.cap is None:
-                self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
-                # Настройки таймаутов
-                self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
-                self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
-                # self.cap = cv2.VideoCapture(0)
-                Logger.info(f'[{self.camera.name}] Create capture on link {self.link}')
+        if self.cap is None or (isinstance(self.cap, cv2.VideoCapture) and not self.cap.isOpened()):
+            self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
+            # Настройки таймаутов
+            self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
+            self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
+            # self.cap = cv2.VideoCapture(0)
+            dmn = 'was_undefined'
+            if isinstance(self.daemon, Daemon):
+                if not self.daemon.thread.is_alive():
+                    self.daemon.thread = None
+                    self.daemon = None
+                    dmn = 'was_dead'
 
-            elif not self.cap.isOpened():
-                self.cap.release()
-                self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
-                self.destroy_writer()
-                self.daemon = None
-                Logger.info(f'[{self.camera.name}] Restart capture')
+            if self.daemon is None:
+                self.daemon = Daemon(self.loop_frames)
+                Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}")
+
+            Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
+            self.capture_error = False
 
     def stop_capture(self):
         if isinstance(self.cap, cv2.VideoCapture):
             self.cap.release()
+            cv2.destroyAllWindows()
 
     def is_record_permanent(self):
         return self.is_video_mode() or self.is_screenshots_mode()
@@ -239,10 +245,15 @@ class CameraStream:
     def destroy_writer(self):
         if isinstance(self.writer, cv2.VideoWriter):
             self.writer.release()
+            Logger.debug(f"🔳️ [{self.camera.name}] VideoWriter stopped: {self.writer_file}")
             self.writer = None
             self.writer_file = None
 
     def create_writer(self, path: str):
+        if self.writer is not None and self.writer.isOpened():
+            self.destroy_writer()
+            time.sleep(0.05)
+
         # Get frame width and height
         frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -250,11 +261,11 @@ class CameraStream:
 
         # Define the codec and create VideoWriter object
         # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         if not Filesystem.exists(path):
             Filesystem.mkdir(path)
         filename = '.'.join([
-            self.date_filename(), 'mkv'
+            self.date_filename(), 'mp4'
         ])
         full_path = os.path.join(
             path,
@@ -262,6 +273,13 @@ class CameraStream:
         )
         self.writer_file = full_path
         self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
+
+        if not self.writer.isOpened():
+            Logger.err(f"[{self.camera.name}] Failed to open VideoWriter!")
+            self.writer = None
+            self.writer_file = None
+        else:
+            Logger.debug(f"🔴 [{self.camera.name}] VideoWriter started: {full_path}")
 
     def loop_frames(self):
         first_run: bool = True
@@ -275,90 +293,97 @@ class CameraStream:
         )
         while self.camera.active or self.opened:
             # Read frame
-            ret: bool = False
-            frame: ndarray | cv2.Mat = None
-            for _ in range(5):  # Пробуем несколько раз
+            try:
+                if not self.cap.isOpened():
+                    self.create_capture()
                 ret, frame = self.cap.read()
-                if ret: break
 
-            # If there's an error in capturing
-            if not ret:
-                Logger.err(f"Camera {self.camera.name} capture error!")
-                self.destroy_writer()
-                self.cap.release()
-                time.sleep(2)
-                self.try_capture()
+                # If there's an error in capturing
+                if not ret:
+                    Logger.err(f"⚠️ [{self.camera.name}] capture error!")
+                    # self.capture_error = True
+                    # self.opened = False
+                    # break
+                    continue
+                else:
+                    self.capture_error = False
+                    self.original = frame
+                    self.resized = imutils.resize(self.original, width=640)
 
-                for _ in range(5):  # Пробуем несколько раз
-                    ret, frame = self.cap.read()
-                    if ret: break
+                    # Start permanent record or permanent screenshots
+                    if self.is_record_permanent() and self.time_part_start == 0:
+                        self.time_part_start = time.time()
+                        # If mode is screenshot
+                        if self.is_screenshots_mode():
+                            # take motion detection screenshot
+                            res = CameraStorage.take_screenshot(self.camera, self.original)
+                            Logger.debug(
+                                f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
+                        # If mode is video
+                        elif self.is_video_mode():
+                            # Create video writer
+                            self.create_writer(CameraStorage.video_path(self.camera))
+                        Logger.debug(
+                            f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}')
 
-            self.original = frame
-            self.resized = imutils.resize(self.original, width=640)
+                    # Take cover
+                    now = time.time()
+                    elapsed = now - self.screen_timer
 
-            # Start permanent record or permanent screenshots
-            if self.is_record_permanent() and self.time_part_start == 0:
-                self.time_part_start = time.time()
-                # If mode is screenshot
-                if self.is_screenshots_mode():
-                    # take motion detection screenshot
-                    res = CameraStorage.take_screenshot(self.camera, self.original)
-                    Logger.debug(
-                        f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
-                # If mode is video
-                elif self.is_video_mode():
-                    # Create video writer
-                    self.create_writer(CameraStorage.video_path(self.camera))
-                Logger.debug(f'Camera {self.camera.name} with permanent record mode: {self.camera.record_mode}')
+                    if elapsed > self.screen_interval:
+                        CameraStorage.upload_cover(self.camera, self.original)
+                        self.screen_timer = now
+                    # End take cover
 
-            # Take cover
-            now = time.time()
-            elapsed = now - self.screen_timer
-
-            if elapsed > self.screen_interval:
-                CameraStorage.upload_cover(self.camera, self.original)
-                self.screen_timer = now
-            # End take cover
-
-            # If writer is opened - write frames to storage
-            if isinstance(self.writer, cv2.VideoWriter):
-                if self.writer.isOpened():
+                    # If writer is opened - write frames to storage
                     try:
-                        self.writer.write(self.original)
-                    except Exception as e:
+                        if (self.writer is not None and
+                                self.writer.isOpened() and
+                                self.original is not None):
+                            self.writer.write(self.original)
+                    except cv2.error as e:
+                        Logger.err(f"⚠️ [{self.camera.name}] OpenCV error in writer: {e}")
                         self.destroy_writer()
-                        self.cap.release()
-                        Logger.err(e)
+                        # self.cap.release()
+                    except Exception as e:
+                        Logger.err(f"⚠️ [{self.camera.name}] General error in writer: {e}")
+                        self.destroy_writer()
+                        # self.cap.release()
 
-            pause = time.time() - self.silence_timer
+                    pause = time.time() - self.silence_timer
 
-            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+                    if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
 
-                frame_copy = self.resized.copy()
+                        frame_copy = self.resized.copy()
 
-                changes = self.tracker.detect_changes(frame_copy, self.original)
-                __frame = self.tracker.draw_rois(frame_copy, changes)
-                cv2.imshow(f"Camera {self.camera.id}", __frame)
+                        changes = self.tracker.detect_changes(frame_copy, self.original)
+                        __frame = self.tracker.draw_rois(frame_copy, changes)
+                        cv2.imshow(f"Camera {self.camera.id}", __frame)
 
-            elif self.is_record_permanent():
-                record_part_diff = time.time() - self.time_part_start
-                cv2.imshow(f"Camera {self.camera.id}", self.resized)
-                if record_part_diff > self.camera.record_duration * 60:
-                    self.time_part_start = 0
-                    self.destroy_writer()
-                    Logger.debug(f'Camera {self.camera.name} end record video part')
-                # text = "No Movement Detected"
+                    elif self.is_record_permanent():
+                        record_part_diff = time.time() - self.time_part_start
+                        cv2.imshow(f"Camera {self.camera.id}", self.resized)
+                        if record_part_diff > self.camera.record_duration * 60:
+                            self.time_part_start = 0
+                            self.destroy_writer()
+                            Logger.debug(f'Camera {self.camera.name} end record video part')
+                        # text = "No Movement Detected"
 
-            cv2.waitKey(3)
+                    cv2.waitKey(5)
+
+            except cv2.error as e:
+                Logger.err(f"⚠️ [{self.camera.name}] error read frame: {e}")
+                break
 
         # Restart capture on error
-        if self.camera.active:
-            time.sleep(1)
-            self.try_capture()
-        cv2.destroyAllWindows()
-        self.destroy_writer()
-        self.stop_capture()
-        Logger.warn(f'[{self.camera.name}] Stop stream')
+        if self.camera.active and self.capture_error:
+            time.sleep(3)
+            Logger.debug(f"⚠️ [{self.camera.name}] Restart camera capture on error")
+            self.create_capture()
+        else:
+            self.destroy_writer()
+            self.stop_capture()
+            Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
 
     def generate_frames(self):
         cap = self.cap

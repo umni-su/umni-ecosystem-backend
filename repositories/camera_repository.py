@@ -74,4 +74,4 @@ class CameraRepository(BaseRepository):
             return camera
 
         except Exception as e:
-            Logger.err(e)
+            Logger.err(f"[{camera.name}] prepare_camera error - {e}")

@@ -25,13 +25,17 @@ class CamerasService(BaseService):
         return None
 
     def cameras_list_task(self):
+        self.cameras = CameraRepository.get_cameras()
+        # for cam in self.cameras:
+        #     CamerasService.streams.append(
+        #         CameraStream(camera=cam)
+        #     )
         while True:
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:
                 current_stream = CamerasService.find_stream_by_camera(camera=cam)
                 if isinstance(current_stream, CameraStream):
                     current_stream.set_camera(camera=cam)
-                    current_stream.try_capture()
                     # Logger.info(f'[{cam.name}] Update camera in stream list')
                 else:
                     CamerasService.streams.append(

@@ -245,8 +245,12 @@ class ROITracker:
         if frame is None or frame.size == 0:
             return False
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        avg_brightness = np.mean(gray)
+        try:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            avg_brightness = np.mean(gray)
+        except cv2.error as e:
+            Logger.err(f"OpenCV error: {e}")
+            return False
 
         # Проверка на черный/белый кадр
         if avg_brightness < self.frame_validity_threshold or avg_brightness > 250:
@@ -280,9 +284,12 @@ class ROITracker:
         self.set_original_frame(original_frame)
         self.set_resized_frame(current_frame)
 
-        # Подготовка кадра
-        gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.GaussianBlur(gray, (self.blur_size, self.blur_size), 0)
+        try:
+            gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.GaussianBlur(gray, (self.blur_size, self.blur_size), 0)
+        except cv2.error as e:
+            Logger.err(f"OpenCV error in detect_changes: {e}")
+            return []
 
         if not self.frame_history:
             self.frame_history.append(gray)
@@ -393,7 +400,7 @@ class ROITracker:
                             original=self.original_frame
                         )
                         self._trigger_motion_start(event)
-                        Logger.info(f"[{self.camera.name}]🏃‍♂️ Подтверждено движение в ROI {roi_id}")
+                        Logger.info(f"🏃 [{self.camera.name}] Подтверждено движение в ROI {roi_id}")
                 else:
                     self._pending_movements[roi_id] = 1
             else:
@@ -422,7 +429,7 @@ class ROITracker:
                     )
                     self._trigger_motion_end(event)
 
-                    Logger.info(f"[{self.camera.name}]🚶‍♂️ Движение завершено в ROI {roi_id}")
+                    Logger.info(f"🏃 [{self.camera.name}] Движение завершено в ROI {roi_id}")
 
     def _process_contours(self, contours, settings: ROISettings) -> List[dict]:
         """Обработка и фильтрация контуров с учетом чувствительности ROI"""
@@ -509,7 +516,7 @@ class ROITracker:
                 )
                 self._trigger_recording_end(event)
 
-                Logger.warn(f"[{self.camera.name}]⬛️ ️КОНЕЦ ЗАПИСИ! Длительность: {duration:.1f} сек")
+                Logger.warn(f"⬛ [{self.camera.name}] ️КОНЕЦ ЗАПИСИ! Длительность: {duration:.1f} сек")
                 self.recording = False
                 self.recording_start_time = None
                 self.triggered = False

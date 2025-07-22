@@ -44,7 +44,7 @@ class CameraStorage(StorageBase):
                     sess.commit()
                 return camera
             except Exception as e:
-                Logger.err(e)
+                Logger.err(f"[{camera.name}] upload_cover error - {e}")
                 raise e
 
         return None

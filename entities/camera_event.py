@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Optional
 
 from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
+from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
@@ -17,8 +19,9 @@ class CameraEventBase:
     type: CameraRecordTypeEnum | None = Field(nullable=True, index=True)
     start: datetime = Field(default_factory=datetime.now, nullable=False)
     end: datetime = Field(nullable=True)
-    screenshot: str = Field(nullable=True)
-    file: str = Field(nullable=True)
+    resized: str = Field(nullable=True)
+    original: str = Field(nullable=True)
+    duration: int | None = Field(nullable=True)
 
 
 class CameraEventEntity(TimeStampMixin, CameraEventBase, IdColumnMixin, table=True):
@@ -29,3 +32,10 @@ class CameraEventEntity(TimeStampMixin, CameraEventBase, IdColumnMixin, table=Tr
     area: CameraAreaEntity | None = Relationship(
         sa_relationship_kwargs=dict(lazy="subquery"),
         back_populates="events")
+
+    # Для режима записи видео
+    camera_recording_id: Optional[int] = Field(default=None, foreign_key="camera_recordings.id")
+    recording: Optional[CameraRecordingEntity] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="events"
+    )
