@@ -128,22 +128,22 @@ class CameraNotifier:
             new_record: bool = False
 
             # Для режима записи связываем с сессией записи
-            if camera.record_mode == CameraRecordTypeEnum.DETECTION_VIDEO:
-                founded_record = CameraNotifier._find_active_recording(event.camera.id)
-                if founded_record is None:
-                    new_record = True
-                    recording = CameraRecordingEntity(
-                        camera_id=event.camera.id,
-                        start=event.timestamp
-                    )
-                    # sess.add(recording)
-                    if event_entity.recording is None:
-                        event_entity.recording = recording
-                    # Создаем поток записи движения
-                    stream.destroy_writer()
-                    stream.create_writer(CameraStorage.video_detections_path(stream.camera))
-                else:
-                    event_entity.camera_recording_id = founded_record.id
+            # if camera.record_mode == CameraRecordTypeEnum.DETECTION_VIDEO:
+            #     founded_record = CameraNotifier._find_active_recording(event.camera.id)
+            #     if founded_record is None:
+            #         new_record = True
+            #         recording = CameraRecordingEntity(
+            #             camera_id=event.camera.id,
+            #             start=event.timestamp
+            #         )
+            #         # sess.add(recording)
+            #         if event_entity.recording is None:
+            #             event_entity.recording = recording
+            #         # Создаем поток записи движения
+            #         stream.destroy_writer()
+            #         stream.create_writer(CameraStorage.video_detections_path(stream.camera))
+            #     else:
+            #         event_entity.camera_recording_id = founded_record.id
 
             sess.add(event_entity)
             sess.commit()
@@ -156,9 +156,9 @@ class CameraNotifier:
             WebSockets.send_broadcast(message)
 
             Logger.debug(
-                f"👋 {camera.name} [EvID#{event_entity.id}] Начало движения в {event_entity.area.name}. Время: {event_entity.start}")
-            if new_record:
-                CameraNotifier.active_recordings.append(recording)
+                f"👋 [{camera.name} EvID#{event_entity.id}] Начало движения в {event_entity.area.name}. Время: {event_entity.start}")
+            # if new_record:
+            # CameraNotifier.active_recordings.append(recording)
             CameraNotifier.active_events.append(event_entity)
 
     @staticmethod
@@ -176,14 +176,16 @@ class CameraNotifier:
             if founded_event is None:
                 return
 
-            event_entity = sess.merge(founded_event)
+            event_entity = sess.get(CameraEventEntity, founded_event.id)
 
             # Обновляем параметры завершения
             event_entity.action = ROIEventType.MOTION_END
             event_entity.end = event.timestamp
             event_entity.duration = (event.timestamp - event_entity.start).total_seconds()
 
+            sess.add(event_entity)
             sess.commit()
+            sess.refresh(event_entity)
 
             message = WebsocketMessageDetectionStart(
                 camera_id=event_entity.camera.id,
@@ -192,6 +194,8 @@ class CameraNotifier:
             WebSockets.send_broadcast(message)
 
             CameraNotifier.active_events.remove(founded_event)
+            Logger.debug(
+                f"👋 [{event_entity.camera.name} EvID#{event_entity.id}] Конец движения в {event_entity.area.name}. Время: {event_entity.end}")
 
     @staticmethod
     def _on_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):
