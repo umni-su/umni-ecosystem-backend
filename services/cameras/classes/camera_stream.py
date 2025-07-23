@@ -242,6 +242,29 @@ class CameraStream:
     def is_detection_mode(self):
         return self.is_screenshot_detection_mode() or self.is_video_detection_mode()
 
+    def write_frame_safe(self):
+        if (
+                self.writer is None
+                or not self.writer.isOpened()
+                or self.original is None
+        ):
+            return False
+
+        try:
+            # Проверяем размер кадра
+            self.writer.write(self.original)
+            return True
+
+        except cv2.error as e:
+            Logger.err(f"[{self.camera.name}] OpenCV Writer Error: {e}")
+            self.destroy_writer()
+            return False
+
+        except Exception as e:
+            Logger.err(f"[{self.camera.name}] Unexpected Writer Error: {e}")
+            self.destroy_writer()
+            return False
+
     def destroy_writer(self):
         if isinstance(self.writer, cv2.VideoWriter):
             self.writer.release()
@@ -250,36 +273,42 @@ class CameraStream:
             self.writer_file = None
 
     def create_writer(self, path: str):
-        if self.writer is not None and self.writer.isOpened():
-            self.destroy_writer()
-            time.sleep(0.05)
-
-        # Get frame width and height
-        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = int(self.cap.get(cv2.CAP_PROP_FPS))
-
-        # Define the codec and create VideoWriter object
-        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         if not Filesystem.exists(path):
-            Filesystem.mkdir(path)
-        filename = '.'.join([
-            self.date_filename(), 'mp4'
-        ])
-        full_path = os.path.join(
-            path,
-            filename
+            Filesystem.mkdir(path, recursive=True)
+
+        # Получаем параметры кадра (если cap доступен)
+        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) if self.cap.isOpened() else 0
+        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) if self.cap.isOpened() else 0
+        fps = int(self.cap.get(cv2.CAP_PROP_FPS)) if self.cap.isOpened() else 25
+
+        # Если размеры не получены, берём из первого кадра
+        if frame_width <= 0 or frame_height <= 0:
+            if self.original is not None:
+                frame_height, frame_width = self.original.shape[:2]
+            else:
+                frame_width, frame_height = 640, 480  # Fallback
+
+        # Выбираем кодек (XVID работает почти везде)
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        filename = f"{self.date_filename()}.avi"  # .avi для XVID
+        full_path = os.path.join(path, filename)
+
+        # Создаём VideoWriter
+        self.writer = cv2.VideoWriter(
+            full_path,
+            fourcc,
+            fps,
+            (frame_width, frame_height)
         )
-        self.writer_file = full_path
-        self.writer = cv2.VideoWriter(full_path, fourcc, fps, (frame_width, frame_height))
 
         if not self.writer.isOpened():
-            Logger.err(f"[{self.camera.name}] Failed to open VideoWriter!")
+            Logger.err(f"[{self.camera.name}] Failed to initialize VideoWriter!")
             self.writer = None
-            self.writer_file = None
-        else:
-            Logger.debug(f"🔴 [{self.camera.name}] VideoWriter started: {full_path}")
+            return False
+
+        self.writer_file = full_path
+        Logger.debug(f"[{self.camera.name}] VideoWriter started: {full_path}")
+        return True
 
     def loop_frames(self):
         first_run: bool = True
@@ -320,7 +349,7 @@ class CameraStream:
                             Logger.debug(
                                 f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
                         # If mode is video
-                        elif self.is_video_mode():
+                        elif self.is_video_mode() and self.writer is None:
                             # Create video writer
                             self.create_writer(CameraStorage.video_path(self.camera))
                         Logger.debug(
@@ -336,19 +365,8 @@ class CameraStream:
                     # End take cover
 
                     # If writer is opened - write frames to storage
-                    try:
-                        if (self.writer is not None and
-                                self.writer.isOpened() and
-                                self.original is not None):
-                            self.writer.write(self.original)
-                    except cv2.error as e:
-                        Logger.err(f"⚠️ [{self.camera.name}] OpenCV error in writer: {e}")
-                        self.destroy_writer()
-                        # self.cap.release()
-                    except Exception as e:
-                        Logger.err(f"⚠️ [{self.camera.name}] General error in writer: {e}")
-                        self.destroy_writer()
-                        # self.cap.release()
+                    if self.writer is not None:
+                        self.write_frame_safe()
 
                     pause = time.time() - self.silence_timer
 
