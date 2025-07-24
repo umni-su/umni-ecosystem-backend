@@ -5,6 +5,7 @@ from models.camera_model import CameraBaseModel
 
 class WebsocketMessageDetection(WebsocketMessageBase):
     camera_id: int | None = None
+    area_id: int | None = None
 
 
 class WebsocketMessageDetectionStart(WebsocketMessageDetection):

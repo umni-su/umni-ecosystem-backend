@@ -330,10 +330,9 @@ class CameraStream:
                 # If there's an error in capturing
                 if not ret:
                     Logger.err(f"⚠️ [{self.camera.name}] capture error!")
-                    # self.capture_error = True
-                    # self.opened = False
-                    # break
-                    continue
+                    self.capture_error = True
+                    self.opened = False
+                    break
                 else:
                     self.capture_error = False
                     self.original = frame

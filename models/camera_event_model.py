@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field
 
@@ -27,5 +27,6 @@ class CameraEventModel(CameraEventModelRelations):
     original: str | None = None
     action: ROIEventType | None
     type: CameraRecordTypeEnum | None
+    duration: float | None = None
     start: datetime | None = Field(default=None)
     end: datetime | None = Field(default=None)
