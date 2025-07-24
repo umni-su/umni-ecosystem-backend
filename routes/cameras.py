@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from starlette.responses import Response
 
 from classes.auth.auth import Auth
+from classes.logger import Logger
 from entities.camera import CameraEntity
 from entities.camera_event import CameraEventEntity
 from models.camera_area_model import CameraAreaBaseModel
@@ -69,8 +70,17 @@ def get_camera_cover(
     stream = CamerasService.find_stream_by_camera(camera)
     if stream is None:
         raise HTTPException(status_code=404)
-    success, im = cv2.imencode('.jpg', stream.resized)
-    print(camera.name, WeatherDetector.detect_weather(stream.resized), DayNightDetector.is_night(stream.resized))
+
+    try:
+        if stream.cap is None or not stream.cap.isOpened():
+            frame = stream.get_no_signal_frame()
+        else:
+            frame = stream.resized
+    except cv2.error as e:
+        frame = stream.get_no_signal_frame()
+        Logger.err(f"[{camera.name}] can not get cover with message {e}")
+        
+    success, im = cv2.imencode('.jpg', frame)
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
     return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
 

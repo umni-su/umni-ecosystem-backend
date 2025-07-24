@@ -25,11 +25,6 @@ class CamerasService(BaseService):
         return None
 
     def cameras_list_task(self):
-        self.cameras = CameraRepository.get_cameras()
-        # for cam in self.cameras:
-        #     CamerasService.streams.append(
-        #         CameraStream(camera=cam)
-        #     )
         while True:
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:

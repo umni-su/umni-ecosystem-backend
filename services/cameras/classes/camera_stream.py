@@ -4,6 +4,7 @@ import time
 from typing import TYPE_CHECKING
 
 import imutils
+import numpy as np
 from numpy import ndarray
 from pydantic import BaseModel
 
@@ -84,13 +85,23 @@ class CameraStream:
 
     writer: cv2.VideoWriter | None = None
 
+    need_skip: bool = False
+
     def __init__(self, camera: CameraEntity):
         self.capture_error = None
         self.writer_file: str | None = None
-        self.prepare_link(camera=camera)
-        self.set_camera(camera=camera)
-        self.create_capture()
-        self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
+        self.set_camera(camera=camera)  # -> capture creates here
+
+        dmn = 'was_undefined'
+        if isinstance(self.daemon, Daemon):
+            if not self.daemon.thread.is_alive():
+                self.daemon.thread = None
+                self.daemon = None
+                dmn = 'was_dead'
+
+        if self.daemon is None:
+            self.daemon = Daemon(self.loop_frames)
+            Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}")
 
     def handle_motion_start(self, event: "ROIDetectionEvent"):
         CameraNotifier.handle_motion_start(event, self)
@@ -104,8 +115,7 @@ class CameraStream:
     def handle_recording_end(self, event: "ROIRecordEvent"):
         CameraNotifier.handle_recording_end(event, self)
 
-    @staticmethod
-    def prepare_link(camera: CameraEntity, secondary: bool = False):
+    def prepare_link(self, camera: CameraEntity, secondary: bool = False):
         userinfo = ''
         if camera.username is not None and camera.password is not None:
             password = crypto.Crypto.decrypt(camera.password)
@@ -136,28 +146,35 @@ class CameraStream:
             # "timeout=5000000&"  # Таймаут 5 сек
             # "max_delay=500000"  # Максимальная задержка пакетов
         )
-        CameraStream.link = url
+        return url
 
     def set_camera(self, camera: CameraEntity):
+        self.need_skip = True
+
         if isinstance(self.camera, CameraEntity):
-            if self.link != self.prepare_link(
-                    camera=camera,
-                    secondary=False
-            ):
+            if camera != self.camera:
                 # camera url update
                 # stop capture
                 # recreate capture
-                pass
-            if self.camera.record_mode != camera.record_mode:
-                # Stop writer
                 self.destroy_writer()
-                self.time_part_start = 0
+                self.stop_capture()
+                time.sleep(2)
+                Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
 
         self.camera = camera
-        self.id = camera.id
+        self.id = self.camera.id
+        self.link = self.prepare_link(self.camera)
+        self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
+
+        if self.camera.record_mode != camera.record_mode:
+            # Stop writer
+            self.destroy_writer()
+            self.time_part_start = 0
 
         if isinstance(self.tracker, ROITracker):
             self.tracker.update_all_rois(self.camera.areas)
+
+        self.need_skip = False
 
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -184,37 +201,24 @@ class CameraStream:
             filename=filename,
         )
 
-    def try_capture(self):
-        if self.camera.active:
-            self.create_capture()
-            while not self.cap.isOpened():
-                self.cap.release()
-                self.create_capture()
-                Logger.err('Retrying in 3 seconds...')
-                print(self.daemon.thread.is_alive())
-                time.sleep(3)
-            # if self.daemon is None:
-            Logger.info(f"🎉 [{self.camera.name} Start capture again]")
-            self.daemon = Daemon(self.loop_frames)
-        return self
+    def _create_video_stream(self):
+        self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
+        if not self.cap.isOpened():
+            self.capture_error = True
+            Logger.debug(
+                f"⚠️ [{self.camera.name}] Restart camera capture on error {self.link}")
+            time.sleep(3)
+            self._create_video_stream()
 
     def create_capture(self):
         if self.cap is None or (isinstance(self.cap, cv2.VideoCapture) and not self.cap.isOpened()):
-            self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
+            self._create_video_stream()
+
+            self.capture_error = False
             # Настройки таймаутов
             self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
             self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
             # self.cap = cv2.VideoCapture(0)
-            dmn = 'was_undefined'
-            if isinstance(self.daemon, Daemon):
-                if not self.daemon.thread.is_alive():
-                    self.daemon.thread = None
-                    self.daemon = None
-                    dmn = 'was_dead'
-
-            if self.daemon is None:
-                self.daemon = Daemon(self.loop_frames)
-                Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}")
 
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
             self.capture_error = False
@@ -222,7 +226,8 @@ class CameraStream:
     def stop_capture(self):
         if isinstance(self.cap, cv2.VideoCapture):
             self.cap.release()
-            cv2.destroyAllWindows()
+            cv2.waitKey(10)
+            # cv2.destroyWindow(f"Camera {self.camera.id}")
 
     def is_record_permanent(self):
         return self.is_video_mode() or self.is_screenshots_mode()
@@ -312,6 +317,13 @@ class CameraStream:
 
     def loop_frames(self):
         first_run: bool = True
+        need_create_capture = False
+        if self.cap is None:
+            need_create_capture = True
+        elif not self.cap.isOpened():
+            need_create_capture = True
+        if need_create_capture:
+            self.create_capture()
         self.tracker = ROITracker(camera=self.camera)
         # Установка callback-функций
         self.tracker.set_callbacks(
@@ -323,8 +335,12 @@ class CameraStream:
         while self.camera.active or self.opened:
             # Read frame
             try:
+                if self.need_skip:
+                    continue
+
                 if not self.cap.isOpened():
                     self.create_capture()
+
                 ret, frame = self.cap.read()
 
                 # If there's an error in capturing
@@ -375,11 +391,11 @@ class CameraStream:
 
                         changes = self.tracker.detect_changes(frame_copy, self.original)
                         __frame = self.tracker.draw_rois(frame_copy, changes)
-                        cv2.imshow(f"Camera {self.camera.id}", __frame)
+                        # cv2.imshow(f"Camera {self.camera.id}", __frame)
 
                     elif self.is_record_permanent():
                         record_part_diff = time.time() - self.time_part_start
-                        cv2.imshow(f"Camera {self.camera.id}", self.resized)
+                        # cv2.imshow(f"Camera {self.camera.id}", self.resized)
                         if record_part_diff > self.camera.record_duration * 60:
                             self.time_part_start = 0
                             self.destroy_writer()
@@ -392,35 +408,47 @@ class CameraStream:
                 Logger.err(f"⚠️ [{self.camera.name}] error read frame: {e}")
                 break
 
-        # Restart capture on error
-        if self.camera.active and self.capture_error:
-            time.sleep(3)
-            Logger.debug(f"⚠️ [{self.camera.name}] Restart camera capture on error")
-            self.create_capture()
-        else:
-            self.destroy_writer()
-            self.stop_capture()
-            Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
+        self.destroy_writer()
+        self.stop_capture()
+        Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
+
+    '''
+    
+    '''
+
+    def get_no_signal_frame(self):
+        try:
+            frame = cv2.imread(os.path.abspath('static/images/no-signal.jpg'))
+            frame = imutils.resize(frame, width=640)
+        except cv2.error as e:
+            frame = np.zeros((640, 360, 1), dtype="uint8")
+        return frame
+
+    '''
+    Generate videoframes stream to view
+    '''
 
     def generate_frames(self):
-        cap = self.cap
-        if not isinstance(cap, cv2.VideoCapture):
-            Logger.err(f'Camera {self.camera.name} cap is not open')
-            return
-        if not cap.isOpened():
-            Logger.err(f"Camera {self.camera.name} could not open RTSP stream.")
-            return
         time_prev = 0
         fps = 15
 
         while True:
+            cap = self.cap
+            if not isinstance(cap, cv2.VideoCapture):
+                frame = self.get_no_signal_frame()
+            elif not cap.isOpened():
+                frame = self.get_no_signal_frame()
+            elif self.resized is None:
+                frame = self.get_no_signal_frame()
+            else:
+                frame = self.resized
             time_elapsed = time.time() - time_prev
             # if time_elapsed > 1. / fps:
             time_prev = time.time()
             # Process the frame with OpenCV (optional)
             # processed_frame = your_opencv_processing_function(frame)
 
-            ret, buffer = cv2.imencode('.jpg', self.resized)  # Encode frame as JPEG
+            ret, buffer = cv2.imencode('.jpg', frame)  # Encode frame as JPEG
             if not ret:
                 continue
 
