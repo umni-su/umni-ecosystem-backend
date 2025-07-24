@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from fastapi import HTTPException
 from sqlmodel import select
 
 from classes.logger import Logger
@@ -8,6 +9,7 @@ from entities.camera_area import CameraAreaEntity
 from repositories.base_repository import BaseRepository
 
 from models.camera_area_model import CameraAreaBaseModel
+from repositories.camera_repository import CameraRepository
 
 
 class CameraAreaRepository(BaseRepository):
@@ -40,7 +42,9 @@ class CameraAreaRepository(BaseRepository):
                     except Exception as e:
                         Logger.err(e)
 
-            return camera.areas
+            cam = CameraRepository.get_camera(camera.id)
+
+            return cam.areas
 
     @classmethod
     def get_area(cls, area_id: int) -> CameraAreaEntity:
@@ -49,3 +53,17 @@ class CameraAreaRepository(BaseRepository):
                 select(CameraAreaEntity)
                 .where(CameraAreaEntity.id == area_id)
             ).first()
+
+    @classmethod
+    def delete_area(cls, area_id: int) -> list[CameraAreaEntity]:
+        with cls.query() as session:
+            try:
+                area = cls.get_area(area_id)
+                camera = CameraRepository.get_camera(area.camera_id)
+                session.delete(cls.get_area(area_id))
+                session.commit()
+                return camera.areas
+
+            except Exception as e:
+                session.rollback()
+                raise HTTPException(status_code=500, detail=str(e))

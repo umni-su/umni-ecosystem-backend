@@ -79,7 +79,7 @@ def get_camera_cover(
     except cv2.error as e:
         frame = stream.get_no_signal_frame()
         Logger.err(f"[{camera.name}] can not get cover with message {e}")
-        
+
     success, im = cv2.imencode('.jpg', frame)
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
     return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
@@ -111,6 +111,14 @@ def save_camera_areas(
     saved_areas = CameraAreaRepository.save_areas_data(areas, camera)
 
     return saved_areas
+
+
+@cameras.delete('/{camera_id}/areas/{area_id}', response_model=list[CameraAreaBaseModel])
+def save_camera_areas(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        areas: list[CameraAreaBaseModel] = Depends(CameraAreaRepository.delete_area),
+):
+    return areas
 
 
 @cameras.post('/{camera_id}/events', response_model=PaginatedResponse[CameraEventModel])
