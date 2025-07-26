@@ -8,7 +8,6 @@ from starlette.responses import Response
 from classes.auth.auth import Auth
 from classes.logger import Logger
 from entities.camera import CameraEntity
-from entities.camera_event import CameraEventEntity
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
@@ -19,8 +18,6 @@ from repositories.camera_repository import CameraRepository
 from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
 from starlette.exceptions import HTTPException
-
-from services.cameras.classes.wheather_detector import WeatherDetector, DayNightDetector
 
 cameras = APIRouter(
     prefix='/cameras',

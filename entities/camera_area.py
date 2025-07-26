@@ -29,5 +29,9 @@ class CameraAreaEntity(TimeStampMixin, CameraAreaEntityBase, IdColumnMixin, tabl
         back_populates="areas")
 
     events: list["CameraEventEntity"] = Relationship(
-        sa_relationship_kwargs=dict(lazy="subquery"),
-        back_populates="area")
+        sa_relationship_kwargs=dict(
+            lazy="subquery",
+            cascade="all, delete-orphan"
+        ),
+        back_populates="area",
+    )

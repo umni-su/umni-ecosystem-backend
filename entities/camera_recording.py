@@ -7,6 +7,7 @@ from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
 if TYPE_CHECKING:
+    from entities.camera import CameraEntity
     from entities.camera_event import CameraEventEntity
 
 
@@ -18,8 +19,15 @@ class CameraRecordingEntity(TimeStampMixin, IdColumnMixin, table=True):
     duration: Optional[float] = None
     path: Optional[str] = None  # Путь к файлу записи
 
+    camera: "CameraEntity" = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="recordings")
+
     # Связи
     events: list["CameraEventEntity"] = Relationship(
-        sa_relationship_kwargs=dict(lazy="subquery"),
+        sa_relationship_kwargs=dict(
+            lazy="subquery",
+            cascade="all, delete-orphan"
+        ),
         back_populates="recording"
     )

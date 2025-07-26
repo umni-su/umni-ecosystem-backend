@@ -7,8 +7,6 @@ from sqlalchemy import func
 from sqlmodel import select, col
 
 from classes.logger import Logger
-from classes.storages.camera_storage import CameraStorage
-from entities.camera_area import CameraAreaEntity
 from entities.camera_event import CameraEventEntity
 from models.pagination_model import PageParams, PaginatedResponse
 from repositories.area_repository import CameraAreaRepository
@@ -16,7 +14,7 @@ from repositories.base_repository import BaseRepository
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
-    from services.cameras.classes.roi_tracker import ROIDetectionEvent, ROIEvent
+    from services.cameras.classes.roi_tracker import ROIEvent
 
 
 class CameraEventsRepository(BaseRepository):

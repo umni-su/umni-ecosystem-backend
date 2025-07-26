@@ -1,3 +1,4 @@
+from entities.camera_recording import CameraRecordingEntity
 from entities.storage import StorageEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -54,5 +55,15 @@ class CameraEntity(
         back_populates="camera")
 
     events: list["CameraEventEntity"] = Relationship(
-        sa_relationship_kwargs=dict(lazy="subquery"),
+        sa_relationship_kwargs=dict(
+            lazy="subquery",
+            cascade="all, delete-orphan"
+        ),
+        back_populates="camera")
+
+    recordings: list["CameraRecordingEntity"] = Relationship(
+        sa_relationship_kwargs=dict(
+            lazy="subquery",
+            cascade="all, delete-orphan"
+        ),
         back_populates="camera")
