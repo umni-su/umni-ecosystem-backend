@@ -28,12 +28,12 @@ class ServiceRunner:
                 if Filesystem.exists(service_main_file):
                     try:
                         service_module = import_module(f'{name}.{item}.{service_name}')
-                        Logger.debug(f'Run service {service_main_class} from {service_main_file}')
+                        Logger.debug(f'⏩  Run service {service_main_class} from {service_main_file}')
                         service_class = getattr(service_module, service_main_class)
                         service_instance: BaseService = service_class()
                         self.services.append(service_instance)
                     except Exception as e:
-                        Logger.err(f"ServiceRunner __init__ {e}")
+                        Logger.err(f"⏩ ServiceRunner __init__ {e}")
 
     def get_service_class_name(self, name: str):
         __name__ = ''
@@ -43,4 +43,4 @@ class ServiceRunner:
         return __name__
 
     def create_service(self, name: str):
-        print(f'Create service: {name}')
+        Logger.debug(f'⏩ Create service: {name}')

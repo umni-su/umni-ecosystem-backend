@@ -1,6 +1,7 @@
+import time
 from datetime import datetime
 
-from classes.logger import Logger
+from classes.tasks.camera_cleanup_task import CameraCleanupManager
 from services.base_service import BaseService
 from services.scheduler.classes.task_scheduler import TaskScheduler
 from services.scheduler.enums.schedule_frequency import ScheduleFrequency
@@ -9,30 +10,26 @@ from services.scheduler.models.task_schedule import TaskSchedule
 
 class SchedulerService(BaseService):
     def run(self):
-        Logger.debug("📆 Scheduler Service started")
-
         # Создаем планировщик
         scheduler = TaskScheduler()
 
-        # Регистрируем задачи
-        def simple_task(name: str):
-            """Простая задача"""
-            print(f"Hello, {name}! Current time: {datetime.now()}")
-            return f"Greeted {name} at {datetime.now()}"
+        def camera_cleanup_task():
+            # Инициализация
+            cleanup_manager = CameraCleanupManager()
 
-        def camera_cleanup_task(probability: float = 0.3):
-            pass
+            # Запуск очистки для всех камер
+            cleanup_manager.run_cleanup_for_all_cameras()
+            # print("!!!! camera_cleanup_task RUN")
 
         # Добавляем задачи
 
-        # 1. Простая задача с интервалом 10 секунд
         scheduler.add_task(
-            func=simple_task,
+            func=camera_cleanup_task,
             schedule_cfg=TaskSchedule(
-                frequency=ScheduleFrequency.MINUTE,
-                interval=1
-            ),
-            kwargs={"name": "Francine"},
+                frequency=ScheduleFrequency.DAY,
+                interval=1,
+                at_time="17:05"
+            )
         )
 
         # Запускаем планировщик в фоновом режиме

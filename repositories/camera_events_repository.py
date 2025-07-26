@@ -1,5 +1,5 @@
 import os.path
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import ceil
 from typing import TYPE_CHECKING
 
@@ -61,6 +61,18 @@ class CameraEventsRepository(BaseRepository):
     def get_event(cls, event_id: int):
         with cls.query() as sess:
             return sess.get(CameraEventEntity, event_id)
+
+    @classmethod
+    def get_old_events(cls, camera: "CameraEntity") -> list[CameraEventEntity]:
+        with cls.query() as sess:
+            cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
+            return sess.exec(
+                select(CameraEventEntity)
+                .where(
+                    (CameraEventEntity.camera == camera) &
+                    (CameraEventEntity.end < cutoff_time)
+                )
+            ).all()
 
     @classmethod
     def get_events(cls, params: PageParams, camera: "CameraEntity"):
