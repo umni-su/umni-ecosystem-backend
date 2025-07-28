@@ -35,7 +35,7 @@ class CameraEventEntity(TimeStampMixin, CameraEventBase, IdColumnMixin, table=Tr
 
     # Для режима записи видео
     camera_recording_id: Optional[int] = Field(default=None, foreign_key="camera_recordings.id")
-    recording: Optional[CameraRecordingEntity] = Relationship(
+    recording: Optional[CameraRecordingEntity] | None = Relationship(
         sa_relationship_kwargs=dict(lazy="subquery"),
         back_populates="events"
     )

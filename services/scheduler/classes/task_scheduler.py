@@ -298,3 +298,11 @@ class TaskScheduler:
         if hasattr(job, 'last_run') and hasattr(job, 'period'):
             return job.last_run + job.period
         return job.next_run
+
+
+"""
+Глобальный инстанс планировщика задач.
+Используется как точка входа для всего приложения.
+Импортируйте этот объект вместо создания новых инстансов.
+"""
+scheduler = TaskScheduler()
