@@ -141,8 +141,8 @@ class CameraNotifier:
                     if event_entity.recording is None:
                         event_entity.recording = recording
                     # Создаем поток записи движения
-                    stream.destroy_writer()
-                    stream.create_writer(CameraStorage.video_detections_path(stream.camera))
+                    stream.destroy_output_container()
+                    stream.create_output_container(CameraStorage.video_detections_path(stream.camera))
                 else:
                     event_entity.camera_recording_id = founded_record.id
 
@@ -224,7 +224,7 @@ class CameraNotifier:
                     recording = sess.get(CameraRecordingEntity, recording.id)
                     recording.end = event.timestamp
                     recording.duration = (event.timestamp - recording.start).total_seconds()
-                    recording.path = stream.writer_file
+                    recording.path = stream.output_file
 
                     # Завершаем все активные события для этой камеры
                     # for key in list(CameraNotifier.active_events.keys()):
@@ -242,7 +242,7 @@ class CameraNotifier:
                     CameraNotifier.active_recordings.remove(founded_record)
                     Logger.debug(
                         f"[{recording.end}] Завершена запись с {event.camera.name}. Длительность: {recording.duration:.2f} сек")
-                    stream.destroy_writer()
+                    stream.stop_write_video()
 
     @staticmethod
     def _notify_in_thread(target: Callable, *args: Any, **kwargs: Any) -> None:

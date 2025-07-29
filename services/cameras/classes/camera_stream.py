@@ -1,10 +1,12 @@
 import datetime
 import os
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
+import av
 import imutils
 import numpy as np
+from av import VideoFrame
 from numpy import ndarray
 from pydantic import BaseModel
 
@@ -19,17 +21,10 @@ import cv2
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.roi_tracker import ROIDetectionEvent
-
 from services.cameras.classes.roi_tracker import ROITracker
 
 if TYPE_CHECKING:
     from services.cameras.classes.roi_tracker import ROIRecordEvent
-
-os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
-    "transport_protocol;tcp"
-    "video_codec;h264"
-)
-os.environ["OPENCV_FFMPEG_LOGLEVEL"] = "debug"  # Вывод подробных логов
 
 
 class ScreenshotResultModel(BaseModel):
@@ -39,60 +34,64 @@ class ScreenshotResultModel(BaseModel):
 
 
 class CameraStream:
-    id: int
-    tracker: ROITracker | None = None
-    opened: bool = True
-    camera: CameraEntity | None = None
-    cap: cv2.VideoCapture | None = None
-    link: str | int | None = None
-    # Number of frames to pass before changing the frame to compare the current
-    # frame against
-    frames_skip: int = 20
-    # Minimum boxed area for a detected motion to count as actual motion
-    # Use to filter out noise or small objects
-    detection_size: int = 5000
-    # Minimum length of time where no motion is detected it should take
-    # (in program cycles) for the program to declare that there is no movement
-    detection_persistent: int = 100
-    # Silence timer
-    silence_timer: int | float = 0
-    # No detect movement after 10 seconds after previous detection was detected
-    silence_pause: int = 10
-
-    cap: cv2.VideoCapture
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    delay_counter = 0
-    movement_persistent_counter = 0
-    first_frame: None | cv2.Mat = None
-    next_frame: None | cv2.Mat = None
-    fps: int = 10
-
-    time_part_start: int | float = 0
-
-    time_prev: int | float = 0
-    time_elapsed: int | float = 0
-
-    original: cv2.typing.MatLike = None
-    resized: cv2.typing.MatLike = None
-    daemon: Daemon | None = None
-    transient_movement_flag: bool = False
-    movement_persistent_flag: bool = False
-    movement_detected: bool = False
-    path: str
-    screen_interval: int = 30
-    screen_timer: float = 0
-    path: str | None = None
-
-    writer: cv2.VideoWriter | None = None
-
-    need_skip: bool = False
-
     def __init__(self, camera: CameraEntity):
-        self.capture_error = None
-        self.writer_file: str | None = None
-        self.set_camera(camera=camera)  # -> capture creates here
+        self.id: int = 0
+        self.tracker: Optional[ROITracker] = None
+        self.opened: bool = True
+        self.camera: Optional[CameraEntity] = None
+        self.link: Optional[str] = None
 
-        dmn = 'was_undefined'
+        # Video processing settings
+        self.frames_skip: int = 20
+        self.detection_size: int = 5000
+        self.detection_persistent: int = 100
+        self.silence_timer: float = 0
+        self.silence_pause: int = 10
+
+        # Frame processing
+        self.font = cv2.FONT_HERSHEY_SIMPLEX
+        self.delay_counter = 0
+        self.movement_persistent_counter = 0
+        self.first_frame: Optional[np.ndarray] = None
+        self.next_frame: Optional[np.ndarray] = None
+        self.fps: int = 10
+
+        # Timing
+        self.time_part_start: float = 0
+        self.time_prev: float = 0
+        self.time_elapsed: float = 0
+
+        # Video frames
+        self.original: Optional[np.ndarray] = None
+        self.resized: Optional[np.ndarray] = None
+
+        # Threading
+        self.daemon: Optional[Daemon] = None
+
+        # Motion detection flags
+        self.transient_movement_flag: bool = False
+        self.movement_persistent_flag: bool = False
+        self.movement_detected: bool = False
+
+        # Storage paths
+        self.path: Optional[str] = None
+        self.screen_interval: int = 30
+        self.screen_timer: float = 0
+
+        # PyAV containers
+        self.input_container: Optional[Union[av.container.InputContainer | av.Stream]] = None
+        self.output_container: Optional[av.container.OutputContainer] = None
+        self.output_stream: Optional[av.Stream] = None
+        self.write: bool = False
+
+        # Error handling
+        self.capture_error: Optional[bool] = None
+        self.output_file: Optional[str] = None
+        self.need_skip: bool = False
+
+        self.set_camera(camera=camera)
+        dmn = 'was_none'
+
         if isinstance(self.daemon, Daemon):
             if not self.daemon.thread.is_alive():
                 self.daemon.thread = None
@@ -103,6 +102,7 @@ class CameraStream:
             self.daemon = Daemon(self.loop_frames)
             Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}")
 
+    # Event handlers (unchanged)
     def handle_motion_start(self, event: "ROIDetectionEvent"):
         CameraNotifier.handle_motion_start(event, self)
 
@@ -110,6 +110,7 @@ class CameraStream:
         CameraNotifier.handle_motion_end(event, self)
 
     def handle_recording_start(self, event: "ROIRecordEvent"):
+        self.write = True
         CameraNotifier.handle_recording_start(event, self)
 
     def handle_recording_end(self, event: "ROIRecordEvent"):
@@ -129,37 +130,16 @@ class CameraStream:
         proto = ''
         if camera.protocol is not None:
             proto = camera.protocol
-        url = (
-            f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
-            # "?transport=tcp&"
-            # "buffer_size=4194304&"  # Увеличение до 4 МБ (для 4K потоков)
-            # "analyzeduration=20000000&"  # 20 сек анализа для сложных потоков
-            # "probesize=20000000&"  # Максимальный анализ
-            # "fflags=+genpts+discardcorrupt+nobuffer+flush_packets&"
-            # "flags=+low_delay+autobsf&"  # Автоматическая битстрим-фильтрация
-            # "strict=experimental&"
-            # "use_wallclock_as_timestamps=1&"
-            # "skip_loop_filter=all&"
-            # "reconnect_at_eof=1&"
-            # "reconnect_streamed=1&"
-            # "reconnect_delay_max=5&"
-            # "timeout=5000000&"  # Таймаут 5 сек
-            # "max_delay=500000"  # Максимальная задержка пакетов
-        )
-        return url
+        return f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
 
     def set_camera(self, camera: CameraEntity):
         self.need_skip = True
 
-        if isinstance(self.camera, CameraEntity):
-            if camera != self.camera:
-                # camera url update
-                # stop capture
-                # recreate capture
-                self.destroy_writer()
-                self.stop_capture()
-                time.sleep(2)
-                Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
+        if isinstance(self.camera, CameraEntity) and camera != self.camera:
+            self.destroy_output_container()
+            self.stop_input_container()
+            time.sleep(2)
+            Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
 
         self.camera = camera
         self.id = self.camera.id
@@ -167,8 +147,7 @@ class CameraStream:
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
         if self.camera.record_mode != camera.record_mode:
-            # Stop writer
-            self.destroy_writer()
+            self.destroy_output_container()
             self.time_part_start = 0
 
         if isinstance(self.tracker, ROITracker):
@@ -179,55 +158,48 @@ class CameraStream:
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
-    def take_screenshot(self, path: str, prefix: str | None = None, frame: cv2.Mat | ndarray | None = None):
-
+    def take_screenshot(self, path: str, prefix: str | None = None, frame: np.ndarray | None = None):
         filename = '.'.join([self.date_filename(), 'jpg'])
         if prefix is not None:
             filename = '.'.join([prefix, filename])
 
         if not Filesystem.exists(path):
             Filesystem.mkdir(path_or_filename=path, recursive=True)
+
         full_filename = os.path.join(path, filename)
-        _frame = self.original
-        if frame is not None:
-            _frame = frame
-        res = cv2.imwrite(
-            filename=full_filename,
-            img=frame
-        )
+        _frame = self.original if frame is None else frame
+        res = cv2.imwrite(filename=full_filename, img=_frame)
+
         return ScreenshotResultModel(
             success=res,
             directory=path,
             filename=filename,
         )
 
-    def _create_video_stream(self):
-        self.cap = cv2.VideoCapture(self.link, cv2.CAP_FFMPEG)
-        if not self.cap.isOpened():
-            self.capture_error = True
-            Logger.debug(
-                f"⚠️ [{self.camera.name}] Restart camera capture on error {self.link}")
-            time.sleep(3)
-            self._create_video_stream()
+    def _create_input_container(self):
+        options = {
+            'rtsp_transport': 'tcp',
+            'stimeout': '5000000',  # 5 seconds timeout
+            'max_delay': '500000',  # Max packet delay
+        }
 
-    def create_capture(self):
-        if self.cap is None or (isinstance(self.cap, cv2.VideoCapture) and not self.cap.isOpened()):
-            self._create_video_stream()
-
+        try:
+            self.input_container = av.open(self.link, options=options)
             self.capture_error = False
-            # Настройки таймаутов
-            self.cap.set(cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000)
-            self.cap.set(cv2.CAP_PROP_READ_TIMEOUT_MSEC, 10000)
-            # self.cap = cv2.VideoCapture(0)
-
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
-            self.capture_error = False
+        except Exception as e:
+            self.capture_error = True
+            Logger.debug(f"⚠️ [{self.camera.name}] Failed to open stream: {e}")
+            time.sleep(3)
+            self._create_input_container()
 
-    def stop_capture(self):
-        if isinstance(self.cap, cv2.VideoCapture):
-            self.cap.release()
-            cv2.waitKey(10)
-            # cv2.destroyWindow(f"Camera {self.camera.id}")
+    def create_input_container(self):
+        if self.input_container is None:
+            self._create_input_container()
+
+    def stop_input_container(self):
+        if self.input_container is not None:
+            self.input_container.close()
 
     def is_record_permanent(self):
         return self.is_video_mode() or self.is_screenshots_mode()
@@ -247,214 +219,275 @@ class CameraStream:
     def is_detection_mode(self):
         return self.is_screenshot_detection_mode() or self.is_video_detection_mode()
 
-    def write_frame_safe(self):
-        if (
-                self.writer is None
-                or not self.writer.isOpened()
-                or self.original is None
-        ):
+    def stop_write_video(self):
+        self.write = False
+
+    def write_frame_safe(self, frame: VideoFrame):
+        if self.output_container is None or frame is None:
             return False
 
         try:
-            # Проверяем размер кадра
-            self.writer.write(self.original)
+            # Convert numpy array to PyAV frame
+            av_frame = frame
+
+            # Ensure the frame has the same format as the stream
+            if self.output_stream is not None:
+                av_frame = av_frame.reformat(
+                    width=self.output_stream.width,
+                    height=self.output_stream.height,
+                    format=self.output_stream.format
+                )
+
+                # Set the PTS (Presentation Time Stamp)
+                if not hasattr(self, 'video_pts'):
+                    self.video_pts = 0
+
+                # Calculate PTS increment based on time_base and frame rate
+                av_frame.pts = self.video_pts
+                input_video_stream = self.input_container.streams.video[0]
+                fps = input_video_stream.average_rate
+                pts_increment = int(self.output_stream.time_base.denominator / fps)
+                self.video_pts += pts_increment
+
+                # Encode and write the frame
+                for packet in self.output_stream.encode(av_frame):
+                    self.output_container.mux(packet)
+
             return True
 
-        except cv2.error as e:
-            Logger.err(f"[{self.camera.name}] OpenCV Writer Error: {e}")
-            self.destroy_writer()
-            return False
-
+        except EOFError as e:
+            self.destroy_output_container()
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] Unexpected Writer Error: {e}")
-            self.destroy_writer()
+            Logger.err(f"[{self.camera.name}] PyAV Writer Error: {e}")
+            self.destroy_output_container()
             return False
 
-    def destroy_writer(self):
-        if isinstance(self.writer, cv2.VideoWriter):
-            self.writer.release()
-            Logger.debug(f"🔳️ [{self.camera.name}] VideoWriter stopped: {self.writer_file}")
-            self.writer = None
-            self.writer_file = None
+    def destroy_output_container(self):
+        if self.output_container is not None:
+            # Flush any remaining packets
+            if self.output_stream is not None:
+                for packet in self.output_stream.encode():
+                    self.output_container.mux(packet)
 
-    def create_writer(self, path: str):
+            # Также флашим аудиопакеты, если есть аудиопоток
+            if hasattr(self, 'audio_output_stream') and self.audio_output_stream is not None:
+                for packet in self.audio_output_stream.encode():
+                    self.output_container.mux(packet)
+
+            self.output_container.close()
+            Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
+            self.output_container = None
+            self.output_stream = None
+            self.audio_output_stream = None  # Добавлено
+            self.output_file = None
+
+    def create_output_container(self, path: str):
         if not Filesystem.exists(path):
             Filesystem.mkdir(path, recursive=True)
 
-        # Получаем параметры кадра (если cap доступен)
-        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)) if self.cap.isOpened() else 0
-        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) if self.cap.isOpened() else 0
-        fps = int(self.cap.get(cv2.CAP_PROP_FPS)) if self.cap.isOpened() else 25
-
-        # Если размеры не получены, берём из первого кадра
-        if frame_width <= 0 or frame_height <= 0:
-            if self.original is not None:
-                frame_height, frame_width = self.original.shape[:2]
-            else:
-                frame_width, frame_height = 640, 480  # Fallback
-
-        # Выбираем кодек (XVID работает почти везде)
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        filename = f"{self.date_filename()}.avi"  # .avi для XVID
+        filename = f"{self.date_filename()}.mp4"
         full_path = os.path.join(path, filename)
 
-        # Создаём VideoWriter
-        self.writer = cv2.VideoWriter(
-            full_path,
-            fourcc,
-            fps,
-            (frame_width, frame_height)
-        )
+        try:
+            # Create output container
+            self.output_container = av.open(full_path, mode='w')
 
-        if not self.writer.isOpened():
-            Logger.err(f"[{self.camera.name}] Failed to initialize VideoWriter!")
-            self.writer = None
+            # Get frame info from input or use defaults
+            if self.input_container is not None and len(self.input_container.streams.video) > 0:
+                input_video_stream = self.input_container.streams.video[0]
+                width = input_video_stream.width
+                height = input_video_stream.height
+                fps = input_video_stream.average_rate
+                codec_name = 'h264'
+
+                # Add video stream to container
+                self.output_stream = self.output_container.add_stream(codec_name, rate=fps)
+                self.output_stream.width = width
+                self.output_stream.height = height
+                self.output_stream.pix_fmt = 'yuv420p'
+                self.output_stream.time_base = input_video_stream.time_base
+
+                # Add audio stream if exists
+                if len(self.input_container.streams.audio) > 0:
+                    input_audio_stream = self.input_container.streams.audio[0]
+                    in_audio_ctx = input_audio_stream.codec_context
+                    self.audio_output_stream = self.output_container.add_stream(
+                        'aac',
+                        rate=in_audio_ctx.sample_rate,
+                        layout=in_audio_ctx.layout.name,
+                    )
+                    self.audio_output_stream.time_base = input_audio_stream.time_base
+            else:
+                # Fallback values if no input stream
+                width, height = 640, 480
+                fps = 25
+                codec_name = 'h264'
+                self.output_stream = self.output_container.add_stream(codec_name, rate=fps)
+                self.output_stream.width = width
+                self.output_stream.height = height
+                self.output_stream.pix_fmt = 'yuv420p'
+
+            self.output_file = full_path
+            Logger.debug(f"[{self.camera.name}] Output container started: {full_path}")
+            return True
+
+        except Exception as e:
+            Logger.err(f"[{self.camera.name}] Failed to initialize output container: {e}")
+            self.output_container = None
+            self.output_stream = None
+            self.audio_output_stream = None
             return False
-
-        self.writer_file = full_path
-        Logger.debug(f"[{self.camera.name}] VideoWriter started: {full_path}")
-        return True
 
     def loop_frames(self):
         first_run: bool = True
-        need_create_capture = False
-        if self.cap is None:
-            need_create_capture = True
-        elif not self.cap.isOpened():
-            need_create_capture = True
-        if need_create_capture:
-            self.create_capture()
+        need_create_input = False
+
+        if self.input_container is None:
+            need_create_input = True
+
+        if need_create_input:
+            self.create_input_container()
+
         self.tracker = ROITracker(camera=self.camera)
-        # Установка callback-функций
         self.tracker.set_callbacks(
             motion_start=self.handle_motion_start,
             motion_end=self.handle_motion_end,
             recording_start=self.handle_recording_start,
             recording_end=self.handle_recording_end
         )
+
+        # Initialize PTS counters
+        self.video_pts = 0
+        self.audio_pts = 0
+
         while self.camera.active or self.opened:
-            # Read frame
             try:
                 if self.need_skip:
                     continue
 
-                if not self.cap.isOpened():
-                    self.create_capture()
+                if self.input_container is None:
+                    self.create_input_container()
+                    continue
 
-                ret, frame = self.cap.read()
+                # Читаем пакеты вместо фреймов для лучшей синхронизации
+                for packet in self.input_container.demux():
+                    if not self.camera.active and not self.opened:
+                        break
 
-                # If there's an error in capturing
-                if not ret:
-                    Logger.err(f"⚠️ [{self.camera.name}] capture error!")
-                    self.capture_error = True
-                    self.opened = False
-                    break
-                else:
-                    self.capture_error = False
-                    self.original = frame
-                    self.resized = imutils.resize(self.original, width=640)
+                    if self.need_skip:
+                        continue
 
-                    # Start permanent record or permanent screenshots
-                    if self.is_record_permanent() and self.time_part_start == 0:
-                        self.time_part_start = time.time()
-                        # If mode is screenshot
-                        if self.is_screenshots_mode():
-                            # take motion detection screenshot
-                            res = CameraStorage.take_screenshot(self.camera, self.original)
-                            Logger.debug(
-                                f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
-                        # If mode is video
-                        elif self.is_video_mode() and self.writer is None:
-                            # Create video writer
-                            self.create_writer(CameraStorage.video_path(self.camera))
-                        Logger.debug(
-                            f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}')
+                    # Демультиплексируем пакеты в фреймы
+                    for frame in packet.decode():
+                        if isinstance(frame, av.AudioFrame) and hasattr(self,
+                                                                        'audio_output_stream') and self.audio_output_stream is not None:
+                            # Обработка аудиофреймов
+                            if self.output_container is not None and self.write:
+                                # Устанавливаем PTS для аудио
+                                if not hasattr(self, 'audio_pts'):
+                                    self.audio_pts = 0
+                                frame.pts = self.audio_pts
+                                self.audio_pts += frame.samples
 
-                    # Take cover
-                    now = time.time()
-                    elapsed = now - self.screen_timer
+                                # Кодируем и записываем аудиофрейм
+                                for packet in self.audio_output_stream.encode(frame):
+                                    if self.audio_output_stream is not None:
+                                        self.output_container.mux(packet)
+                                    else:
+                                        break
+                            else:
+                                self.destroy_output_container()
+                            continue
 
-                    if elapsed > self.screen_interval:
-                        CameraStorage.upload_cover(self.camera, self.original)
-                        self.screen_timer = now
-                    # End take cover
+                        if isinstance(frame, av.VideoFrame):
+                            # Обработка видеофреймов
+                            self.original = frame.to_ndarray(format='bgr24')
+                            self.resized = imutils.resize(self.original, width=640)
 
-                    # If writer is opened - write frames to storage
-                    if self.writer is not None:
-                        self.write_frame_safe()
+                            # Start permanent record or permanent screenshots
+                            if self.is_record_permanent() and self.time_part_start == 0:
+                                self.time_part_start = time.time()
 
-                    pause = time.time() - self.silence_timer
+                                if self.is_screenshots_mode():
+                                    res = CameraStorage.take_screenshot(self.camera, self.original)
+                                    Logger.debug(
+                                        f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
+                                elif self.is_video_mode() and (self.output_container is None):
+                                    self.create_output_container(CameraStorage.video_path(self.camera))
 
-                    if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+                                Logger.debug(
+                                    f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}')
 
-                        frame_copy = self.resized.copy()
+                            # Take cover
+                            now = time.time()
+                            elapsed = now - self.screen_timer
 
-                        changes = self.tracker.detect_changes(frame_copy, self.original)
-                        __frame = self.tracker.draw_rois(frame_copy, changes)
-                        # cv2.imshow(f"Camera {self.camera.id}", __frame)
+                            if elapsed > self.screen_interval:
+                                CameraStorage.upload_cover(self.camera, self.original)
+                                self.screen_timer = now
 
-                    elif self.is_record_permanent():
-                        record_part_diff = time.time() - self.time_part_start
-                        # cv2.imshow(f"Camera {self.camera.id}", self.resized)
-                        if record_part_diff > self.camera.record_duration * 60:
-                            self.time_part_start = 0
-                            self.destroy_writer()
-                            Logger.debug(f'Camera {self.camera.name} end record video part')
-                        # text = "No Movement Detected"
+                            # Write frames to output container if needed
+                            if self.output_container is not None and self.write:
+                                self.write_frame_safe(frame)
+                            else:
+                                self.destroy_output_container()
 
-                    cv2.waitKey(5)
+                            pause = time.time() - self.silence_timer
 
-            except cv2.error as e:
-                Logger.err(f"⚠️ [{self.camera.name}] error read frame: {e}")
+                            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+                                frame_copy = self.resized.copy()
+                                changes = self.tracker.detect_changes(frame_copy, self.original)
+                                __frame = self.tracker.draw_rois(frame_copy, changes)
+
+                            elif self.is_record_permanent():
+                                record_part_diff = time.time() - self.time_part_start
+                                if record_part_diff > self.camera.record_duration * 60:
+                                    self.time_part_start = 0
+                                    self.destroy_output_container()
+                                    Logger.debug(f'Camera {self.camera.name} end record video part')
+
+                            first_run = False
+
+            except EOFError as e:
+                Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}")
+                pass
+            except Exception as e:
+                Logger.err(f"⚠️ [{self.camera.name}] error processing frame: {e}")
+                self.capture_error = True
+                time.sleep(1)
                 break
 
-        self.destroy_writer()
-        self.stop_capture()
+        self.destroy_output_container()
+        self.stop_input_container()
         Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
-
-    '''
-    
-    '''
 
     def get_no_signal_frame(self):
         try:
             frame = cv2.imread(os.path.abspath('static/images/no-signal.jpg'))
             frame = imutils.resize(frame, width=640)
-        except cv2.error as e:
+        except Exception:
             frame = np.zeros((640, 360, 1), dtype="uint8")
         return frame
-
-    '''
-    Generate videoframes stream to view
-    '''
 
     def generate_frames(self):
         time_prev = 0
         fps = 15
 
         while True:
-            cap = self.cap
-            if not isinstance(cap, cv2.VideoCapture):
-                frame = self.get_no_signal_frame()
-            elif not cap.isOpened():
-                frame = self.get_no_signal_frame()
-            elif self.resized is None:
+            if self.input_container is None or self.resized is None:
                 frame = self.get_no_signal_frame()
             else:
                 frame = self.resized
-            time_elapsed = time.time() - time_prev
-            # if time_elapsed > 1. / fps:
-            time_prev = time.time()
-            # Process the frame with OpenCV (optional)
-            # processed_frame = your_opencv_processing_function(frame)
 
-            ret, buffer = cv2.imencode('.jpg', frame)  # Encode frame as JPEG
+            time_elapsed = time.time() - time_prev
+            time_prev = time.time()
+
+            ret, buffer = cv2.imencode('.jpg', frame)
             if not ret:
                 continue
 
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-            # continue
 
     def save_event(self):
         pass
