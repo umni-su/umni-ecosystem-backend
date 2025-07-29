@@ -282,6 +282,8 @@ class CameraStream:
             self.output_file = None
 
     def create_output_container(self, path: str):
+        self.video_pts = 0
+        self.audio_pts = 0
         if not Filesystem.exists(path):
             Filesystem.mkdir(path, recursive=True)
 
