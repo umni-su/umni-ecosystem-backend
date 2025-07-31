@@ -3,8 +3,10 @@ from fastapi.responses import StreamingResponse, FileResponse
 import os
 from typing import Annotated
 
-from models.camera_event_model import CameraEventModel
+from classes.auth.auth import Auth
+from models.camera_event_model import CameraEventBase, CameraEventModel
 from repositories.camera_events_repository import CameraEventsRepository
+from responses.user import UserResponseOut
 
 events = APIRouter(
     prefix='/events',
@@ -12,10 +14,18 @@ events = APIRouter(
 )
 
 
+@events.get("/{event_id}", response_model=CameraEventBase)
+async def stream_video(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        event: Annotated[CameraEventBase, Depends(CameraEventsRepository.get_event)]
+):
+    return event
+
+
 @events.get("/{event_id}/play")
 async def stream_video(
         request: Request,
-        # user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         event: Annotated[CameraEventModel, Depends(CameraEventsRepository.get_event)]
 ):
     if not event or not event.recording:

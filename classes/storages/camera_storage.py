@@ -20,6 +20,7 @@ class ScreenshotResultModel(BaseModel):
     success: bool = False
     directory: str
     filename: str
+    full_path: str
 
 
 class CameraStorage(StorageBase):
@@ -86,6 +87,7 @@ class CameraStorage(StorageBase):
             success=res,
             directory=_dir,
             filename=filename,
+            full_path=os.path.join(_dir, filename)
         )
 
     @classmethod

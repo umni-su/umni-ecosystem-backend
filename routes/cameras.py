@@ -9,9 +9,9 @@ from classes.auth.auth import Auth
 from classes.logger import Logger
 from entities.camera import CameraEntity
 from models.camera_area_model import CameraAreaBaseModel
-from models.camera_event_model import CameraEventModel
+from models.camera_event_model import CameraEventModel, CameraEventBase
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
-from models.pagination_model import PaginatedResponse, PageParams
+from models.pagination_model import PaginatedResponse, EventsPageParams, TimelineParams
 from repositories.area_repository import CameraAreaRepository
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_repository import CameraRepository
@@ -69,7 +69,7 @@ def get_camera_cover(
         raise HTTPException(status_code=404)
 
     try:
-        if stream.cap is None or not stream.cap.isOpened():
+        if not stream.is_opened() and not stream.resized:
             frame = stream.get_no_signal_frame()
         else:
             frame = stream.resized
@@ -120,12 +120,23 @@ def save_camera_areas(
 
 @cameras.post('/{camera_id}/events', response_model=PaginatedResponse[CameraEventModel])
 def save_camera_areas(
-        params: PageParams,
+        params: EventsPageParams,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         camera: Annotated[CameraEntity, Depends(CameraRepository.get_camera)],
 
 ):
     events = CameraEventsRepository.get_events(params, camera)
+    return events
+
+
+@cameras.post('/{camera_id}/timeline', response_model=list[CameraEventBase])
+def get_camera_timeline(
+        params: TimelineParams,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        camera: Annotated[CameraEntity, Depends(CameraRepository.get_camera)],
+
+):
+    events = CameraEventsRepository.get_timeline(params, camera)
     return events
 
 

@@ -6,10 +6,13 @@ from models.camera_area_model import CameraAreaBaseModel
 from models.storage_model import StorageModel
 
 
-class CameraBaseModel(BaseModel):
+class CameraGetModel(BaseModel):
     id: int | None = None
     storage_id: int
     name: str
+
+
+class CameraBaseModel(CameraGetModel):
     active: bool = True
     alerts: bool = True
     record: bool = False

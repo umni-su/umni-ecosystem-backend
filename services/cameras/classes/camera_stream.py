@@ -4,10 +4,10 @@ import time
 from typing import TYPE_CHECKING, Optional, Union
 
 import av
+import cv2
 import imutils
 import numpy as np
 from av import VideoFrame
-from numpy import ndarray
 from pydantic import BaseModel
 
 import classes.crypto.crypto as crypto
@@ -16,14 +16,15 @@ from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
 from classes.thread.Daemon import Daemon
 from entities.camera import CameraEntity
-import cv2
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
+from repositories.camera_events_repository import CameraEventsRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.roi_tracker import ROIDetectionEvent
 from services.cameras.classes.roi_tracker import ROITracker
 
 if TYPE_CHECKING:
+    from entities.camera_event import CameraEventEntity
     from services.cameras.classes.roi_tracker import ROIRecordEvent
 
 
@@ -36,6 +37,8 @@ class ScreenshotResultModel(BaseModel):
 class CameraStream:
     def __init__(self, camera: CameraEntity):
         self.id: int = 0
+        self.video_pts = 0
+        self.audio_pts = 0
         self.tracker: Optional[ROITracker] = None
         self.opened: bool = True
         self.camera: Optional[CameraEntity] = None
@@ -88,6 +91,10 @@ class CameraStream:
         self.capture_error: Optional[bool] = None
         self.output_file: Optional[str] = None
         self.need_skip: bool = False
+        self.need_restart: bool = False
+
+        # For permanent events
+        self.permanent_event: Optional["CameraEventEntity"] = None
 
         self.set_camera(camera=camera)
         dmn = 'was_none'
@@ -136,8 +143,7 @@ class CameraStream:
         self.need_skip = True
 
         if isinstance(self.camera, CameraEntity) and camera != self.camera:
-            self.destroy_output_container()
-            self.stop_input_container()
+            self.need_restart = True
             time.sleep(2)
             Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
 
@@ -154,6 +160,9 @@ class CameraStream:
             self.tracker.update_all_rois(self.camera.areas)
 
         self.need_skip = False
+
+    def is_opened(self):
+        return isinstance(self.input_container, av.container.InputContainer)
 
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -200,6 +209,7 @@ class CameraStream:
     def stop_input_container(self):
         if self.input_container is not None:
             self.input_container.close()
+            self.input_container = None
 
     def is_record_permanent(self):
         return self.is_video_mode() or self.is_screenshots_mode()
@@ -276,10 +286,20 @@ class CameraStream:
 
             self.output_container.close()
             Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
+
+            # Если у камеры режим периодического видео или скриншотов,
+            # нужно завершить запись, если она есть и обновить событие и запись в БД
+            if self.is_record_permanent() and self.permanent_event is not None:
+                CameraEventsRepository.close_permanent_event(
+                    event=self.permanent_event
+                )
+                Logger.debug(f'🎬 [{self.camera.name}] Permanent event end: #ID{self.permanent_event.id}]')
+                self.permanent_event = None
             self.output_container = None
             self.output_stream = None
             self.audio_output_stream = None  # Добавлено
             self.output_file = None
+            self.time_part_start = 0
 
     def create_output_container(self, path: str):
         self.video_pts = 0
@@ -349,6 +369,7 @@ class CameraStream:
 
         if need_create_input:
             self.create_input_container()
+            Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}')
 
         self.tracker = ROITracker(camera=self.camera)
         self.tracker.set_callbacks(
@@ -371,6 +392,18 @@ class CameraStream:
                     self.create_input_container()
                     continue
 
+                if self.need_restart:
+                    Logger.debug(f"🆘 [{self.camera.name}] Restarting output container: {self.output_file}")
+                    self.destroy_output_container()
+                    time.sleep(1)
+                    self.stop_input_container()
+                    time.sleep(1)
+                    self.create_input_container()
+                    time.sleep(1)
+                    self.need_skip = False
+                    self.need_restart = False
+                    self.capture_error = False
+
                 # Читаем пакеты вместо фреймов для лучшей синхронизации
                 for packet in self.input_container.demux():
                     if not self.camera.active and not self.opened:
@@ -378,6 +411,8 @@ class CameraStream:
 
                     if self.need_skip:
                         continue
+                    if self.need_restart:
+                        break
 
                     # Демультиплексируем пакеты в фреймы
                     for frame in packet.decode():
@@ -416,6 +451,15 @@ class CameraStream:
                                         f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
                                 elif self.is_video_mode() and (self.output_container is None):
                                     self.create_output_container(CameraStorage.video_path(self.camera))
+                                    self.write = True
+                                    # Create event
+                                    self.permanent_event = CameraEventsRepository.add_permanent_event(
+                                        camera=self.camera,
+                                        frame=self.original,
+                                        record_path=self.output_file
+                                    )
+                                    Logger.debug(
+                                        f'🎬 [{self.camera.name}] Permanent event start: #ID{self.permanent_event.id}]')
 
                                 Logger.debug(
                                     f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}')
@@ -444,7 +488,6 @@ class CameraStream:
                             elif self.is_record_permanent():
                                 record_part_diff = time.time() - self.time_part_start
                                 if record_part_diff > self.camera.record_duration * 60:
-                                    self.time_part_start = 0
                                     self.destroy_output_container()
                                     Logger.debug(f'Camera {self.camera.name} end record video part')
 
@@ -452,12 +495,13 @@ class CameraStream:
 
             except EOFError as e:
                 Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}")
+                # self.need_restart = True
                 pass
             except Exception as e:
                 Logger.err(f"⚠️ [{self.camera.name}] error processing frame: {e}")
+                self.need_restart = True
                 self.capture_error = True
-                time.sleep(1)
-                break
+                pass
 
         self.destroy_output_container()
         self.stop_input_container()

@@ -19,6 +19,8 @@ class ROIEventType(Enum):
     MOTION_END = 2
     ROI_DETECT_START = 3
     ROI_DETECT_END = 4
+    STATIC_VIDEO = 5
+    STATIC_SCREENSHOT = 6
 
 
 class ROISettings(BaseModel):
