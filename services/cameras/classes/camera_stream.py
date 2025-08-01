@@ -193,7 +193,7 @@ class CameraStream:
         }
 
         try:
-            self.input_container = av.open(self.link, options=options)
+            self.input_container = av.open(self.link, options=options, timeout=10)
             self.capture_error = False
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
         except Exception as e:
@@ -395,11 +395,8 @@ class CameraStream:
                 if self.need_restart:
                     Logger.debug(f"🆘 [{self.camera.name}] Restarting output container: {self.output_file}")
                     self.destroy_output_container()
-                    time.sleep(1)
                     self.stop_input_container()
-                    time.sleep(1)
                     self.create_input_container()
-                    time.sleep(1)
                     self.need_skip = False
                     self.need_restart = False
                     self.capture_error = False
@@ -495,7 +492,7 @@ class CameraStream:
 
             except EOFError as e:
                 Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}")
-                # self.need_restart = True
+                self.need_restart = True
                 pass
             except Exception as e:
                 Logger.err(f"⚠️ [{self.camera.name}] error processing frame: {e}")
