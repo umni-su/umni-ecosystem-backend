@@ -140,13 +140,17 @@ def get_camera_timeline(
     return events
 
 
-@cameras.get('/events/{event_id}/preview')
+@cameras.get('/events/{event_id}/{type}')
 def get_camera_area_preview(
+        type: str,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         event: Annotated[CameraEventModel, Depends(CameraEventsRepository.get_event)],
 
 ):
-    frame = cv2.imread(event.resized, cv2.IMREAD_UNCHANGED)
+    if type == 'original':
+        frame = cv2.imread(event.original, cv2.IMREAD_UNCHANGED)
+    else:
+        frame = cv2.imread(event.resized, cv2.IMREAD_UNCHANGED)
     success, im = cv2.imencode(ext='.jpg', img=frame)
     if success:
         headers = {'Content-Disposition': f'inline; filename="{event.id}"'}

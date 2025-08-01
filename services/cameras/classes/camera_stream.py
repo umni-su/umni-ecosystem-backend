@@ -65,8 +65,8 @@ class CameraStream:
         self.time_elapsed: float = 0
 
         # Video frames
-        self.original: Optional[np.ndarray] = None
-        self.resized: Optional[np.ndarray] = None
+        self.original: Optional[Union[np.ndarray | cv2.Mat]] = None
+        self.resized: Optional[Union[np.ndarray | cv2.Mat]] = None
 
         # Threading
         self.daemon: Optional[Daemon] = None
@@ -92,6 +92,14 @@ class CameraStream:
         self.output_file: Optional[str] = None
         self.need_skip: bool = False
         self.need_restart: bool = False
+
+        # Heartbeat
+        self.last_frame_time = 0  # Время последнего полученного кадра
+        self.heartbeat_timeout = 10  # Максимальное время без кадров (сек)
+        self.heartbeat_check_interval = 5  # Интервал проверки (сек)
+        self.last_heartbeat_check = 0
+        self.restart_delay = 3  # Задержка между попытками перезапуска (сек)
+        self.last_restart_time = 0
 
         # For permanent events
         self.permanent_event: Optional["CameraEventEntity"] = None
@@ -160,9 +168,6 @@ class CameraStream:
             self.tracker.update_all_rois(self.camera.areas)
 
         self.need_skip = False
-
-    def is_opened(self):
-        return isinstance(self.input_container, av.container.InputContainer)
 
     def date_filename(self):
         return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
@@ -360,6 +365,37 @@ class CameraStream:
             self.audio_output_stream = None
             return False
 
+    def is_stream_alive(self):
+        """Проверяет, активен ли поток, включая проверку на зависание"""
+        if not self.is_opened():
+            return False
+
+        # Проверка на зависание (нет новых кадров)
+        current_time = time.time()
+        if current_time - self.last_frame_time > self.heartbeat_timeout:
+            Logger.warn(f"⚠️ [{self.camera.name}] Stream frozen - no frames for {self.heartbeat_timeout} sec")
+            return False
+
+        try:
+            # Быстрая проверка состояния контейнера
+            if hasattr(self.input_container, 'is_alive'):
+                return self.input_container.is_alive()
+            return True
+        except (av.error.FFmpegError, EOFError, OSError):
+            return False
+
+    def check_heartbeat(self):
+        """Периодическая проверка состояния потока"""
+        current_time = time.time()
+        if current_time - self.last_heartbeat_check > self.heartbeat_check_interval:
+            self.last_heartbeat_check = current_time
+            if not self.is_stream_alive():
+                Logger.warn(f"❤️🩹 [{self.camera.name}] Heartbeat check failed - restarting stream")
+                self.need_restart = True
+
+    def is_opened(self):
+        return isinstance(self.input_container, av.container.InputContainer)
+
     def loop_frames(self):
         first_run: bool = True
         need_create_input = False
@@ -385,34 +421,38 @@ class CameraStream:
 
         while self.camera.active or self.opened:
             try:
+                # Проверка heartbeat
+                self.check_heartbeat()
+
                 if self.need_skip:
+                    continue
+
+                # Проверяем, нужно ли перезапустить контейнер
+                current_time = time.time()
+
+                if self.need_restart and (current_time - self.last_restart_time) > self.restart_delay:
+                    self._perform_restart()
                     continue
 
                 if self.input_container is None:
                     self.create_input_container()
                     continue
 
-                if self.need_restart:
-                    Logger.debug(f"🆘 [{self.camera.name}] Restarting output container: {self.output_file}")
-                    self.destroy_output_container()
-                    self.stop_input_container()
-                    self.create_input_container()
-                    self.need_skip = False
-                    self.need_restart = False
-                    self.capture_error = False
-
                 # Читаем пакеты вместо фреймов для лучшей синхронизации
                 for packet in self.input_container.demux():
+                    self.check_heartbeat()  # Проверка между пакетами
                     if not self.camera.active and not self.opened:
                         break
 
-                    if self.need_skip:
-                        continue
-                    if self.need_restart:
+                    if not self.camera.active and not self.opened:
+                        break
+
+                    if self.need_skip or self.need_restart:
                         break
 
                     # Демультиплексируем пакеты в фреймы
                     for frame in packet.decode():
+                        self.last_frame_time = time.time()  # Обновляем время последнего кадра
                         if isinstance(frame, av.AudioFrame) and hasattr(self,
                                                                         'audio_output_stream') and self.audio_output_stream is not None:
                             # Обработка аудиофреймов
@@ -493,16 +533,36 @@ class CameraStream:
             except EOFError as e:
                 Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}")
                 self.need_restart = True
+                time.sleep(1)  # Добавляем небольшую паузу перед следующей попыткой
                 pass
-            except Exception as e:
-                Logger.err(f"⚠️ [{self.camera.name}] error processing frame: {e}")
+            except av.error.FFmpegError as e:
+                Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}")
                 self.need_restart = True
                 self.capture_error = True
-                pass
+                time.sleep(3)  # Увеличиваем паузу для серьезных ошибок
+            except Exception as e:
+                Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}")
+                self.need_restart = True
+                self.capture_error = True
+                time.sleep(5)
 
         self.destroy_output_container()
         self.stop_input_container()
         Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
+
+    def _perform_restart(self):
+        """Выполняет полный перезапуск потока"""
+        Logger.debug(f"🔄 [{self.camera.name}] Performing full restart...")
+        try:
+            self.destroy_output_container()
+            self.stop_input_container()
+            self.create_input_container()
+            self.last_frame_time = time.time()  # Сбрасываем таймер кадров
+        except Exception as e:
+            Logger.err(f"⚠️ [{self.camera.name}] Restart failed: {e}")
+        finally:
+            self.need_restart = False
+            self.last_restart_time = time.time()
 
     def get_no_signal_frame(self):
         try:
