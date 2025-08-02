@@ -546,12 +546,15 @@ class ROITracker:
                 if roi.id == roi_id:
                     _exit = True
             pts = np.array(roi.points, np.int32)
-            color = (0, 0, 255) if roi.id in self.active_movements else roi.bgr_color
 
-            cv2.fillPoly(overlay, [pts], color)
-            thickness = 3 if roi.id in self.active_movements else 1
-            border = (0, 255, 255) if roi.id in self.active_movements else (0, 255, 0)
-            cv2.polylines(overlay, [pts], True, border, thickness)
+            # color = (0, 0, 255) if roi.id in self.active_movements else roi.bgr_color
+            # cv2.fillPoly(overlay, [pts], color)
+
+            if roi.id in self.active_movements:
+                cv2.fillPoly(overlay, [pts], roi.bgr_color)
+                thickness = 3
+                border = (0, 255, 255)
+                cv2.polylines(overlay, [pts], True, border, thickness)
 
         cv2.addWeighted(overlay, 0.3, frame, 0.7, 0, frame)
 
