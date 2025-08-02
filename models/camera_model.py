@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, computed_field
 
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -24,9 +24,15 @@ class CameraBaseModel(CameraGetModel):
     ip: str | None = None
     port: int | None = None
     username: str | None = None
-    password: str | None = None
+    password: str | None = Field(exclude=True)
     primary: str | None = None
     secondary: str | None = None
+    change_credentials: bool = False
+
+    @computed_field
+    @property
+    def has_credentials(self) -> bool:
+        return True if (self.password is not None or self.username is not None) else False
 
 
 class CameraModelWithRelations(CameraBaseModel):

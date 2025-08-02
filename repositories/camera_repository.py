@@ -60,15 +60,16 @@ class CameraRepository(BaseRepository):
             camera.record_mode = model.record_mode
             camera.record_duration = model.record_duration
             camera.delete_after = model.delete_after
-            camera.username = model.username
             if model.protocol is not CameraProtocolEnum.USB:
                 camera.ip = model.ip
                 camera.port = model.port
             camera.protocol = model.protocol
-            if model.password is not None:
-                camera.password = crypto.Crypto.encrypt(model.password)
-            else:
-                model.password = None
+            if model.change_credentials:
+                camera.username = model.username
+                if model.password is not None:
+                    camera.password = crypto.Crypto.encrypt(model.password)
+                else:
+                    model.password = None
             camera.primary = model.primary
             camera.secondary = model.secondary
             return camera

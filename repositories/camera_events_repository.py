@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from math import ceil
 from typing import TYPE_CHECKING
+
+import cv2
 import numpy as np
 import imutils
 from sqlalchemy import func
@@ -15,6 +17,7 @@ from models.pagination_model import EventsPageParams, PaginatedResponse, EventsP
 from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
 from services.cameras.classes.roi_tracker import ROIEvent, ROIEventType
+from services.cameras.classes.wheather_detector import WeatherDetector
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
@@ -127,7 +130,8 @@ class CameraEventsRepository(BaseRepository):
     @classmethod
     def get_event(cls, event_id: int):
         with cls.query() as sess:
-            return sess.get(CameraEventEntity, event_id)
+            event = sess.get(CameraEventEntity, event_id)
+            return event
 
     @classmethod
     def get_old_events(cls, camera: "CameraEntity") -> list[CameraEventEntity]:
