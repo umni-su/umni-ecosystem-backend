@@ -293,7 +293,7 @@ class CameraStream:
                         if self.output_container is not None:
                             self.output_container.mux(packet)
                 except (av.error.FFmpegError, EOFError) as e:
-                    Logger.debug(f"[{self.camera.name}] Error during stream flush: {e}")
+                    Logger.err(f"[{self.camera.name}] Error during stream flush: {e}")
 
             # Также флашим аудиопакеты, если есть аудиопоток
             if hasattr(self, 'audio_output_stream') and self.audio_output_stream is not None:
@@ -302,7 +302,7 @@ class CameraStream:
                         if self.output_container is not None:
                             self.output_container.mux(packet)
                 except (av.error.FFmpegError, EOFError) as e:
-                    Logger.debug(f"[{self.camera.name}] Error during audio flush: {e}")
+                    Logger.err(f"[{self.camera.name}] Error during audio flush: {e}")
         finally:
             # Всегда закрываем контейнер, даже если были ошибки
             try:
