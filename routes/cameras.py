@@ -105,7 +105,7 @@ def save_camera_areas(
         areas: list[CameraAreaBaseModel],
         camera: CameraEntity = Depends(CameraRepository.get_camera),
 ):
-    saved_areas = CameraAreaRepository.save_areas_data(areas, camera)
+    saved_areas = CameraAreaRepository.save_areas_data(areas, camera)  # TODO fix concurent queries
 
     return saved_areas
 
