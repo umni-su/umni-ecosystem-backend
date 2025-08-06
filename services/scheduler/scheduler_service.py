@@ -19,7 +19,7 @@ class SchedulerService(BaseService):
             schedule_cfg=TaskSchedule(
                 frequency=ScheduleFrequency.DAY,
                 interval=1,
-                at_time="17:05"
+                at_time='13:00'
             )
         )
 

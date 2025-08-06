@@ -1,5 +1,6 @@
 import datetime
 import os
+import threading
 import time
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -103,6 +104,8 @@ class CameraStream:
 
         # For permanent events
         self.permanent_event: Optional["CameraEventEntity"] = None
+
+        self._container_lock = threading.Lock()
 
         self.set_camera(camera=camera)
         dmn = 'was_none'
@@ -278,31 +281,55 @@ class CameraStream:
             return False
 
     def destroy_output_container(self):
-        if self.output_container is not None:
-            # Flush any remaining packets
+        if self.output_container is None:
+            return
+
+        try:
+            # Flush any remaining packets only if stream is still valid
             if self.output_stream is not None:
-                for packet in self.output_stream.encode():
-                    self.output_container.mux(packet)
+                try:
+                    # Попытка флаша оставшихся пакетов
+                    for packet in self.output_stream.encode():
+                        if self.output_container is not None:
+                            self.output_container.mux(packet)
+                except (av.error.FFmpegError, EOFError) as e:
+                    Logger.debug(f"[{self.camera.name}] Error during stream flush: {e}")
 
             # Также флашим аудиопакеты, если есть аудиопоток
             if hasattr(self, 'audio_output_stream') and self.audio_output_stream is not None:
-                for packet in self.audio_output_stream.encode():
-                    self.output_container.mux(packet)
-
-            self.output_container.close()
-            Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
+                try:
+                    for packet in self.audio_output_stream.encode():
+                        if self.output_container is not None:
+                            self.output_container.mux(packet)
+                except (av.error.FFmpegError, EOFError) as e:
+                    Logger.debug(f"[{self.camera.name}] Error during audio flush: {e}")
+        finally:
+            # Всегда закрываем контейнер, даже если были ошибки
+            try:
+                if self.output_container is not None:
+                    self.output_container.close()
+                    Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
+            except Exception as e:
+                Logger.debug(f"[{self.camera.name}] Error closing container: {e}")
 
             # Если у камеры режим периодического видео или скриншотов,
             # нужно завершить запись, если она есть и обновить событие и запись в БД
             if self.is_record_permanent() and self.permanent_event is not None:
-                CameraEventsRepository.close_permanent_event(
-                    event=self.permanent_event
-                )
-                Logger.debug(f'🎬 [{self.camera.name}] Permanent event end: #ID{self.permanent_event.id}]')
+                try:
+                    CameraEventsRepository.close_permanent_event(
+                        event=self.permanent_event
+                    )
+                    Logger.debug(f'🎬 [{self.camera.name}] Permanent event end: #ID{self.permanent_event.id}]')
+                except Exception as e:
+                    Logger.debug(f"[{self.camera.name}] Error closing permanent event: {e}")
+
                 self.permanent_event = None
+
+            # Всегда сбрасываем состояние
             self.output_container = None
             self.output_stream = None
-            self.audio_output_stream = None  # Добавлено
+            if hasattr(self, 'audio_output_stream'):
+                self.audio_output_stream = None
             self.output_file = None
             self.time_part_start = 0
 
@@ -510,10 +537,11 @@ class CameraStream:
                                 self.screen_timer = now
 
                             # Write frames to output container if needed
-                            if self.output_container is not None and self.write:
-                                self.write_frame_safe(frame)
-                            else:
-                                self.destroy_output_container()
+                            with self._container_lock:
+                                if self.output_container is not None and self.write:
+                                    self.write_frame_safe(frame)
+                                else:
+                                    self.destroy_output_container()
 
                             pause = time.time() - self.silence_timer
 
