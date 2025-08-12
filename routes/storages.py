@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from classes.auth.auth import Auth
-from models.storage_model import StorageModel, StorageModelBase
+from models.storage_model import StorageModelBase
 from repositories.storage_repository import StorageRepository
 from responses.success import SuccessResponse
 from responses.user import UserResponseOut
@@ -14,10 +14,10 @@ storages = APIRouter(
 )
 
 
-@storages.get('', response_model=list[StorageModel])
+@storages.get('', response_model=list[StorageModelBase])
 def get_storages(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        items: list[StorageModel] = Depends(StorageRepository.get_storages)
+        items: list[StorageModelBase] = Depends(StorageRepository.get_storages)
 ):
     return items
 

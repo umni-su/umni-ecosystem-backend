@@ -4,6 +4,7 @@ import re
 from sqlmodel import select
 
 import database.database as db
+from classes.logger import Logger
 from entities.sensor import Sensor
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ai_ntc_model import MqttCnfAnalogPortsModel, MqttCnfAnalogPortModel
@@ -23,7 +24,7 @@ class MqttCnfAiMessage(BaseMessage):
     def save(self):
         if self.model is None:
             return
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             for (key, item) in self.model:
                 _key = MqttSensorTypeEnum.NTC
                 if key == 'ai1' or key == 'ai2':
@@ -32,12 +33,12 @@ class MqttCnfAiMessage(BaseMessage):
                     ai_port: MqttCnfAnalogPortModel = item
                     identifier = '.'.join([
                         'dev',
-                        str(self.topic.device_entity.id),
+                        str(self.topic.device_model.id),
                         re.sub(r"(\d+)", "", key),
                         str(ai_port.channel)
                     ])
                     sensor = self.get_or_new_sensor(identifier)
-                    sensor.device = self.topic.device_entity
+                    sensor.device_id = self.topic.device_model.id
                     sensor.identifier = identifier
                     sensor.type = _key
                     sensor.name = ai_port.label
@@ -46,4 +47,5 @@ class MqttCnfAiMessage(BaseMessage):
                     session.add(sensor)
                 except Exception as e:
                     print(e)
+            Logger.info(f'📟⚙️ [{self.topic.original_topic}] AI config saved successfully')
             session.commit()

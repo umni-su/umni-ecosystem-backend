@@ -19,6 +19,8 @@ class DeviceModel(BaseModel):
     total_heap: int | None = None
     fw_ver: str | None = None
     last_sync: datetime | None = None
+    created: datetime | None = None
+    updated: datetime | None = None
 
 
 class DeviceUpdateModel(BaseModel):

@@ -1,3 +1,4 @@
+from database.database import session_scope
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel
 from repositories.base_repository import BaseRepository
@@ -8,7 +9,7 @@ from sqlmodel import col
 class ConfigurationRepository(BaseRepository):
     @classmethod
     def get_configuration(cls):
-        with cls.query() as sess:
+        with session_scope() as sess:
             config = sess.exec(
                 select(ConfigurationEntity).where(
                     col(ConfigurationEntity.key).not_in(

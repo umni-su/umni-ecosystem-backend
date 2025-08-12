@@ -3,6 +3,7 @@ import datetime
 from sqlmodel import select, Session
 
 import database.database as db
+from classes.logger import Logger
 from entities.sensor import Sensor
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_dio_cnf_model import MqttDioCngModel
@@ -23,12 +24,12 @@ class MqttCnfDioMessage(BaseMessage):
             _type = MqttTopicEnum.REL
         identifier = '.'.join([
             'dev',
-            str(self.topic.device_entity.id),
+            str(self.topic.device_model.id),
             _type,
             str(port.index)
         ])
         sensor = self.get_or_new_sensor(identifier)
-        sensor.device = self.topic.device_entity
+        sensor.device_id = self.topic.device_model.id
         sensor.identifier = identifier
         sensor.name = port.label
         sensor.type = sensor_type
@@ -38,12 +39,15 @@ class MqttCnfDioMessage(BaseMessage):
         session.add(sensor)
 
     def save(self):
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             try:
                 for di in self.model.di:
                     self.create_update(session, di, MqttSensorTypeEnum.INPUT)
                 for do in self.model.do:
                     self.create_update(session, do, MqttSensorTypeEnum.RELAY)
                 session.commit()
+
+                Logger.info(
+                    f'📟⚙️ [{self.topic.original_topic}] DIO config saved successfully')
             except Exception as e:
                 print(e)

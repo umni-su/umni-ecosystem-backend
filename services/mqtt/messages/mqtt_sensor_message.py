@@ -26,14 +26,14 @@ class MqttSensorMessage(BaseMessage):
     def save(self):
 
         if self.identifier is not None and self.has_device:
-            with db.get_separate_session() as session:
+            with db.session_scope() as session:
                 founded = session.exec(
                     select(Sensor).where(Sensor.identifier == self.identifier)
                 ).first()
                 if isinstance(founded, Sensor):
                     try:
                         sensor = founded
-                        sensor.device = self.topic.device_entity
+                        sensor.device_id = self.topic.device_model.id
                         sensor.identifier = self.identifier
                         sensor.value = self.sensor_value()
                         session.add(sensor)
@@ -57,12 +57,13 @@ class MqttSensorMessage(BaseMessage):
                         if (delta is None or (delta.seconds / 60 >= trigger)) or (sensor.type not in delta_types):
                             history = SensorHistory()
                             history.value = sensor.value
-                            sensor.history.append(history)
+                            history.sensor = sensor
+                            session.add(history)
                             session.commit()
                             session.refresh(history)
 
                             Logger.info(
-                                f"ID#{history.id}, type:{sensor.type}: {self.identifier} -> {self.sensor_value()}")
+                                f"📟📄 [{self.topic.original_topic} / ID#{history.id} / {history.sensor.identifier}], type:{sensor.type}: {self.identifier} -> {self.sensor_value()}")
                     except Exception as e:
                         Logger.err(e)
 

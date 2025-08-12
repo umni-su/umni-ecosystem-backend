@@ -2,7 +2,8 @@ import datetime
 
 from pydantic_core import ValidationError
 
-from database.database import get_separate_session
+from classes.logger import Logger
+from database.database import session_scope
 from entities.device import Device
 from entities.device_network_interfaces import DeviceNetworkInterface
 from services.mqtt.messages.base_message import BaseMessage
@@ -48,8 +49,11 @@ class MqttRegisterMessage(BaseMessage):
 
     def save(self):
         try:
-            with get_separate_session() as session:
-                device: Device = self.get_or_new_device()
+            with session_scope() as session:
+                if self.topic.device_model is not None:
+                    device = session.get(Device, self.topic.device_model.id)
+                else:
+                    device = Device()
                 device.name = self.model.name
                 device.type = self.model.type
                 device.fw_ver = self.model.systeminfo.fw_ver
@@ -80,6 +84,8 @@ class MqttRegisterMessage(BaseMessage):
                     # if founded is not None:
                     #     ni = founded
                 session.commit()
+
+                Logger.info(f'📟💡 [Device ID{device.id} / {device.name}] - registration success')
 
         except Exception as e:
             print(e)

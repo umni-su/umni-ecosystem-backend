@@ -22,12 +22,12 @@ class BaseMessage:
         self.topic = MqttTopic(topic)
         self.original_message = message.decode()
         self.prepare_message()
-        self.has_device = self.topic.device_entity is not None
+        self.has_device = self.topic.device_model is not None
         if self.has_device:
             self.unique_prefix = '.'.join(
                 [
                     'dev',
-                    str(self.topic.device_entity.id),
+                    str(self.topic.device_model.id),
                     self.topic.topic.replace('/', '.')
                 ]
             )
@@ -44,15 +44,8 @@ class BaseMessage:
     def save(self):
         pass
 
-    def get_or_new_device(self) -> Device:
-        device = Device()
-        if self.topic.device_entity is not None:
-            device = self.topic.device_entity
-
-        return device
-
     def get_or_new_sensor(self, identifier: str) -> Sensor:
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             sensor = Sensor()
             existing = session.exec(
                 select(Sensor).where(Sensor.identifier == identifier)

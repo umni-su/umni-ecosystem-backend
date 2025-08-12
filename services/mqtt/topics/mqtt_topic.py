@@ -1,8 +1,9 @@
 from sqlmodel import select
 
-from database.database import get_separate_session
+from database.database import session_scope
 
 from entities.device import Device
+from models.device_model import DeviceModelWithRelations
 
 
 class MqttTopic:
@@ -10,7 +11,7 @@ class MqttTopic:
     prefix: str | None = None
     device: str | None = None
     topic: str | None = None
-    device_entity: Device | None = None
+    device_model: DeviceModelWithRelations | None = None
 
     def __init__(self, original_topic):
         self.original_topic = original_topic
@@ -21,7 +22,11 @@ class MqttTopic:
             self.device = expl[1]
             del expl[0:2]
             self.topic = "/".join(expl)
-            with get_separate_session() as session:
-                self.device_entity = session.exec(
+            with session_scope() as session:
+                model: Device | None = session.exec(
                     select(Device).where(Device.name == self.device)
                 ).first()
+                if isinstance(model, Device):
+                    self.device_model = DeviceModelWithRelations.model_validate(model.model_dump())
+                else:
+                    self.device_model = None

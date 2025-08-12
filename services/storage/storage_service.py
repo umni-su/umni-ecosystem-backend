@@ -5,7 +5,9 @@ from threading import Thread
 from classes.logger import Logger
 from classes.websockets.messages.ws_message_storage_size import WebsocketMessageStorageSize
 from classes.websockets.websockets import WebSockets
+from database.database import session_scope
 from entities.storage import StorageEntity
+from models.storage_model import StorageModelBase
 from repositories.storage_repository import StorageRepository
 from services.base_service import BaseService
 
@@ -24,19 +26,21 @@ class StorageService(BaseService):
         return total_size
 
     @classmethod
-    def calculate_size(cls, storage: StorageEntity):
-        while cls.running:
-            try:
-                size = StorageService.get_size(storage.path)
-                WebSockets.send_broadcast(
-                    WebsocketMessageStorageSize(
-                        size=size,
-                        storage_id=storage.id
+    def calculate_size(cls, storage_id: int):
+        with session_scope() as sess:
+            storage = sess.get(StorageEntity, storage_id)  # Перезагружаем объект
+            while cls.running:
+                try:
+                    size = StorageService.get_size(storage.path)
+                    WebSockets.send_broadcast(
+                        WebsocketMessageStorageSize(
+                            size=size,
+                            storage_id=storage.id
+                        )
                     )
-                )
-                time.sleep(10)
-            except Exception as e:
-                Logger.err(e)
+                    time.sleep(10)
+                except Exception as e:
+                    Logger.err(e)
 
     def run(self):
         storages = StorageRepository.get_storages()
@@ -44,6 +48,6 @@ class StorageService(BaseService):
             thread = Thread(
                 daemon=True,
                 target=self.calculate_size,
-                args=[storage]
+                args=[storage.id]
             )
             thread.start()

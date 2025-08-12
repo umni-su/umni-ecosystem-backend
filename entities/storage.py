@@ -15,4 +15,7 @@ class StorageEntityBase:
 
 class StorageEntity(TimeStampMixin, StorageEntityBase, IdColumnMixin, table=True):
     __tablename__ = 'storages'
-    cameras: list["CameraEntity"] = Relationship(back_populates="storage")
+    cameras: list["CameraEntity"] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="storage"
+    )

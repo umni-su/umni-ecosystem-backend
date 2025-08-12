@@ -4,14 +4,16 @@ import cv2
 import numpy as np
 from datetime import datetime
 from collections import deque
-from typing import List, Optional, Dict, Callable, Any
+from typing import List, Optional, Dict, Callable, TYPE_CHECKING
 
 from numpy import ndarray
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 from classes.logger import Logger
-from entities.camera import CameraEntity
-from entities.camera_area import CameraAreaEntity
+
+if TYPE_CHECKING:
+    from models.camera_area_model import CameraAreaBaseModel
+    from models.camera_model import CameraModelWithRelations
 
 
 class ROIEventType(Enum):
@@ -96,7 +98,7 @@ class ROI(BaseModel):
 
 class ROIEvent(BaseModel):
     event: ROIEventType
-    camera: CameraEntity
+    camera: "CameraModelWithRelations"
     timestamp: datetime
     frame: ndarray
     original: ndarray
@@ -127,7 +129,7 @@ class ROITracker:
         - Визуализация
     """
 
-    def __init__(self, camera: CameraEntity):
+    def __init__(self, camera: "CameraModelWithRelations"):
         self.resized_frame = None
         self.original_frame = None
         self.rois = []
@@ -610,7 +612,7 @@ class ROITracker:
                     return False
         return False
 
-    def update_all_rois(self, new_rois: List[CameraAreaEntity]) -> bool:
+    def update_all_rois(self, new_rois: List["CameraAreaBaseModel"]) -> bool:
         """Полное обновление всех ROI с сохранением состояния"""
         try:
             # Сохраняем текущие активные ROI

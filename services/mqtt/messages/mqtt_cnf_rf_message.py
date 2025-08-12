@@ -6,6 +6,7 @@ import database.database as db
 from typing import List
 from pydantic import RootModel
 
+from classes.logger import Logger
 from entities.sensor import Sensor
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_rf_item_model import MqttRfItemModel
@@ -20,17 +21,17 @@ class MqttCnfRfMessage(BaseMessage):
         self.model = RootModel[List[MqttRfItemModel]].model_validate_json(self.original_message)
 
     def save(self):
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             try:
                 for rf in self.model.root:
                     identifier = '.'.join([
                         'dev',
-                        str(self.topic.device_entity.id),
+                        str(self.topic.device_model.id),
                         MqttTopicEnum.RF433,
                         str(rf.serial)
                     ])
                     sensor = self.get_or_new_sensor(identifier)
-                    sensor.device = self.topic.device_entity
+                    sensor.device_id = self.topic.device_model.id
                     sensor.identifier = identifier
                     sensor.name = rf.label
                     sensor.type = MqttSensorTypeEnum.RF433
@@ -39,5 +40,6 @@ class MqttCnfRfMessage(BaseMessage):
                     sensor.value = str(rf.state)
                     session.add(sensor)
                 session.commit()
+                Logger.info(f'📟⚙️ [{self.topic.original_topic}] RF433 config saved successfully')
             except Exception as e:
                 print(e)

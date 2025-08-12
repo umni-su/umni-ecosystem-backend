@@ -41,7 +41,7 @@ class Auth:
 
     @staticmethod
     def get_user(username: str):
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             user = session.exec(
                 select(UserEntity).where(UserEntity.username == username)
             ).first()

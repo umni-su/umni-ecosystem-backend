@@ -4,6 +4,7 @@ from pydantic import RootModel
 from sqlmodel import select
 
 import database.database as db
+from classes.logger import Logger
 from entities.sensor import Sensor
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ow_model import MqttCnfOwModel
@@ -18,12 +19,12 @@ class MqttCnfOwMessage(BaseMessage):
         self.model = RootModel[List[MqttCnfOwModel]].model_validate_json(self.original_message)
 
     def save(self):
-        with db.get_separate_session() as session:
+        with db.session_scope() as session:
             try:
                 for ow in self.model.root:
                     identifier = '.'.join([
                         'dev',
-                        str(self.topic.device_entity.id),
+                        str(self.topic.device_model.id),
                         MqttTopicEnum.OW,
                         ow.sn
                     ])
@@ -31,10 +32,12 @@ class MqttCnfOwMessage(BaseMessage):
                     sensor.identifier = identifier
                     sensor.name = ow.label
                     sensor.options = ow.model_dump()
-                    sensor.device = self.topic.device_entity
+                    sensor.device_id = self.topic.device_model.id
                     sensor.last_sync = datetime.datetime.now()
                     sensor.type = MqttSensorTypeEnum.DS18B20
                     session.add(sensor)
                 session.commit()
+
+                Logger.info(f'📟⚙️ [{self.topic.original_topic}] 1-WIRE config saved successfully')
             except Exception as e:
                 print(e)
