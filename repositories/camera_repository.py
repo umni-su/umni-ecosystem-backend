@@ -2,6 +2,7 @@ import os
 
 import classes.crypto.crypto as crypto
 from classes.logger import Logger
+from database.database import session_scope
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel
@@ -14,7 +15,7 @@ from repositories.storage_repository import StorageRepository
 class CameraRepository(BaseRepository):
     @classmethod
     def get_cameras(cls):
-        with cls.query() as sess:
+        with session_scope() as sess:
             cameras = sess.exec(
                 select(CameraEntity)
             ).all()
@@ -22,7 +23,7 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def get_camera(cls, camera_id: int) -> CameraEntity | None:
-        with cls.query() as sess:
+        with session_scope() as sess:
             return sess.exec(
                 select(CameraEntity).where(CameraEntity.id == camera_id)
             ).first()
@@ -30,7 +31,7 @@ class CameraRepository(BaseRepository):
     @classmethod
     def add_camera(cls, model: CameraBaseModel):
         camera = cls.prepare_camera(model, CameraEntity())
-        with cls.query() as sess:
+        with session_scope() as sess:
             sess.add(camera)
             sess.commit()
             sess.refresh(camera)
@@ -38,7 +39,7 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def update_camera(cls, model: CameraBaseModel):
-        with cls.query() as sess:
+        with session_scope() as sess:
             cam = cls.get_camera(model.id)
             camera = cls.prepare_camera(model, cam)
             sess.add(camera)
