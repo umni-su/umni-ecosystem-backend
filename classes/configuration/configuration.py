@@ -1,9 +1,7 @@
-from typing import Sequence
-
 from sqlmodel import Session, select
 
+from database.database import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
-from database.database import session
 
 
 class EcosystemDatabaseConfiguration:
@@ -14,12 +12,12 @@ class EcosystemDatabaseConfiguration:
         self.reread()
 
     def reread(self):
-        self.session = session
-        self.db_config = self.session.exec(
-            select(ConfigurationEntity)
-        ).all()
-        self.check_and_create_configuration_values()
-        self.is_installed()
+        with write_session() as sess:
+            self.db_config = sess.exec(
+                select(ConfigurationEntity)
+            ).all()
+            self.check_and_create_configuration_values()
+            self.is_installed()
 
     '''
     Check on boot if system is installed
