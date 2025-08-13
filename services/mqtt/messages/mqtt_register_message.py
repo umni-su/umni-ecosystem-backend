@@ -3,7 +3,7 @@ import datetime
 from pydantic_core import ValidationError
 
 from classes.logger import Logger
-from database.database import session_scope
+from database.database import write_session
 from entities.device import Device
 from entities.device_network_interfaces import DeviceNetworkInterface
 from services.mqtt.messages.base_message import BaseMessage
@@ -49,7 +49,7 @@ class MqttRegisterMessage(BaseMessage):
 
     def save(self):
         try:
-            with session_scope() as session:
+            with write_session() as session:
                 if self.topic.device_model is not None:
                     device = session.get(Device, self.topic.device_model.id)
                 else:

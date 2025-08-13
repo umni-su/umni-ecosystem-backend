@@ -1,7 +1,7 @@
 from sqlmodel import select
 from starlette.exceptions import HTTPException
 from classes.storages.device_storage import device_storage
-from database.database import session_scope
+from database.database import write_session
 from entities.sensor import Sensor
 from models.sensor_model import SensorUpdateModel
 from repositories.base_repository import BaseRepository
@@ -13,7 +13,7 @@ class SensorRepository(BaseRepository):
 
     @classmethod
     def get_sensor(cls, sensor_id):
-        with session_scope() as sess:
+        with write_session() as sess:
             yield sess.exec(
                 select(Sensor).where(Sensor.id == sensor_id)
             ).first()
@@ -21,7 +21,7 @@ class SensorRepository(BaseRepository):
     @classmethod
     def update_sensor(cls, model: SensorUpdateModel):
 
-        with session_scope() as sess:
+        with write_session() as sess:
             sensor = sess.exec(
                 select(Sensor).where(Sensor.id == model.id)
             ).first()

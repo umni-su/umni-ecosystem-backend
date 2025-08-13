@@ -31,12 +31,12 @@ class CamerasService(BaseService):
                 current_stream = CamerasService.find_stream_by_camera(camera=cam)
                 if isinstance(current_stream, CameraStream):
                     current_stream.set_camera(camera=cam)
-                    # Logger.info(f'[{cam.name}] Update camera in stream list')
+                    Logger.info(f'[{cam.name}] Update camera in stream list')
                 else:
                     CamerasService.streams.append(
                         CameraStream(camera=cam)
                     )
-                    # Logger.info(f'[{cam.name}] Add camera to stream list')
+                    Logger.info(f'[{cam.name}] Add camera to stream list')
             time.sleep(5)
 
     def run(self):

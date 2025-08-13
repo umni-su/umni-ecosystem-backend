@@ -8,12 +8,12 @@ from typing import List, Optional, Dict, Callable, TYPE_CHECKING
 
 from numpy import ndarray
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+from entities.camera import CameraEntity
 
 from classes.logger import Logger
 
 if TYPE_CHECKING:
-    from models.camera_area_model import CameraAreaBaseModel
-    from models.camera_model import CameraModelWithRelations
+    from entities.camera_area import CameraAreaEntity
 
 
 class ROIEventType(Enum):
@@ -98,7 +98,7 @@ class ROI(BaseModel):
 
 class ROIEvent(BaseModel):
     event: ROIEventType
-    camera: "CameraModelWithRelations"
+    camera: CameraEntity
     timestamp: datetime
     frame: ndarray
     original: ndarray
@@ -129,7 +129,7 @@ class ROITracker:
         - Визуализация
     """
 
-    def __init__(self, camera: "CameraModelWithRelations"):
+    def __init__(self, camera: "CameraEntity"):
         self.resized_frame = None
         self.original_frame = None
         self.rois = []
@@ -612,7 +612,7 @@ class ROITracker:
                     return False
         return False
 
-    def update_all_rois(self, new_rois: List["CameraAreaBaseModel"]) -> bool:
+    def update_all_rois(self, new_rois: List["CameraAreaEntity"]) -> bool:
         """Полное обновление всех ROI с сохранением состояния"""
         try:
             # Сохраняем текущие активные ROI

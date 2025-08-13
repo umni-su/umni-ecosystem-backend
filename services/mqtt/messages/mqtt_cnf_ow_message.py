@@ -19,7 +19,7 @@ class MqttCnfOwMessage(BaseMessage):
         self.model = RootModel[List[MqttCnfOwModel]].model_validate_json(self.original_message)
 
     def save(self):
-        with db.session_scope() as session:
+        with db.write_session() as session:
             try:
                 for ow in self.model.root:
                     identifier = '.'.join([

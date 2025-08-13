@@ -26,7 +26,7 @@ class ScreenshotResultModel(BaseModel):
 class CameraStorage(StorageBase):
     @classmethod
     def upload_cover(cls, camera: "CameraEntity", frame: cv2.Mat):
-        with db.get_separate_session() as sess:
+        with db.write_session() as sess:
             try:
                 cls.path = camera.storage.path
                 rel_path = os.path.join(
@@ -42,7 +42,7 @@ class CameraStorage(StorageBase):
                 if cv2.imwrite(image_path, frame):
                     camera.cover = rel_path
                     # sess.add(camera)
-                    sess.commit()
+                    # sess.commit()
                 return camera
             except Exception as e:
                 Logger.err(f"[{camera.name}] upload_cover error - {e}")

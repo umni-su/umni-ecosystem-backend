@@ -39,7 +39,7 @@ class MqttCnfDioMessage(BaseMessage):
         session.add(sensor)
 
     def save(self):
-        with db.session_scope() as session:
+        with db.write_session() as session:
             try:
                 for di in self.model.di:
                     self.create_update(session, di, MqttSensorTypeEnum.INPUT)

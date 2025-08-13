@@ -45,7 +45,7 @@ class BaseMessage:
         pass
 
     def get_or_new_sensor(self, identifier: str) -> Sensor:
-        with db.session_scope() as session:
+        with db.write_session() as session:
             sensor = Sensor()
             existing = session.exec(
                 select(Sensor).where(Sensor.identifier == identifier)

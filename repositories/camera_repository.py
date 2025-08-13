@@ -1,8 +1,6 @@
-import os
-
-import classes.crypto.crypto as crypto
+from classes.crypto.crypto import crypto
 from classes.logger import Logger
-from database.database import session_scope
+from database.database import write_session
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel
@@ -15,7 +13,7 @@ from repositories.storage_repository import StorageRepository
 class CameraRepository(BaseRepository):
     @classmethod
     def get_cameras(cls):
-        with session_scope() as sess:
+        with write_session() as sess:
             cameras = sess.exec(
                 select(CameraEntity)
             ).all()
@@ -23,7 +21,7 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def get_camera(cls, camera_id: int) -> CameraEntity | None:
-        with session_scope() as sess:
+        with write_session() as sess:
             return sess.exec(
                 select(CameraEntity).where(CameraEntity.id == camera_id)
             ).first()
@@ -31,7 +29,7 @@ class CameraRepository(BaseRepository):
     @classmethod
     def add_camera(cls, model: CameraBaseModel):
         camera = cls.prepare_camera(model, CameraEntity())
-        with session_scope() as sess:
+        with write_session() as sess:
             sess.add(camera)
             sess.commit()
             sess.refresh(camera)
@@ -39,12 +37,10 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def update_camera(cls, model: CameraBaseModel):
-        with session_scope() as sess:
+        with write_session() as sess:
             cam = cls.get_camera(model.id)
             camera = cls.prepare_camera(model, cam)
             sess.add(camera)
-            sess.commit()
-            sess.refresh(camera)
             return camera
 
     @classmethod
@@ -68,7 +64,7 @@ class CameraRepository(BaseRepository):
             if model.change_credentials:
                 camera.username = model.username
                 if model.password is not None:
-                    camera.password = crypto.Crypto.encrypt(model.password)
+                    camera.password = crypto.encrypt(model.password)
                 else:
                     model.password = None
             camera.primary = model.primary

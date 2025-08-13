@@ -1,5 +1,5 @@
 from classes.storages.filesystem import Filesystem
-from database.database import session_scope
+from database.database import write_session
 from entities.storage import StorageEntity
 from models.storage_model import StorageModel, StorageModelBase
 from repositories.base_repository import BaseRepository
@@ -22,21 +22,21 @@ class StorageRepository(BaseRepository):
 
     @classmethod
     def get_storages(cls):
-        with session_scope() as sess:
+        with write_session() as sess:
             return sess.exec(
                 select(StorageEntity)
             ).all()
 
     @classmethod
     def get_storage(cls, storage_id: int):
-        with session_scope() as sess:
+        with write_session() as sess:
             return sess.exec(
                 select(StorageEntity).where(StorageEntity.id == storage_id)
             ).first()
 
     @classmethod
     def add_storage(cls, model: StorageModelBase):
-        with session_scope() as sess:
+        with write_session() as sess:
             cls.path_exists(model.path)
             storage = StorageEntity()
             storage.name = model.name
@@ -49,7 +49,7 @@ class StorageRepository(BaseRepository):
 
     @classmethod
     def update_storage(cls, model: StorageModel):
-        with session_scope() as sess:
+        with write_session() as sess:
             cls.path_exists(model.path)
             storage = cls.get_storage(model.id)
             storage.name = model.name
@@ -62,7 +62,7 @@ class StorageRepository(BaseRepository):
 
     @classmethod
     def delete_storage(cls, storage_id: int):
-        with session_scope() as sess:
+        with write_session() as sess:
             storage = cls.get_storage(storage_id)
             if isinstance(storage, StorageEntity):
                 sess.delete(storage)

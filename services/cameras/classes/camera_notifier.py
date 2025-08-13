@@ -11,11 +11,13 @@ from classes.websockets.messages.ws_message_detection import (
     WebsocketMessageDetectionEnd
 )
 from classes.websockets.websockets import WebSockets
+
 from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.camera_event import CameraEventEntity
+
 from services.cameras.classes.roi_tracker import ROIDetectionEvent, ROIRecordEvent, ROIEventType
 
 if TYPE_CHECKING:
@@ -96,7 +98,7 @@ class CameraNotifier:
         Args:
             event (ROIDetectionEvent): Событие обнаружения движения
         """
-        with db.get_separate_session() as sess:
+        with db.write_session() as sess:
             camera = sess.get(CameraEntity, event.camera.id)
             area = sess.get(CameraAreaEntity, event.roi.id)
             if area is None:
@@ -170,7 +172,7 @@ class CameraNotifier:
         Args:
             event (ROIDetectionEvent): Событие окончания движения
         """
-        with db.get_separate_session() as sess:
+        with db.write_session() as sess:
             key = event.roi.id
 
             # Находим активное событие для завершения
@@ -216,7 +218,7 @@ class CameraNotifier:
         Args:
             event (ROIRecordEvent): Событие окончания записи
         """
-        with db.get_separate_session() as sess:
+        with db.write_session() as sess:
             founded_record = CameraNotifier._find_active_recording(event.camera.id)
             if isinstance(founded_record, CameraRecordingEntity):
                 recording = sess.get(CameraRecordingEntity, founded_record.id)

@@ -10,7 +10,7 @@ from sqlmodel import select, col
 
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
-from database.database import session_scope
+from database.database import write_session
 from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -32,7 +32,7 @@ class CameraEventsRepository(BaseRepository):
     @classmethod
     def add_permanent_event(cls, camera: "CameraEntity", frame: np.ndarray,
                             record_path: str | None = None) -> CameraEventEntity:
-        with session_scope() as session:
+        with write_session() as session:
             try:
                 has_record = False
                 # Если у камеры режим периодического видео,
@@ -72,7 +72,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def close_permanent_event(cls, event: CameraEventEntity) -> CameraEventEntity:
-        with session_scope() as session:
+        with write_session() as session:
             try:
                 event = session.get(CameraEventEntity, event.id)
                 event.end = datetime.now()
@@ -91,7 +91,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def add_event(cls, model: "ROIEvent"):
-        with session_scope() as sess:
+        with write_session() as sess:
             if hasattr(model, 'roi'):
                 area = CameraAreaRepository.get_area(model.roi.id)
                 camera = area.camera
@@ -117,7 +117,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def update_event_end(cls, event: CameraEventEntity):
-        with session_scope() as sess:
+        with write_session() as sess:
             try:
                 event.end = datetime.now()
                 sess.add(event)
@@ -130,13 +130,13 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_event(cls, event_id: int):
-        with session_scope() as sess:
+        with write_session() as sess:
             event = sess.get(CameraEventEntity, event_id)
             return event
 
     @classmethod
     def get_old_events(cls, camera: "CameraEntity") -> list[CameraEventEntity]:
-        with session_scope() as sess:
+        with write_session() as sess:
             cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
             return sess.exec(
                 select(CameraEventEntity)
@@ -148,7 +148,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_timeline(cls, params: TimelineParams, camera: "CameraEntity"):
-        with session_scope() as sess:
+        with write_session() as sess:
             query = (
                 select(CameraEventEntity)
                 .where(CameraEventEntity.camera_id == camera.id)
@@ -160,7 +160,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_events(cls, params: EventsPageParams, camera: "CameraEntity"):
-        with session_scope() as sess:
+        with write_session() as sess:
             # Подготавливаем базовый запрос
             query = (
                 select(CameraEventEntity)

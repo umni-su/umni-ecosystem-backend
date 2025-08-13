@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import select, col
 
-from database.database import session_scope
+from database.database import write_session
 from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
@@ -12,7 +12,7 @@ from repositories.base_repository import BaseRepository
 class SensorHistoryRepository(BaseRepository):
     @classmethod
     def get_last_record(cls, sensor: Sensor) -> None | SensorHistoryModel:
-        with session_scope() as sess:
+        with write_session() as sess:
             last = sess.exec(
                 select(SensorHistory)
                 .where(SensorHistory.sensor == sensor)
@@ -27,7 +27,7 @@ class SensorHistoryRepository(BaseRepository):
 
     @classmethod
     def get_sensor_history(cls, sensor_id: int, body: SearchHistoryModel):
-        with session_scope() as sess:
+        with write_session() as sess:
             start: datetime = body.range[0]
             end: datetime = body.range[1]
             query = select(SensorHistory).where(

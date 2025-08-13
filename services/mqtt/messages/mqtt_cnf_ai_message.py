@@ -24,7 +24,7 @@ class MqttCnfAiMessage(BaseMessage):
     def save(self):
         if self.model is None:
             return
-        with db.session_scope() as session:
+        with db.write_session() as session:
             for (key, item) in self.model:
                 _key = MqttSensorTypeEnum.NTC
                 if key == 'ai1' or key == 'ai2':

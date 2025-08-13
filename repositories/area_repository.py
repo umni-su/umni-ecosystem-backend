@@ -2,18 +2,19 @@ from fastapi import HTTPException
 from sqlmodel import select
 
 from classes.logger import Logger
-from database.database import session_scope
+from database.database import write_session
 from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
 from repositories.base_repository import BaseRepository
 
 from models.camera_area_model import CameraAreaBaseModel
+from repositories.camera_repository import CameraRepository
 
 
 class CameraAreaRepository(BaseRepository):
     @classmethod
     def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: CameraEntity):
-        with session_scope() as session:
+        with write_session() as session:
             try:
                 # Убедимся, что камера в сессии (без повторного добавления)
                 camera = session.merge(camera)
@@ -43,18 +44,15 @@ class CameraAreaRepository(BaseRepository):
 
                     session.add(area)
 
-                session.commit()
-                session.refresh(camera)
+                # session.refresh(camera)
                 return camera.areas
 
             except Exception as e:
-                session.rollback()
                 Logger.err(e)
-                raise  # Или вернуть None/пустой список
 
     @classmethod
     def get_camera_areas(cls, camera_id: int) -> list[CameraAreaBaseModel]:
-        with session_scope() as session:
+        with write_session() as session:
             areas = session.exec(
                 select(CameraAreaEntity)
                 .where(CameraAreaEntity.camera_id == camera_id)
@@ -63,7 +61,7 @@ class CameraAreaRepository(BaseRepository):
 
     @classmethod
     def get_area(cls, area_id: int) -> CameraAreaEntity:
-        with session_scope() as session:
+        with write_session() as session:
             return session.exec(
                 select(CameraAreaEntity)
                 .where(CameraAreaEntity.id == area_id)
@@ -71,17 +69,16 @@ class CameraAreaRepository(BaseRepository):
 
     @classmethod
     def delete_area(cls, area_id: int) -> list["CameraAreaEntity"]:
-        with session_scope() as session:
+        with write_session() as session:
             try:
                 area = cls.get_area(area_id)
                 if not area:
                     raise HTTPException(status_code=404, detail="Area not found")
 
-                camera = area.camera
                 session.delete(area)  # Events удалятся автоматически благодаря каскаду!
-                session.commit()
 
-                session.refresh(camera)  # Обновляем камеру, чтобы получить актуальный список areas
+                # session.refresh(camera)  # Обновляем камеру, чтобы получить актуальный список areas
+                camera = CameraRepository.get_camera(area.camera_id)
                 return camera.areas
 
             except Exception as e:

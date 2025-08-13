@@ -5,7 +5,7 @@ from threading import Thread
 from classes.logger import Logger
 from classes.websockets.messages.ws_message_storage_size import WebsocketMessageStorageSize
 from classes.websockets.websockets import WebSockets
-from database.database import session_scope
+from database.database import write_session
 from entities.storage import StorageEntity
 from models.storage_model import StorageModelBase
 from repositories.storage_repository import StorageRepository
@@ -27,7 +27,7 @@ class StorageService(BaseService):
 
     @classmethod
     def calculate_size(cls, storage_id: int):
-        with session_scope() as sess:
+        with write_session() as sess:
             storage = sess.get(StorageEntity, storage_id)  # Перезагружаем объект
             while cls.running:
                 try:

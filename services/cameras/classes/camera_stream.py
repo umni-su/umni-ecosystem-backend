@@ -11,7 +11,7 @@ import numpy as np
 from av import VideoFrame
 from pydantic import BaseModel
 
-import classes.crypto.crypto as crypto
+from classes.crypto.crypto import crypto
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
@@ -21,12 +21,13 @@ from entities.camera import CameraEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from repositories.camera_events_repository import CameraEventsRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
-from services.cameras.classes.roi_tracker import ROIDetectionEvent
-from services.cameras.classes.roi_tracker import ROITracker
 
 if TYPE_CHECKING:
     from entities.camera_event import CameraEventEntity
     from services.cameras.classes.roi_tracker import ROIRecordEvent
+
+from services.cameras.classes.roi_tracker import ROIDetectionEvent
+from services.cameras.classes.roi_tracker import ROITracker
 
 
 class ScreenshotResultModel(BaseModel):
@@ -137,7 +138,7 @@ class CameraStream:
     def prepare_link(self, camera: CameraEntity, secondary: bool = False):
         userinfo = ''
         if camera.username is not None and camera.password is not None:
-            password = crypto.Crypto.decrypt(camera.password)
+            password = crypto.decrypt(camera.password)
             userinfo = f'{camera.username}:{password}@'
         stream = camera.primary
         if secondary:

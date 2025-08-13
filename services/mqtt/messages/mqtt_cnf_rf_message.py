@@ -21,7 +21,7 @@ class MqttCnfRfMessage(BaseMessage):
         self.model = RootModel[List[MqttRfItemModel]].model_validate_json(self.original_message)
 
     def save(self):
-        with db.session_scope() as session:
+        with db.write_session() as session:
             try:
                 for rf in self.model.root:
                     identifier = '.'.join([

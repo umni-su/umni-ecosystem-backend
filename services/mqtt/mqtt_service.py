@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 import classes.ecosystem as eco
-from classes.crypto.crypto import Crypto
+from classes.crypto.crypto import crypto
 from classes.logger import Logger
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody
@@ -15,7 +15,6 @@ from services.mqtt.messages.mqtt_dio_message import MqttDioMessage
 from services.mqtt.messages.mqtt_ntc_message import MqttNtcMessage
 from services.mqtt.messages.mqtt_ow_message import MqttOwMessage
 from services.mqtt.messages.mqtt_rf_message import MqttRfMessage
-from services.mqtt.messages.mqtt_sensor_message import MqttSensorMessage
 from services.mqtt.messages.mqtt_register_message import MqttRegisterMessage
 from services.mqtt.topics.mqtt_topic import MqttTopic
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
@@ -91,7 +90,7 @@ class MqttService(BaseService):
             self.mqttc.on_connect = self.on_connect
             self.mqttc.on_message = self.on_message
             if model.user is not None and model.password is not None:
-                pwd = Crypto.decrypt(str(model.password))
+                pwd = crypto.decrypt(str(model.password))
                 self.mqttc.username_pw_set(
                     username=model.user,
                     password=pwd

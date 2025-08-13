@@ -26,7 +26,7 @@ class MqttSensorMessage(BaseMessage):
     def save(self):
 
         if self.identifier is not None and self.has_device:
-            with db.session_scope() as session:
+            with db.write_session() as session:
                 founded = session.exec(
                     select(Sensor).where(Sensor.identifier == self.identifier)
                 ).first()

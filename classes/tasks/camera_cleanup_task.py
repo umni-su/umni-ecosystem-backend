@@ -6,7 +6,7 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, field_validator
 
 from classes.logger import Logger
-from database.database import session
+from database.database import write_session
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_recording_repository import CameraRecordingRepository
 from repositories.camera_repository import CameraRepository
@@ -95,7 +95,7 @@ class CameraCleanupManager:
 
     def _clean_camera_events(self, camera, cutoff_time):
         """Очистка событий камеры"""
-        with db.get_separate_session() as session:
+        with db.write_session() as session:
 
             events = CameraEventsRepository.get_old_events(camera)
 
@@ -119,24 +119,25 @@ class CameraCleanupManager:
 
     def _clean_camera_recordings(self, camera, cutoff_time):
         """Очистка записей камеры"""
-        recordings = CameraRecordingRepository.get_old_recordings(camera)
+        with write_session() as session:
+            recordings = CameraRecordingRepository.get_old_recordings(camera)
 
-        deleted_count = 0
-        for recording in recordings:
-            try:
-                # Удаляем файл записи
-                if recording.path and os.path.exists(recording.path):
-                    os.remove(recording.path)
+            deleted_count = 0
+            for recording in recordings:
+                try:
+                    # Удаляем файл записи
+                    if recording.path and os.path.exists(recording.path):
+                        os.remove(recording.path)
 
-                # Удаляем запись о записи
-                session.delete(recording)
-                deleted_count += 1
-            except Exception as e:
-                Logger.err(f"🗑️ Error deleting recording {recording.id}: {str(e)}")
+                    # Удаляем запись о записи
+                    session.delete(recording)
+                    deleted_count += 1
+                except Exception as e:
+                    Logger.err(f"🗑️ Error deleting recording {recording.id}: {str(e)}")
 
-        if deleted_count:
-            session.commit()
-            Logger.info(f"🗑️ Deleted {deleted_count} recordings for camera {camera.id}")
+            if deleted_count:
+                session.commit()
+                Logger.info(f"🗑️ Deleted {deleted_count} recordings for camera {camera.id}")
 
     def get_active_cleanups(self) -> List[int]:
         """Возвращает список ID камер, для которых идет очистка"""
