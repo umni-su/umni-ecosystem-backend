@@ -6,7 +6,7 @@ from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 from sqlmodel import Field, Relationship, Column
 from sqlalchemy.sql import false
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from entities.camera_area import CameraAreaEntity
@@ -19,13 +19,13 @@ class CameraEntityBase:
     storage_id: int = Field(nullable=False, foreign_key="storages.id")
     location_id: int | None = Field(nullable=True, foreign_key="locations.id")
     record: bool = Field(default=False)
-    record_mode: CameraRecordTypeEnum = Field(nullable=True, default=CameraRecordTypeEnum.DETECTION_VIDEO)
-    record_duration: int | None = Field(sa_column=Column(nullable=True, default=None))
-    delete_after: int | None = Field(default=None, nullable=True)
-    cover: None | str = Field(nullable=True, default=None)
-    fps: int | None = Field(nullable=True)
-    scale: float | None = Field(nullable=True)
-    alerts: bool = Field(sa_column=Column(nullable=False, server_default=false()))
+    record_mode: Optional[CameraRecordTypeEnum] = Field(default=CameraRecordTypeEnum.DETECTION_VIDEO)
+    record_duration: Optional[int] = Field(default=None)
+    delete_after: Optional[int] = Field(default=None)
+    cover: Optional[str] = Field(default=None, max_length=255)
+    fps: Optional[int] = Field(default=None)
+    scale: Optional[float] = Field(default=None)
+    alerts: bool = Field(default=False)
 
 
 class CameraEntityConnection:

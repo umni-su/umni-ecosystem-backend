@@ -6,6 +6,8 @@ from services.scheduler.models.task_schedule import TaskSchedule
 
 
 class SchedulerService(BaseService):
+    name = 'scheduler'
+
     def run(self):
         # Создаем планировщик
 

@@ -13,6 +13,7 @@ from services.base_service import BaseService
 
 
 class StorageService(BaseService):
+    name = 'storage'
 
     @staticmethod
     def get_size(start_path='.'):

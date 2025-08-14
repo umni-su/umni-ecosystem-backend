@@ -12,11 +12,11 @@ from pydantic import BaseModel
 from sqlmodel import select
 
 from classes.crypto.hasher import Hasher
+from classes.ecosystem import ecosystem
 from classes.logger import Logger
 from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
 
-import classes.ecosystem as eco
 import database.database as db
 from responses.unauthenticated_response import UnauthenticatedResponse
 from responses.user import UserResponseOut
@@ -58,7 +58,7 @@ class Auth:
 
     @staticmethod
     def create_access_token(data: dict, expires_delta: timedelta | None = None):
-        key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+        key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
@@ -70,8 +70,8 @@ class Auth:
 
     @staticmethod
     def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], response: Response):
-        key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
-        installed = eco.Ecosystem.is_installed()
+        key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+        installed = ecosystem.is_installed()
 
         install_exception = HTTPException(
             status_code=status.HTTP_423_LOCKED,
@@ -131,7 +131,7 @@ class Auth:
             detail='You are not authorize'
         )
         try:
-            key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
             if username is None:
@@ -153,7 +153,7 @@ class Auth:
         if session is None and token is None:
             raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
         try:
-            key = eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
             if username is None:

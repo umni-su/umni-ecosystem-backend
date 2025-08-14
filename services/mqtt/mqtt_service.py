@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
-import classes.ecosystem as eco
 from classes.crypto.crypto import crypto
+from classes.ecosystem import ecosystem
 from classes.logger import Logger
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody
@@ -29,10 +29,10 @@ class MqttService(BaseService):
         super().__init__()
 
     def run(self):
-        host = eco.Ecosystem.config.get_setting(ConfigurationKeys.MQTT_HOST).value
-        port = eco.Ecosystem.config.get_setting(ConfigurationKeys.MQTT_PORT).value
-        username = eco.Ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER).value
-        password = eco.Ecosystem.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value
+        host = ecosystem.config.get_setting(ConfigurationKeys.MQTT_HOST).value
+        port = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PORT).value
+        username = ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER).value
+        password = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value
         self.mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
         self.model = MqttBody(

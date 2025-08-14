@@ -12,6 +12,7 @@ from services.cameras.classes.camera_stream import CameraStream
 
 
 class CamerasService(BaseService):
+    name = "cameras"
     cameras: list["CameraEntity"]
     streams: list[CameraStream] = []
     checking_thread: Daemon | None = None

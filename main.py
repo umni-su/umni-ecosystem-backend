@@ -1,8 +1,12 @@
+import sys
 from contextlib import asynccontextmanager
+from classes.logger import Logger
 
 import uvicorn
 from fastapi import FastAPI
-from classes.logger import Logger
+
+from database.database import db_manager
+
 from routes.cameras import cameras
 from routes.events import events
 from routes.storages import storages
@@ -12,23 +16,15 @@ from routes.install import install
 from routes.initialize import initialize
 from routes.configuration import conf
 
-import database.database as db
-
-from config.configuration import configuration
-from classes.ecosystem import Ecosystem
+from config.settings import settings
 from routes.sensors import sensors
 from routes.systeminfo import systeminfo
 from routes.websockets import websockets
 from services.cameras.cameras_service import CamerasService
 
 
-# fastapi dev .\main.py
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    db.create_all()
-    ecosystem = Ecosystem()
     Logger.info('Generator lifespan at start of app')
     yield
     # Clean up the ML entities and release the resources
@@ -41,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    root_path=configuration.api_root
+    root_path=settings.API_ROOT
 )
 # app.add_middleware(
 #     CORSMiddleware,

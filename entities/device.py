@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship, BIGINT
 from entities.mixins.created_updated import TimeStampMixin
 
 from typing import TYPE_CHECKING
@@ -19,7 +18,11 @@ class DeviceBase:
     photo: str | None = Field(nullable=True)
     type: int | None = Field(nullable=True)
     online: bool = Field(default=False)
-    uptime: int | None = Field(nullable=True)
+    uptime: int | None = Field(
+        default=None,
+        nullable=True,
+        sa_type=BIGINT  # Указываем тип BIGINT для PostgreSQL
+    )
     free_heap: int | None = Field(nullable=True)
     total_heap: int | None = Field(nullable=True)
     fw_ver: str | None = Field(nullable=True, max_length=10)

@@ -3,6 +3,7 @@ import datetime
 from sqlmodel import select
 
 import database.database as db
+from classes.ecosystem import ecosystem
 from classes.logger import Logger
 from entities.configuration import ConfigurationKeys
 
@@ -10,7 +11,6 @@ from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
 from repositories.sensor_history_repository import SensorHistoryRepository
 from services.mqtt.messages.base_message import BaseMessage
-import classes.ecosystem as eco
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 
 
@@ -51,7 +51,7 @@ class MqttSensorMessage(BaseMessage):
                             ]
                             delta = datetime.datetime.now() - last.created
                             trigger = int(
-                                eco.Ecosystem.config.get_setting(ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT).value)
+                                ecosystem.config.get_setting(ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT).value)
                             # Logger.debug(f'{last.id} {last.sensor_id} Delta is {delta.seconds / 60}')
                             # Not check delta if relays inputs and buttons rf 433
                         if (delta is None or (delta.seconds / 60 >= trigger)) or (sensor.type not in delta_types):

@@ -5,7 +5,7 @@ from sqlalchemy import pool
 from sqlmodel import SQLModel
 from alembic import context
 
-from config.configuration import configuration
+from config.settings import settings
 
 '''
 Create migration

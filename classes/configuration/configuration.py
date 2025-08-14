@@ -5,7 +5,6 @@ from entities.configuration import ConfigurationEntity, ConfigurationKeys
 
 
 class EcosystemDatabaseConfiguration:
-    session: Session
     db_config: [ConfigurationEntity] = []
 
     def __init__(self):
@@ -29,23 +28,23 @@ class EcosystemDatabaseConfiguration:
         conf = self.get_setting(ConfigurationKeys.APP_INSTALLED)
         if conf is None:
             return False
-        return conf.value == '1'
+        return conf.value == 'true'
 
     def check_and_create_configuration_values(self):
         created: [str] = []
-        for _key in ConfigurationKeys:
-            if not self.exists(_key):
-                value = None
-                if _key == ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT:
-                    value = str(5)
-                conf: ConfigurationEntity = ConfigurationEntity()
-                conf.key = _key
-                conf.value = value
-                self.session.add(conf)
-                self.session.commit()
-                created.append(_key)
-        if len(created) > 0:
-            print(f'Created {len(created)} items: {",".join(created)}')
+        with write_session() as session:
+            for _key in ConfigurationKeys:
+                if not self.exists(_key):
+                    value = None
+                    if _key == ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT:
+                        value = str(5)
+                    conf: ConfigurationEntity = ConfigurationEntity()
+                    conf.key = _key
+                    conf.value = value
+                    session.add(conf)
+                    created.append(_key)
+            if len(created) > 0:
+                print(f'Created {len(created)} items: {",".join(created)}')
 
     def get_setting(self, key: str) -> ConfigurationEntity | None:
         for conf in self.db_config:
