@@ -339,8 +339,10 @@ class CameraStream:
             self.time_part_start = 0
 
     def create_output_container(self, path: str):
+        # не стартуем, если поток должен быть закрыт (exit приложения)
         if not self.opened:
             return
+        
         self.video_pts = 0
         self.audio_pts = 0
         if not Filesystem.exists(path):
