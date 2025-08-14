@@ -1,4 +1,4 @@
-from classes.crypto.crypto import crypto
+from config.dependencies import get_ecosystem
 from classes.logger import Logger
 from database.database import write_session
 from entities.camera import CameraEntity
@@ -64,7 +64,8 @@ class CameraRepository(BaseRepository):
             if model.change_credentials:
                 camera.username = model.username
                 if model.password is not None:
-                    camera.password = crypto.encrypt(model.password)
+                    ecosystem = get_ecosystem()
+                    camera.password = ecosystem.crypto.encrypt(model.password)
                 else:
                     model.password = None
             camera.primary = model.primary

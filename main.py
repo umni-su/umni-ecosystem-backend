@@ -1,5 +1,7 @@
-import sys
+import time
 from contextlib import asynccontextmanager
+
+from classes.ecosystem import Ecosystem
 from classes.logger import Logger
 
 import uvicorn
@@ -25,6 +27,7 @@ from services.cameras.cameras_service import CamerasService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    ecosystem = Ecosystem()
     Logger.info('Generator lifespan at start of app')
     yield
     # Clean up the ML entities and release the resources

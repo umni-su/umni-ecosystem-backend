@@ -1,13 +1,20 @@
+import typing
+
 from cryptography.fernet import Fernet
 
 from classes.logger import logger
 from database.database import write_session
 from entities.configuration import ConfigurationKeys
-import classes.ecosystem as eco
+
+if typing.TYPE_CHECKING:
+    from classes.configuration.configuration import EcosystemDatabaseConfiguration
 
 
 class Crypto:
     key: str | None = None
+
+    def __init__(self, config: "EcosystemDatabaseConfiguration"):
+        self.config = config
 
     def init(self):
         self.load_key()
@@ -15,7 +22,7 @@ class Crypto:
         return self
 
     def load_key(self):
-        key = eco.ecosystem.config.get_setting(ConfigurationKeys.APP_KEY)
+        key = self.config.get_setting(ConfigurationKeys.APP_KEY)
         create: bool = False
         if key is None:
             create = True
@@ -45,6 +52,3 @@ class Crypto:
         f = Fernet(key)
         decrypt = f.decrypt(b)
         return decrypt.decode()
-
-
-crypto = Crypto().init()

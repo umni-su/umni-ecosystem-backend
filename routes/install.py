@@ -1,9 +1,8 @@
 import datetime
 from fastapi import APIRouter, Response, status
 from sqlmodel import delete
-from classes.crypto.crypto import crypto
 from classes.crypto.hasher import Hasher
-from classes.ecosystem import ecosystem
+from config.dependencies import get_ecosystem
 from classes.logger import Logger
 from database.database import write_session
 from entities.configuration import ConfigurationKeys
@@ -24,6 +23,7 @@ install = APIRouter(
 @install.post('')
 def install_ecosystem(body: InstallBody, response: Response):
     try:
+        ecosystem = get_ecosystem()
         account: AccountBody = body.account
         mqtt: MqttBody = body.mqtt
         a_password = Hasher.hash(account.password)
@@ -57,7 +57,7 @@ def install_ecosystem(body: InstallBody, response: Response):
                     session.add(session.merge(port))
 
                     if mqtt.password is not None and mqtt.user is not None:
-                        mqtt_password = crypto.encrypt(str(mqtt.password))
+                        mqtt_password = ecosystem.crypto.encrypt(str(mqtt.password))
 
                         user = ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER)
                         user.value = mqtt.user

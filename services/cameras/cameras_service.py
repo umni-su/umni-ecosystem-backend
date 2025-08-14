@@ -30,9 +30,9 @@ class CamerasService(BaseService):
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:
                 current_stream = CamerasService.find_stream_by_camera(camera=cam)
-                if isinstance(current_stream, CameraStream):
-                    current_stream.set_camera(camera=cam)
-                    Logger.info(f'[{cam.name}] Update camera in stream list')
+                if current_stream is not None and current_stream.id == cam.id:
+                    # current_stream.set_camera(camera=cam)
+                    Logger.info(f'[{cam.name}] Update camera in stream list ({len(self.cameras)})')
                 else:
                     CamerasService.streams.append(
                         CameraStream(camera=cam)

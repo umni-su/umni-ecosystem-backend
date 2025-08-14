@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from classes.ecosystem import Ecosystem
+from config.dependencies import get_ecosystem
 from responses.init import InitResponse
 
 initialize = APIRouter(
@@ -10,6 +10,8 @@ initialize = APIRouter(
 
 
 @initialize.get('', response_model=InitResponse)
-def init():
-    success = Ecosystem.installed
+def init(
+        ecosystem=Depends(get_ecosystem)
+):
+    success = ecosystem.installed
     return InitResponse(success=success)

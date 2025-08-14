@@ -1,7 +1,6 @@
 import paho.mqtt.client as mqtt
-from classes.crypto.crypto import crypto
-from classes.ecosystem import ecosystem
 from classes.logger import Logger
+from config.dependencies import get_crypto
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody
 from services.base_service import BaseService
@@ -25,14 +24,11 @@ class MqttService(BaseService):
     mqttc: mqtt.Client = None
     model: MqttBody
 
-    def __init__(self):
-        super().__init__()
-
     def run(self):
-        host = ecosystem.config.get_setting(ConfigurationKeys.MQTT_HOST).value
-        port = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PORT).value
-        username = ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER).value
-        password = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value
+        host = self.config.get_setting(ConfigurationKeys.MQTT_HOST).value
+        port = self.config.get_setting(ConfigurationKeys.MQTT_PORT).value
+        username = self.config.get_setting(ConfigurationKeys.MQTT_USER).value
+        password = self.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value
         self.mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 
         self.model = MqttBody(
@@ -90,6 +86,7 @@ class MqttService(BaseService):
             self.mqttc.on_connect = self.on_connect
             self.mqttc.on_message = self.on_message
             if model.user is not None and model.password is not None:
+                crypto = get_crypto()
                 pwd = crypto.decrypt(str(model.password))
                 self.mqttc.username_pw_set(
                     username=model.user,

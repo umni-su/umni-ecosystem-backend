@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from sqlmodel import select
 
 from classes.crypto.hasher import Hasher
-from classes.ecosystem import ecosystem
+from config.dependencies import get_ecosystem
 from classes.logger import Logger
 from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
@@ -30,6 +30,10 @@ class Auth:
     # openssl rand -hex 32
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
+    @staticmethod
+    def get_ecosystem():
+        return get_ecosystem()
 
     @staticmethod
     def verify_password(plain_password, hashed_password):
@@ -57,7 +61,11 @@ class Auth:
         return user
 
     @staticmethod
-    def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    def create_access_token(
+            data: dict,
+            expires_delta: timedelta | None = None
+    ):
+        ecosystem = Auth.get_ecosystem()
         key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
         to_encode = data.copy()
         if expires_delta:
@@ -70,6 +78,7 @@ class Auth:
 
     @staticmethod
     def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], response: Response):
+        ecosystem = Auth.get_ecosystem()
         key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
         installed = ecosystem.is_installed()
 
@@ -131,6 +140,7 @@ class Auth:
             detail='You are not authorize'
         )
         try:
+            ecosystem = Auth.get_ecosystem()
             key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
@@ -153,6 +163,7 @@ class Auth:
         if session is None and token is None:
             raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
         try:
+            ecosystem = Auth.get_ecosystem()
             key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")

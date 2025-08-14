@@ -4,7 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Response, status, Form, Body
 
 from classes.auth.auth import Auth, Token, ACCESS_TOKEN_EXPIRE_MINUTES
-from classes.ecosystem import Ecosystem
+from config.dependencies import get_ecosystem
 from entities.user import UserEntity
 from responses.auth_check import AuthCheckResponse
 
@@ -20,7 +20,8 @@ auth = APIRouter(
 def check_auth(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
-    installed = Ecosystem.installed
+    ecosystem = get_ecosystem()
+    installed = ecosystem.installed
     return AuthCheckResponse(
         installed=installed,
         authenticated=True,

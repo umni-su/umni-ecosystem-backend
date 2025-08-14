@@ -11,7 +11,7 @@ import numpy as np
 from av import VideoFrame
 from pydantic import BaseModel
 
-from classes.crypto.crypto import crypto
+from config.dependencies import get_ecosystem
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
@@ -25,6 +25,7 @@ from services.cameras.classes.camera_notifier import CameraNotifier
 if TYPE_CHECKING:
     from entities.camera_event import CameraEventEntity
     from services.cameras.classes.roi_tracker import ROIRecordEvent
+    from classes.ecosystem import Ecosystem
 
 from services.cameras.classes.roi_tracker import ROIDetectionEvent
 from services.cameras.classes.roi_tracker import ROITracker
@@ -34,10 +35,12 @@ class ScreenshotResultModel(BaseModel):
     success: bool = False
     directory: str
     filename: str
+    ecosystem: "Ecosystem" = None
 
 
 class CameraStream:
     def __init__(self, camera: CameraEntity):
+        self.ecosystem = get_ecosystem()
         self.id: int = 0
         self.video_pts = 0
         self.audio_pts = 0
@@ -138,7 +141,7 @@ class CameraStream:
     def prepare_link(self, camera: CameraEntity, secondary: bool = False):
         userinfo = ''
         if camera.username is not None and camera.password is not None:
-            password = crypto.decrypt(camera.password)
+            password = self.ecosystem.crypto.decrypt(camera.password)
             userinfo = f'{camera.username}:{password}@'
         stream = camera.primary
         if secondary:
@@ -158,6 +161,7 @@ class CameraStream:
             self.need_restart = True
             time.sleep(2)
             Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
+            print(self.camera, camera)
 
         self.camera = camera
         self.id = self.camera.id
@@ -335,6 +339,8 @@ class CameraStream:
             self.time_part_start = 0
 
     def create_output_container(self, path: str):
+        if not self.opened:
+            return
         self.video_pts = 0
         self.audio_pts = 0
         if not Filesystem.exists(path):
@@ -449,6 +455,9 @@ class CameraStream:
 
         while self.camera.active or self.opened:
             try:
+                if not self.opened:
+                    print('eeeedeed')
+                    break
                 # Проверка heartbeat
                 self.check_heartbeat()
 
@@ -574,9 +583,10 @@ class CameraStream:
                 self.need_restart = True
                 self.capture_error = True
                 time.sleep(5)
-
         self.destroy_output_container()
         self.stop_input_container()
+        self.output_container = None
+        self.input_container = None
         Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
 
     def _perform_restart(self):
