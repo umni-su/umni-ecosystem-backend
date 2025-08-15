@@ -83,7 +83,6 @@ def install_ecosystem(body: InstallBody, response: Response):
     except Exception as e:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         Logger.err(f'Error install {e}')
-        raise
         return SuccessResponse(success=False)
 
     response.status_code = 201

@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 from math import ceil
 from typing import TYPE_CHECKING
 
-import cv2
 import numpy as np
 import imutils
 from sqlalchemy import func
 from sqlmodel import select, col
+from fastapi import HTTPException
 
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
@@ -18,7 +18,6 @@ from models.pagination_model import EventsPageParams, PaginatedResponse, EventsP
 from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
 from services.cameras.classes.roi_tracker import ROIEvent, ROIEventType
-from services.cameras.classes.wheather_detector import WeatherDetector
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
@@ -130,8 +129,33 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_event(cls, event_id: int):
-        with write_session() as sess:
+        with (write_session() as sess):
             event = sess.get(CameraEventEntity, event_id)
+            if not event:
+                raise HTTPException(status_code=404)
+            return event
+
+    @classmethod
+    def delete_event(cls, event_id: int):
+        with write_session() as sess:
+            try:
+                event = sess.get(CameraEventEntity, event_id)
+                recording = event.recording
+                if recording is not None:
+                    other_events_with_same_record = sess.exec(
+                        select(CameraEventEntity).where(CameraEventEntity.camera_recording_id == recording.id)
+                    ).all()
+                    count = len(other_events_with_same_record)
+                    if count == 1 and recording.id == other_events_with_same_record[0].id:
+                        sess.delete(recording)
+
+                sess.delete(event)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=str(e)
+                )
+
             return event
 
     @classmethod

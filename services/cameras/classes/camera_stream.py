@@ -156,12 +156,21 @@ class CameraStream:
 
     def set_camera(self, camera: CameraEntity):
         self.need_skip = True
+        if self.camera is not None and self.camera.model_dump() != camera.model_dump():
+            changed_fields = {
+                field: (getattr(self.camera, field), new_value)
+                for field, new_value in camera.model_dump().items()
+                if hasattr(self.camera, field)
+                   and new_value is not None  # Игнорируем None в обновлении
+                   and getattr(self.camera, field) != new_value
+            }
 
-        if self.camera is not None and self.prepare_link(camera) != self.prepare_link(self.camera):
-            self.need_restart = True
-            time.sleep(2)
-            Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
-            print(self.camera, camera)
+            if changed_fields:
+                print(f"Changes detected in {self.camera.name}: {changed_fields}")
+                self.need_restart = True
+                time.sleep(2)
+                Logger.warn(f'{self.camera.name} was changed! Changes: {changed_fields}')
+                self.need_restart = True
 
         self.camera = camera
         self.id = self.camera.id

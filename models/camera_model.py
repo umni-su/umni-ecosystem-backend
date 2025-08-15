@@ -24,7 +24,7 @@ class CameraBaseModel(CameraGetModel):
     ip: str | None = None
     port: int | None = None
     username: str | None = None
-    password: str | None = Field(exclude=True)
+    password: str | None = Field(exclude=True, default=None)
     primary: str | None = None
     secondary: str | None = None
     change_credentials: bool = False

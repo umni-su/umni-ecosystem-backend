@@ -41,7 +41,7 @@ class CameraStorage(StorageBase):
                     Filesystem.mkdir(os.path.dirname(image_path))
                 if cv2.imwrite(image_path, frame):
                     camera.cover = rel_path
-                    # sess.add(camera)
+                    sess.add(camera)
                     # sess.commit()
                 return camera
             except Exception as e:
