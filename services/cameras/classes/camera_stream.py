@@ -90,6 +90,7 @@ class CameraStream:
         self.input_container: Optional[Union[av.container.InputContainer | av.Stream]] = None
         self.output_container: Optional[av.container.OutputContainer] = None
         self.output_stream: Optional[av.Stream] = None
+        self.audio_output_stream = None
         self.write: bool = False
 
         # Error handling
@@ -294,40 +295,34 @@ class CameraStream:
             self.destroy_output_container()
             return False
 
+    def is_file_valid(self, filepath: str) -> bool:
+        try:
+            with av.open(filepath) as container:
+                if len(container.streams.video) == 0:
+                    return False
+                # Проверяем, что можем прочитать первый кадр
+                for frame in container.decode(video=0):
+                    if frame is not None:
+                        return True
+                    break
+            return False
+        except:
+            return False
+
     def destroy_output_container(self):
         if self.output_container is None:
             return
 
         try:
-            # Flush any remaining packets only if stream is still valid
-            if self.output_stream is not None:
-                try:
-                    # Попытка флаша оставшихся пакетов
-                    for packet in self.output_stream.encode():
-                        if self.output_container is not None:
-                            self.output_container.mux(packet)
-                except (av.error.FFmpegError, EOFError) as e:
-                    Logger.err(f"[{self.camera.name}] Error during stream flush: {e}")
+            # Сначала флашим все данные
+            self.flush_output_container()
 
-            # Также флашим аудиопакеты, если есть аудиопоток
-            if hasattr(self, 'audio_output_stream') and self.audio_output_stream is not None:
-                try:
-                    for packet in self.audio_output_stream.encode():
-                        if self.output_container is not None:
-                            self.output_container.mux(packet)
-                except (av.error.FFmpegError, EOFError) as e:
-                    Logger.err(f"[{self.camera.name}] Error during audio flush: {e}")
-        finally:
-            # Всегда закрываем контейнер, даже если были ошибки
-            try:
-                if self.output_container is not None:
-                    self.output_container.close()
-                    Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
-            except Exception as e:
-                Logger.debug(f"[{self.camera.name}] Error closing container: {e}")
+            # Затем закрываем контейнер
+            if self.output_container is not None:
+                self.output_container.close()
+                Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
 
-            # Если у камеры режим периодического видео или скриншотов,
-            # нужно завершить запись, если она есть и обновить событие и запись в БД
+            # Обработка постоянных событий
             if self.is_record_permanent() and self.permanent_event is not None:
                 try:
                     CameraEventsRepository.close_permanent_event(
@@ -337,8 +332,9 @@ class CameraStream:
                 except Exception as e:
                     Logger.debug(f"[{self.camera.name}] Error closing permanent event: {e}")
 
-                self.permanent_event = None
-
+        except Exception as e:
+            Logger.debug(f"[{self.camera.name}] Error during container destruction: {e}")
+        finally:
             # Всегда сбрасываем состояние
             self.output_container = None
             self.output_stream = None
@@ -346,6 +342,7 @@ class CameraStream:
                 self.audio_output_stream = None
             self.output_file = None
             self.time_part_start = 0
+            self.permanent_event = None
 
     def create_output_container(self, path: str):
         # не стартуем, если поток должен быть закрыт (exit приложения)
@@ -354,6 +351,7 @@ class CameraStream:
 
         self.video_pts = 0
         self.audio_pts = 0
+
         if not Filesystem.exists(path):
             Filesystem.mkdir(path, recursive=True)
 
@@ -361,8 +359,17 @@ class CameraStream:
         full_path = os.path.join(path, filename)
 
         try:
+            # Используем movflags для фрагментированного MP4
+            options = {
+                'movflags': 'frag_keyframe+empty_moov+default_base_moof',
+                'fragment_duration': '1000',  # 1 секунда между фрагментами
+            }
+
             # Create output container
-            self.output_container = av.open(full_path, mode='w')
+            self.output_container = av.open(
+                full_path,
+                mode='w',
+                options=options)
 
             # Get frame info from input or use defaults
             if self.input_container is not None and len(self.input_container.streams.video) > 0:
@@ -410,6 +417,24 @@ class CameraStream:
             self.audio_output_stream = None
             return False
 
+    def flush_output_container(self):
+        if self.output_container is None:
+            return
+
+        try:
+            # Для видео
+            if self.output_stream is not None:
+                for packet in self.output_stream.encode(None):  # Flush encoder
+                    self.output_container.mux(packet)
+
+            # Для аудио, если есть
+            if hasattr(self, 'audio_output_stream') and self.audio_output_stream is not None:
+                for packet in self.audio_output_stream.encode(None):
+                    self.output_container.mux(packet)
+
+        except Exception as e:
+            Logger.err(f"[{self.camera.name}] Error during flush: {e}")
+
     def is_stream_alive(self):
         """Проверяет, активен ли поток, включая проверку на зависание"""
         if not self.is_opened():
@@ -445,6 +470,9 @@ class CameraStream:
         first_run: bool = True
         need_create_input = False
 
+        last_flush_time = time.time()
+        flush_interval = 30  # Флашим каждые 30 секунд
+
         if self.input_container is None:
             need_create_input = True
 
@@ -466,9 +494,6 @@ class CameraStream:
 
         while self.camera.active or self.opened:
             try:
-                if not self.opened:
-                    print('eeeedeed')
-                    break
                 # Проверка heartbeat
                 self.check_heartbeat()
 
@@ -477,6 +502,12 @@ class CameraStream:
 
                 # Проверяем, нужно ли перезапустить контейнер
                 current_time = time.time()
+
+                # Периодический flush
+                if current_time - last_flush_time > flush_interval:
+                    with self._container_lock:
+                        self.flush_output_container()
+                    last_flush_time = current_time
 
                 if self.need_restart and (current_time - self.last_restart_time) > self.restart_delay:
                     self._perform_restart()
