@@ -157,7 +157,7 @@ class CameraStream:
     def set_camera(self, camera: CameraEntity):
         self.need_skip = True
 
-        if isinstance(self.camera, CameraEntity) and camera != self.camera:
+        if self.camera is not None and self.prepare_link(camera) != self.prepare_link(self.camera):
             self.need_restart = True
             time.sleep(2)
             Logger.warn(f'{self.camera.name} url was changed! Capture should be reload')
@@ -342,7 +342,7 @@ class CameraStream:
         # не стартуем, если поток должен быть закрыт (exit приложения)
         if not self.opened:
             return
-        
+
         self.video_pts = 0
         self.audio_pts = 0
         if not Filesystem.exists(path):

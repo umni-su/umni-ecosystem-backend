@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING
 
 from classes.logger import Logger
 from classes.thread.Daemon import Daemon
+from services.cameras.classes.stream_registry import StreamRegistry
+from services.cameras.utils.stream_utils import find_stream_by_camera
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
@@ -18,26 +20,18 @@ class CamerasService(BaseService):
     checking_thread: Daemon | None = None
     daemon: Daemon | None = None
 
-    @classmethod
-    def find_stream_by_camera(cls, camera: "CameraEntity"):
-        for stream in CamerasService.streams:
-            if stream.id == camera.id:
-                return stream
-        return None
-
     def cameras_list_task(self):
         while True:
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:
-                current_stream = CamerasService.find_stream_by_camera(camera=cam)
-                if current_stream is not None and current_stream.id == cam.id:
-                    # current_stream.set_camera(camera=cam)
-                    Logger.info(f'[{cam.name}] Update camera in stream list ({len(self.cameras)})')
+                current_stream = StreamRegistry.find_by_camera(cam)  # Используем StreamRegistry
+                if current_stream:
+                    current_stream.set_camera(cam)
+                    Logger.info(f'[{cam.name}] Обновлена камера в списке потоков')
                 else:
-                    CamerasService.streams.append(
-                        CameraStream(camera=cam)
-                    )
-                    Logger.info(f'[{cam.name}] Add camera to stream list')
+                    new_stream = CameraStream(camera=cam)
+                    StreamRegistry.add_stream(new_stream)  # Добавляем поток в реестр
+                    Logger.info(f'[{cam.name}] Добавлен новый поток')
             time.sleep(5)
 
     def run(self):

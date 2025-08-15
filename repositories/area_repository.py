@@ -9,11 +9,15 @@ from repositories.base_repository import BaseRepository
 
 from models.camera_area_model import CameraAreaBaseModel
 from repositories.camera_repository import CameraRepository
+from services.cameras.classes.stream_registry import StreamRegistry
 
 
 class CameraAreaRepository(BaseRepository):
     @classmethod
-    def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: CameraEntity):
+    def save_areas_data(
+            cls,
+            areas: list["CameraAreaBaseModel"], camera: CameraEntity
+    ):
         with write_session() as session:
             try:
                 # Убедимся, что камера в сессии (без повторного добавления)
@@ -43,6 +47,9 @@ class CameraAreaRepository(BaseRepository):
                     area.options = __area.options.model_dump() if __area.options is not None else None
 
                     session.add(area)
+
+                    stream = StreamRegistry.find_by_camera(camera)
+                    stream.tracker.update_all_rois(camera.areas)
 
                 # session.refresh(camera)
                 return camera.areas

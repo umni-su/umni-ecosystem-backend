@@ -16,8 +16,9 @@ from repositories.area_repository import CameraAreaRepository
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_repository import CameraRepository
 from responses.user import UserResponseOut
-from services.cameras.cameras_service import CamerasService
 from starlette.exceptions import HTTPException
+
+from services.cameras.classes.stream_registry import StreamRegistry
 
 cameras = APIRouter(
     prefix='/cameras',
@@ -64,7 +65,7 @@ def get_camera_cover(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         camera: CameraEntity = Depends(CameraRepository.get_camera)
 ):
-    stream = CamerasService.find_stream_by_camera(camera)
+    stream = StreamRegistry.find_by_camera(camera)
     if stream is None:
         raise HTTPException(status_code=404)
 
@@ -87,7 +88,7 @@ def get_camera_stream(
         user: Annotated[UserResponseOut, Depends(Auth.validate_token)],
         camera: CameraEntity = Depends(CameraRepository.get_camera)
 ):
-    for stream in CamerasService.streams:
+    for stream in StreamRegistry.get_all_streams():
         if stream.id == camera.id and stream.opened:
             return StreamingResponse(
                 content=stream.generate_frames(),
