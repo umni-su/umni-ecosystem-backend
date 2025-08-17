@@ -8,6 +8,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from database.database import db_manager
+from database.migrations import MigrationManager
 
 from routes.cameras import cameras
 from routes.events import events
@@ -27,6 +28,9 @@ from services.cameras.cameras_service import CamerasService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Только если используем Nuitka (проверка скомпилированного режима)
+    # if getattr(sys, 'frozen', False):
+    MigrationManager.run_migrations()
     ecosystem = Ecosystem()
     Logger.info('Generator lifespan at start of app')
     yield

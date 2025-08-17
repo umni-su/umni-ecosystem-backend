@@ -1,37 +1,62 @@
 from logging.config import fileConfig
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 from alembic import context
-
 from config.settings import settings
-
-'''
-Create migration
-alembic revision --autogenerate -m "Update cameras"
-Run migration
-alembic upgrade head   
-
-alembic downgrade -1
-'''
-
 import database.entities_imports
+import logging
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# 1. Отключаем стандартное логирование Alembic
+logging.getLogger('alembic').handlers.clear()
+logging.getLogger('alembic').propagate = False  # Важно!
+
+# 2. Инициализируем ваш логгер
+logger = logging.getLogger("my_app")
+logger.setLevel(logging.DEBUG)
+
+# Очищаем все предыдущие обработчики
+logger.handlers.clear()
+
+# Настраиваем форматтер как вам нужно
+formatter = logging.Formatter(
+    fmt="%(levelname)s %(asctime)s [%(threadName)s] [%(name)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+# Добавляем консольный обработчик
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+
+# 3. Перехватываем логи Alembic в ваш логгер
+class AlembicProxyHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        # Перенаправляем логи Alembic в ваш логгер
+        msg = self.format(record)
+        if record.levelno >= logging.ERROR:
+            logger.error(msg)
+        elif record.levelno >= logging.WARNING:
+            logger.warning(msg)
+        elif record.levelno >= logging.INFO:
+            logger.info(msg)
+        else:
+            logger.debug(msg)
+
+
+# Применяем наш перехватчик
+alembic_logger = logging.getLogger('alembic')
+alembic_logger.handlers.clear()
+alembic_logger.addHandler(AlembicProxyHandler())
+alembic_logger.propagate = False
+
+# 4. Отключаем fileConfig если он вам не нужен
 config = context.config
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Отключаем стандартную конфигурацию логирования
+    config.attributes['configure_logger'] = False
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-
+# Ваш остальной код...
 target_metadata = SQLModel.metadata
 
 
@@ -39,7 +64,6 @@ target_metadata = SQLModel.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -55,8 +79,7 @@ def run_migrations_offline() -> None:
     """
 
     # https://dev.to/mchawa/sqlmodel-alembic-tutorial-gc8
-    # https://dev.to/mchawa/sqlmodel-alembic-tutorial-gc8
-    url = f'sqlite:///{configuration.db_dir}{configuration.db_source}'
+    url = str(settings.database_url)
 
     # url = config.get_main_option("sqlalchemy.url")
     naming_convention = {
@@ -71,8 +94,12 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        # render_as_batch=True,
-        naming_convention=naming_convention,
+        # Отключаем логирование SQLAlchemy через Alembic
+        include_schemas=False,
+        include_object=None,
+        process_revision_directives=None,
+        compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
@@ -91,7 +118,7 @@ def run_migrations_online() -> None:
     #     prefix="sqlalchemy.",
     #     poolclass=pool.NullPool,
     # )
-    url = f'sqlite:///{configuration.db_dir}{configuration.db_source}'
+    url = str(settings.database_url)
     connectable = engine_from_config(
         {
             'url': url
@@ -103,7 +130,11 @@ def run_migrations_online() -> None:
     with connectable.connect() as connection:
         context.configure(
             connection=connection,
-            target_metadata=target_metadata
+            target_metadata=target_metadata,
+            # Аналогичные настройки как в offline
+            include_schemas=False,
+            include_object=None,
+            process_revision_directives=None,
         )
 
         with context.begin_transaction():

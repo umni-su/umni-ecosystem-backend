@@ -5,6 +5,7 @@ from psycopg2 import OperationalError
 from contextlib import contextmanager
 from config.settings import settings
 from classes.logger import Logger
+from database.migrations import MigrationManager
 
 MAX_RETRIES = 3
 RETRY_DELAY = 0.3
@@ -18,9 +19,18 @@ class DatabaseManager:
     def __init__(self):
         self.engine = create_engine(str(settings.database_url))
 
-        # Создаем таблицы
-        SQLModel.metadata.create_all(self.engine)
-        Logger.info("Таблицы созданы")
+        # Создаем таблицы только в dev/test режиме
+        if MigrationManager.is_development():
+            self._create_tables()
+
+    def _create_tables(self):
+        """Создание таблиц (только для dev/test)"""
+        try:
+            SQLModel.metadata.create_all(self.engine)
+            Logger.info("⏭️ Таблицы созданы (режим разработки)")
+        except Exception as e:
+            Logger.err(f"⏭️ Ошибка при создании таблиц: {e}")
+            raise
 
     @contextmanager
     def write_session(self, expire_on_commit: bool = False):

@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # Настройки БД с дефолтными значениями (для разработки)
+    APP_MODE: str = "development"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "postgres"
     DB_SERVER: str = "localhost"
