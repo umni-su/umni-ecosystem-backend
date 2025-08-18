@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlmodel import select, col
+from sqlmodel import select, col, asc
 
 from database.database import write_session
 from entities.sensor import Sensor
@@ -36,6 +36,8 @@ class SensorHistoryRepository(BaseRepository):
                 col(SensorHistory.created).between(
                     start, end
                 )
+            ).order_by(
+                asc(SensorHistory.created)
             )
             history = sess.exec(query)
             yield history
