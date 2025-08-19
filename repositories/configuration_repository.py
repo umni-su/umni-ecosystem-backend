@@ -23,7 +23,7 @@ class ConfigurationRepository(BaseRepository):
             ).all()
             res: list[ConfigurationModel] = []
             for c in config:
-                if c.key == ConfigurationKeys.MQTT_PASSWORD:
+                if c.key == ConfigurationKeys.MQTT_PASSWORD and c.value is None:
                     c.value = '**********'
                 res.append(c)
 

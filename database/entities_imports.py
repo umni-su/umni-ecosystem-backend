@@ -12,3 +12,4 @@ from entities.camera_event import CameraEventEntity
 
 from entities.location import LocationEntity
 from entities.notification import NotificationEntity
+from entities.rule_entity import RuleEntity, RuleNode, RuleEdge

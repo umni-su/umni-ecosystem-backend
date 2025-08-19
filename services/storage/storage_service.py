@@ -1,19 +1,27 @@
 import os
 import time
 from threading import Thread
-
+from pydantic import BaseModel
 from classes.logger import Logger
 from classes.websockets.messages.ws_message_storage_size import WebsocketMessageStorageSize
 from classes.websockets.websockets import WebSockets
 from database.database import write_session
 from entities.storage import StorageEntity
-from models.storage_model import StorageModelBase
 from repositories.storage_repository import StorageRepository
 from services.base_service import BaseService
 
 
+class StorageTask(BaseModel):
+    storage_id: int
+    thread: Thread | None = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class StorageService(BaseService):
     name = 'storage'
+    tasks: list[StorageTask] = []
 
     @staticmethod
     def get_size(start_path='.'):
@@ -30,25 +38,25 @@ class StorageService(BaseService):
     def calculate_size(cls, storage_id: int):
         with write_session() as sess:
             storage = sess.get(StorageEntity, storage_id)  # Перезагружаем объект
-            while cls.running:
-                try:
-                    size = StorageService.get_size(storage.path)
-                    WebSockets.send_broadcast(
-                        WebsocketMessageStorageSize(
-                            size=size,
-                            storage_id=storage.id
-                        )
+            try:
+                WebSockets.send_broadcast(
+                    WebsocketMessageStorageSize(
+                        storage_id=storage.id,
+                        storage_path=storage.path
                     )
-                    time.sleep(10)
-                except Exception as e:
-                    Logger.err(e)
+                )
+            except Exception as e:
+                Logger.err(e)
 
     def run(self):
-        storages = StorageRepository.get_storages()
-        for storage in storages:
-            thread = Thread(
-                daemon=True,
-                target=self.calculate_size,
-                args=[storage.id]
-            )
-            thread.start()
+        while self.running:
+            storages = StorageRepository.get_storages()
+            for storage in storages:
+                thread = Thread(
+                    daemon=False,
+                    target=self.calculate_size,
+                    args=[storage.id]
+                )
+                thread.start()
+                thread.join(timeout=5)
+            time.sleep(10)

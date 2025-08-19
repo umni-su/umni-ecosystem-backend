@@ -18,6 +18,7 @@ from routes.devices import devices
 from routes.install import install
 from routes.initialize import initialize
 from routes.configuration import conf
+from routes.rules import rules
 
 from config.settings import settings
 from routes.sensors import sensors
@@ -63,6 +64,7 @@ app.include_router(storages)
 app.include_router(systeminfo)
 app.include_router(cameras)
 app.include_router(events)
+app.include_router(rules)
 app.include_router(websockets)
 
 if __name__ == "__main__":

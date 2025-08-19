@@ -2,7 +2,7 @@ import time
 
 from sqlmodel import create_engine, SQLModel, Session, text
 from psycopg2 import OperationalError
-from contextlib import contextmanager
+from contextlib import contextmanager, AbstractContextManager
 from config.settings import settings
 from classes.logger import Logger
 from database.migrations import MigrationManager
@@ -21,7 +21,8 @@ class DatabaseManager:
 
         # Создаем таблицы только в dev/test режиме
         if MigrationManager.is_development():
-            self._create_tables()
+            # self._create_tables()
+            pass
 
     def _create_tables(self):
         """Создание таблиц (только для dev/test)"""
@@ -33,7 +34,7 @@ class DatabaseManager:
             raise
 
     @contextmanager
-    def write_session(self, expire_on_commit: bool = False):
+    def write_session(self, expire_on_commit: bool = False) -> AbstractContextManager[Session]:
         session = None
         for attempt in range(MAX_RETRIES):
             try:

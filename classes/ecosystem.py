@@ -42,13 +42,13 @@ class Ecosystem:
         return self._crypto
 
     def init_base_config(self):
-        self.service_runner = ServiceRunner(self.config)
         while not self.installed:
             self.config.reread()
             self.installed = self.config.is_installed()
             logger.warn(f'Ecosystem is not installed. [{time.time()}] Try again after 3 sec...')
             time.sleep(3)
         self.installed = True
+        self.service_runner = ServiceRunner(self.config)
 
         logger.info('Ecosystem starting, case installed...')
 

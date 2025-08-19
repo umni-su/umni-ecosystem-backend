@@ -11,6 +11,7 @@ class DeviceModel(BaseModel):
     name: str | None = None
     title: str | None = None
     description: str | None = None
+    location_id: int | None = None
     photo: str | None = None
     type: int | None = None
     online: bool | None = None

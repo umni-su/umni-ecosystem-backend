@@ -19,9 +19,8 @@ class SchedulerService(BaseService):
         scheduler.add_task(
             func=camera_cleanup_task,
             schedule_cfg=TaskSchedule(
-                frequency=ScheduleFrequency.DAY,
-                interval=1,
-                at_time='13:00'
+                frequency=ScheduleFrequency.MINUTE,
+                interval=20
             )
         )
 

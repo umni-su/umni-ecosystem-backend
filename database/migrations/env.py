@@ -1,17 +1,42 @@
-from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 from alembic import context
 from config.settings import settings
-import database.entities_imports
 import logging
+
+import database.entities_imports
+
+'''
+    Создание
+    alembic revision -m "Описание миграции" — создаёт файл миграции с пустыми методами upgrade() и downgrade().
+    alembic revision --autogenerate -m "Описание изменений" — автоматически определяет изменения в моделях SQLAlchemy.
+    alembic revision --head-only -m "Описание" — создаёт миграцию только с обновлением версии.
+     
+    Применение
+    alembic upgrade head — применить все миграции до последней версии.
+    alembic upgrade +1 — применить следующую миграцию.
+    alembic upgrade <revision_id> — применить конкретную миграцию.
+    
+    Откат
+    alembic downgrade -1 — откатить последнюю миграцию.
+    alembic downgrade base — откатить все миграции.
+    alembic downgrade <revision_id> — откатить до конкретной ревизии.
+     
+    Список
+    alembic current — показать текущую версию схемы.
+    alembic history — показать историю всех миграций.
+    alembic heads — показать все активные точки миграций.
+    alembic show <revision_id> — показать содержимое конкретной миграции.
+    alembic stamp head — пометить базу как соответствующую последней версии.
+
+'''
 
 # 1. Отключаем стандартное логирование Alembic
 logging.getLogger('alembic').handlers.clear()
 logging.getLogger('alembic').propagate = False  # Важно!
 
 # 2. Инициализируем ваш логгер
-logger = logging.getLogger("my_app")
+logger = logging.getLogger("app")
 logger.setLevel(logging.DEBUG)
 
 # Очищаем все предыдущие обработчики
