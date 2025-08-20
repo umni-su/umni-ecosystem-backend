@@ -1,4 +1,5 @@
 import time
+from starlette.exceptions import HTTPException
 
 from database.database import write_session
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
@@ -19,7 +20,10 @@ class RulesRepository(BaseRepository):
     @classmethod
     def get_rule(cls, rule_id: int):
         with write_session() as sess:
-            return sess.get(RuleEntity, rule_id)
+            rule = sess.get(RuleEntity, rule_id)
+            if not rule:
+                raise HTTPException(status_code=404, detail="Rule not found")
+            return rule
 
     @classmethod
     def add_rule(cls, rule_data: RuleCreate):
@@ -101,8 +105,8 @@ class RulesRepository(BaseRepository):
                     id=edge.id,
                     source=edge.source,
                     target=edge.target,
-                    source_handle=edge.sourceHandle,
-                    target_handle=edge.targetHandle,
+                    source_handle=edge.source_handle,
+                    target_handle=edge.target_handle,
                     rule_id=rule_id
                 )
                 session.add(db_edge)

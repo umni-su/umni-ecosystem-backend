@@ -29,18 +29,23 @@ class RuleNodeTypeKeys(StrEnum):
     RULE_START = 'rule.start'
     RULE_END = 'rule.end'
     RULE_CONDITION = 'rule.condition'
-    ENTITIES_CAMERA = 'entities.camera'
-    ENTITIES_DEVICE = 'entities.device'
-    ENTITIES_SENSOR = 'entities.sensor'
+    # TRIGGERS
     SENSORS_CHANGES = 'sensors.changes.state'
     DEVICES_CHANGES = 'devices.changes.state'
     MOTION_START = 'camera.motion.start'
     MOTION_END = 'camera.motion.end'
+    # ACTIONS
+    ACTION_CAMERA = 'action.camera'
+    ACTION_DEVICE = 'action.device'
+    ENTITIES_SENSOR = 'action.sensor'
     ACTION_ALARM_ON = 'action.alarm.on'
     ACTION_ALARM_OFF = 'action.alarm.off'
     ACTION_EMAIL = 'action.email'
     ACTION_TELEGRAM = 'action.telegram'
     ACTION_WEBHOOK = 'action.webhook'
+    ACTION_SCREENSHOT = 'action.camera.screenshot'
+    ACTION_RECORD_START = 'action.record.start'
+    ACTION_RECORD_END = 'action.record.start'
 
 
 class RuleNodeData(BaseModel):

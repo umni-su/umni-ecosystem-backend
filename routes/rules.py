@@ -1,8 +1,9 @@
-from typing import Annotated
+from typing import Annotated, Any, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 
 from classes.auth.auth import Auth
+from classes.rules.rule_executor import ExecutionResult, RuleExecutor
 from database.database import write_session
 from entities.rule_entity import RuleEntity
 from models.rule_model import (
@@ -57,3 +58,24 @@ def update_rule_graph(
         rule: RuleModel = Depends(RulesRepository.update_rule_graph)
 ):
     return rule
+
+
+@rules.post("/{rule_id}/execute", response_model=ExecutionResult)
+async def execute_rule(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        rule_id: int,
+        trigger_data: Dict[str, Any] = Body(...),
+        executor: RuleExecutor = Depends(RuleExecutor)
+):
+    """Выполняет правило и возвращает детальный результат"""
+    return await executor.execute_rule(rule_id, trigger_data)
+
+
+@rules.post("/{rule_id}/execute-from-start")
+async def execute_from_start(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        rule_id: int,
+        executor: RuleExecutor = Depends(RuleExecutor)
+):
+    """Выполняет правило с START ноды"""
+    return await executor.execute_from_start(rule_id)
