@@ -1,8 +1,8 @@
-"""add rules tables
+"""Create rules table
 
-Revision ID: 8d41cec54892
+Revision ID: b776cdd8c211
 Revises: 
-Create Date: 2025-08-20 23:45:53.166089
+Create Date: 2025-08-24 00:24:16.299434
 
 """
 from typing import Sequence, Union
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 import sqlmodel
 # revision identifiers, used by Alembic.
-revision: str = '8d41cec54892'
+revision: str = 'b776cdd8c211'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -34,7 +34,7 @@ def upgrade() -> None:
     )
     op.create_table('rule_nodes',
     sa.Column('id', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
-    sa.Column('type', sa.Enum('TRIGGER', 'CONDITION', 'ENTITY', 'DEVICE', 'CAMERA', 'ACTION', 'START', 'END', name='rulenodetypes'), nullable=True),
+    sa.Column('type', sqlmodel.sql.sqltypes.AutoString(), nullable=True),
     sa.Column('position', sa.JSON(), nullable=True),
     sa.Column('rule_id', sa.Integer(), nullable=False),
     sa.Column('data', sa.JSON(), nullable=True),

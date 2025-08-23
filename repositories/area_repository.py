@@ -75,6 +75,13 @@ class CameraAreaRepository(BaseRepository):
             ).first()
 
     @classmethod
+    def get_areas(cls) -> list[CameraAreaEntity]:
+        with write_session() as session:
+            return session.exec(
+                select(CameraAreaEntity)
+            ).all()
+
+    @classmethod
     def delete_area(cls, area_id: int) -> list["CameraAreaEntity"]:
         with write_session() as session:
             try:

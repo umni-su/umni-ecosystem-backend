@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from sqlmodel import SQLModel, Field, Relationship, JSON
 
@@ -9,10 +9,10 @@ from entities.mixins.id_column import IdColumnMixin
 
 class RuleNodeBase(SQLModel):
     id: str = Field(primary_key=True)
-    type: Optional[RuleNodeTypes] = None
-    position: NodePosition | None = Field(sa_type=JSON, default=None, nullable=True)
+    type: Optional[str] = None
+    position: Optional[Dict[str, Any]] = Field(sa_type=JSON, default=None, nullable=True)
     rule_id: int = Field(foreign_key="rules.id")
-    data: RuleNodeData | None = Field(sa_type=JSON, default=None, nullable=True)
+    data: Optional[Dict[str, Any]] = Field(sa_type=JSON, default=None, nullable=True)
 
 
 class RuleNode(RuleNodeBase, table=True):
@@ -20,6 +20,9 @@ class RuleNode(RuleNodeBase, table=True):
     key: Optional[RuleNodeTypeKeys] = None
     entity_id: Optional[int] = None
     entity_type: Optional[RuleEntityType] = None
+    rule: "RuleEntity" = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="nodes")
 
 
 class RuleEdge(SQLModel, table=True):
@@ -30,6 +33,9 @@ class RuleEdge(SQLModel, table=True):
     source_handle: Optional[str] = None
     target_handle: Optional[str] = None
     rule_id: int = Field(foreign_key="rules.id")
+    rule: "RuleEntity" = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="edges")
 
 
 class RuleEntityBase(SQLModel):

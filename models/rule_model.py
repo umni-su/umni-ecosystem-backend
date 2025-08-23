@@ -48,14 +48,57 @@ class RuleNodeTypeKeys(StrEnum):
     ACTION_RECORD_END = 'action.record.start'
 
 
+class RuleNodeListItem(BaseModel):
+    id: int
+    name: Optional[str] | None = None
+    description: Optional[str] | None = None
+    icon: Optional[str] | None = None
+    color: Optional[str] | None = None
+
+
+class RuleNodeEl(BaseModel):
+    type: RuleNodeTypes | None = None
+    icon: str | None = None
+    key: RuleNodeTypeKeys | None = None
+    title: str | None = None
+
+
+class RuleNodeFlow(BaseModel):
+    el: RuleNodeEl
+    index: int | None = None
+    group: str | None = None
+
+
 class RuleNodeData(BaseModel):
     options: dict
-    flow: dict
+    flow: RuleNodeFlow
 
 
 class RuleNodePosition(BaseModel):
     x: float
     y: float
+
+
+class RuleNodeModel(BaseModel):
+    id: str
+    type: Optional[RuleNodeTypes] = None
+    position: RuleNodePosition | None = None
+    rule_id: int
+    data: RuleNodeData | None = None
+
+    @classmethod
+    @field_validator('position', mode='before')
+    def validate_position(cls, v):
+        if isinstance(v, dict):
+            return NodePosition(**v)
+        return v
+
+    @classmethod
+    @field_validator('data', mode='before')
+    def validate_data(cls, v):
+        if isinstance(v, dict):
+            return RuleNodeData(**v)
+        return v
 
 
 # Модели для создания/обновления правил
@@ -78,7 +121,6 @@ class NodePosition(BaseModel):
 
 
 class NodeDataOptions(BaseModel):
-    entity_id: Optional[int] = None
     state: Optional[str] = None
     action: Optional[str] = None
     operand: Optional[str] = None  # Для условий
@@ -99,7 +141,7 @@ class NodeDataFlow(BaseModel):
 
 
 class NodeData(BaseModel):
-    options: Optional[NodeDataOptions] = Field(default_factory=dict)
+    options: Optional[Dict] = Field(default_factory=dict)
     flow: NodeDataFlow
 
 
@@ -108,6 +150,19 @@ class NodeCreate(BaseModel):
     type: str
     position: NodePosition | None
     data: NodeData
+
+
+class NodeDataWithList(NodeData):
+    options: Optional[Dict] = Field(default_factory=dict)
+    flow: NodeDataFlow
+    items: List[RuleNodeListItem] = Field(default_factory=list)
+
+
+class NodeVisualize(NodeCreate):
+    id: str
+    type: str
+    position: NodePosition | None
+    data: NodeDataWithList
 
 
 class EdgeCreate(BaseModel):
@@ -122,12 +177,19 @@ class EdgeCreate(BaseModel):
 
 
 class RuleGraphUpdate(BaseModel):
-    nodes: List[NodeCreate] = Field(default=list[NodeCreate])
+    nodes: List[NodeVisualize] = Field(default=list[NodeVisualize])
     edges: List[EdgeCreate] = Field(default=list[EdgeCreate])
 
 
 class RuleModel(RuleGraphUpdate, RuleCreate):
     id: int | None = Field(default=None)
+
+    @classmethod
+    @field_validator('nodes', mode='before')
+    def validate_nodes(cls, v):
+        if v is None:
+            return []
+        return [RuleNodeModel(**node) if isinstance(node, dict) else node for node in v]
 
 
 class RuleUpdate(BaseModel):

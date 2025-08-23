@@ -18,10 +18,10 @@ devices = APIRouter(
 @devices.get('', response_model=list[DeviceModelWithRelations])
 def get_devices(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        deviceList: list[DeviceModelWithRelations] = Depends(DeviceRepository.get_devices)
+        device_list: list[DeviceModelWithRelations] = Depends(DeviceRepository.get_devices)
 ):
     try:
-        return deviceList
+        return device_list
 
     except Exception as e:
         Logger.err(e)

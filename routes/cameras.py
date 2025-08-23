@@ -26,7 +26,7 @@ cameras = APIRouter(
 )
 
 
-@cameras.get('')
+@cameras.get('', response_model=list[CameraModelWithRelations])
 def get_cameras(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         camera_list: list[CameraBaseModel] = Depends(CameraRepository.get_cameras)

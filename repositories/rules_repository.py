@@ -2,11 +2,22 @@ import time
 from starlette.exceptions import HTTPException
 
 from database.database import write_session
+from entities.camera_area import CameraAreaEntity
+from entities.device import Device
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
-from models.rule_model import RuleCreate, RuleNodeTypes, RuleNodeTypeKeys, RuleNodeData, NodePosition, RuleGraphUpdate, \
-    RuleEntityType
+from models.rule_model import (
+    RuleCreate,
+    RuleNodeTypes,
+    RuleNodeTypeKeys,
+    RuleNodeData, NodePosition,
+    RuleGraphUpdate,
+    RuleEntityType, RuleNodeListItem, RuleNodeFlow, RuleNodeEl, RuleNodeModel
+)
 from repositories.base_repository import BaseRepository
-from sqlmodel import select, delete
+from sqlmodel import select, delete, col
+
+from repositories.camera_repository import CameraRepository
+from repositories.device_repository import DeviceRepository
 
 
 class RulesRepository(BaseRepository):
@@ -44,7 +55,11 @@ class RulesRepository(BaseRepository):
                 key=RuleNodeTypeKeys.RULE_START,
                 data=RuleNodeData(
                     options={},
-                    flow={"el": {"type": "start"}}
+                    flow=RuleNodeFlow(
+                        el=RuleNodeEl(
+                            type=RuleNodeTypes.START
+                        )
+                    )
                 ).model_dump()
             )
             sess.add(start_node)
@@ -61,8 +76,8 @@ class RulesRepository(BaseRepository):
     ):
         with write_session() as session:
             # Удаляем старые узлы и связи
-            session.exec(delete(RuleEdge).where(RuleEdge.rule_id == rule_id))
-            session.exec(delete(RuleNode).where(RuleNode.rule_id == rule_id))
+            session.exec(delete(RuleEdge).where(col(RuleEdge.rule_id) == rule_id))
+            session.exec(delete(RuleNode).where(col(RuleNode.rule_id) == rule_id))
 
             # Добавляем новые узлы
             for node in graph_data.nodes:
@@ -71,16 +86,16 @@ class RulesRepository(BaseRepository):
                 # Определяем entity_type и entity_id
                 entity_type, entity_id = None, None
                 if node.type == RuleNodeTypes.ENTITY:
-                    if node_data.flow["el"]["key"] in (
+                    if node_data.flow.el.key in (
                             RuleNodeTypeKeys.DEVICES_CHANGES
                     ):
                         entity_type = RuleEntityType.DEVICE
-                    elif node_data.flow["el"]["key"] in (
+                    elif node_data.flow.el.key in (
                             RuleNodeTypeKeys.MOTION_END,
                             RuleNodeTypeKeys.MOTION_START
                     ):
                         entity_type = RuleEntityType.CAMERA
-                    elif node_data.flow["el"]["key"] in (
+                    elif node_data.flow.el.key in (
                             RuleNodeTypeKeys.SENSORS_CHANGES
                     ):
                         entity_type = RuleEntityType.SENSOR
@@ -92,7 +107,7 @@ class RulesRepository(BaseRepository):
                     position=node.position.model_dump(),
                     rule_id=rule_id,
                     data=node_data.model_dump(),
-                    key=node_data.flow["el"]["key"],
+                    key=node_data.flow.el.key,
                     entity_id=entity_id,
                     entity_type=entity_type
                 )
@@ -112,3 +127,92 @@ class RulesRepository(BaseRepository):
                 session.add(db_edge)
             session.commit()
             return session.get(RuleEntity, rule_id)
+
+    @classmethod
+    def get_node(cls, node_id: str):
+        with write_session() as sess:
+            node = sess.get(RuleNode, node_id)
+            if not node:
+                raise HTTPException(status_code=404, detail="Node not found")
+            return RuleNodeModel.model_validate(node.model_dump())
+
+    @classmethod
+    def get_node_entities_by_trigger(cls, trigger: str | None):
+        if trigger is None:
+            return []
+        res = []
+        trigger = RuleNodeTypeKeys(trigger)
+        if trigger in (
+                RuleNodeTypeKeys.MOTION_START,
+                RuleNodeTypeKeys.MOTION_END
+        ):
+            cameras = CameraRepository.get_cameras()
+            for camera in cameras:
+                for area in camera.areas:
+                    res.append(
+                        RuleNodeListItem(
+                            id=area.id,
+                            name=area.name,
+                            icon='mdi-texture-box',
+                            color=area.color
+                        )
+                    )
+        if trigger == RuleNodeTypeKeys.DEVICES_CHANGES:
+            devices = DeviceRepository.get_devices()
+            for device in devices:
+                res.append(
+                    RuleNodeListItem(
+                        id=device.id,
+                        name=device.name,
+                        description=device.title,
+                        icon='mdi-chip',
+                    )
+                )
+        return res
+
+    @classmethod
+    def get_node_entities_by_node(cls, node_id: str):
+        node = cls.get_node(node_id)
+        if node:
+            trigger = node.data.flow.el.key
+            ids = node.data.options.get("ids")
+            res = []
+            if ids is not None:
+                with write_session() as sess:
+                    if trigger in (
+                            RuleNodeTypeKeys.MOTION_START,
+                            RuleNodeTypeKeys.MOTION_END
+                    ):
+                        areas = sess.exec(
+                            select(CameraAreaEntity).where(
+                                col(CameraAreaEntity.id).in_(ids)
+                            )
+                        ).all()
+                        for area in areas:
+                            res.append(
+                                RuleNodeListItem(
+                                    id=area.id,
+                                    name=area.name,
+                                    icon='mdi-texture-box',
+                                    color=area.color
+                                )
+                            )
+                    elif trigger == RuleNodeTypeKeys.DEVICES_CHANGES:
+                        devices = sess.exec(
+                            select(Device).where(
+                                col(Device.id).in_(ids)
+                            )
+                        ).all()
+                        for device in devices:
+                            res.append(
+                                RuleNodeListItem(
+                                    id=device.id,
+                                    name=device.name,
+                                    description=device.title,
+                                    icon='mdi-chip',
+                                )
+                            )
+
+            return [RuleNodeListItem.model_validate(item) for item in res]
+
+        raise HTTPException(status_code=404, detail="Node not found")

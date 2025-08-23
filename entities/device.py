@@ -31,5 +31,11 @@ class DeviceBase:
 
 class Device(TimeStampMixin, DeviceBase, IdColumnMixin, table=True):
     __tablename__ = 'devices'
-    sensors: list["Sensor"] = Relationship(back_populates="device")
-    network_interfaces: list["DeviceNetworkInterface"] = Relationship(back_populates="device")
+    sensors: list["Sensor"] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="device"
+    )
+    network_interfaces: list["DeviceNetworkInterface"] = Relationship(
+        sa_relationship_kwargs=dict(lazy="subquery"),
+        back_populates="device"
+    )

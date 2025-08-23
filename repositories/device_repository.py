@@ -14,7 +14,7 @@ class DeviceRepository(BaseRepository):
     @classmethod
     def get_devices(cls):
         with write_session() as sess:
-            yield sess.exec(
+            return sess.exec(
                 select(Device).order_by(
                     col(Device.id).desc()
                 )
@@ -23,7 +23,7 @@ class DeviceRepository(BaseRepository):
     @classmethod
     def get_device(cls, device_id: int):
         with write_session() as sess:
-            yield sess.exec(
+            return sess.exec(
                 select(Device).where(Device.id == device_id)
             ).first()
 
@@ -35,7 +35,7 @@ class DeviceRepository(BaseRepository):
             sess.add(device)
             sess.commit()
             sess.refresh(device)
-            yield device
+            return device
 
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):

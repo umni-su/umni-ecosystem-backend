@@ -9,7 +9,7 @@ from entities.rule_entity import RuleEntity
 from models.rule_model import (
     RuleCreate,
     RuleGraphUpdate,
-    RuleModel
+    RuleModel, RuleNodeModel, RuleNodeListItem, RuleNodeTypeKeys
 )
 from repositories.rules_repository import RulesRepository
 from responses.user import UserResponseOut
@@ -36,9 +36,23 @@ def get_rules(
 @rules.get("/{rule_id}", response_model=RuleModel)
 def get_rule(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        rule: list[RuleEntity] = Depends(RulesRepository.get_rule)
+        rule: RuleEntity = Depends(RulesRepository.get_rule)
 ):
-    return rule
+    rule_data = {
+        "id": rule.id,
+        "name": rule.name,
+        "description": rule.description,
+        "enabled": rule.enabled,
+        "priority": rule.priority,
+        "nodes": [node.model_dump() for node in rule.nodes],
+        "edges": [edge.model_dump() for edge in rule.edges]
+    }
+    _rule = RuleModel.model_validate(rule_data)
+    for index, node in enumerate(_rule.nodes):
+        _rule.nodes[index].data.items = RulesRepository.get_node_entities_by_node(
+            node.id
+        )
+    return _rule
 
 
 @rules.post("", response_model=RuleModel)
@@ -79,3 +93,20 @@ async def execute_from_start(
 ):
     """Выполняет правило с START ноды"""
     return await executor.execute_from_start(rule_id)
+
+
+@rules.get("/nodes/{node_id}", response_model=RuleNodeModel)
+def get_node(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        node: RuleNodeModel = Depends(RulesRepository.get_node)
+):
+    return node
+
+
+@rules.get("/nodes/{node_id}/list", response_model=list[RuleNodeListItem])
+def get_node(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        node: RuleNodeModel = Depends(RulesRepository.get_node),
+):
+    _list: list[RuleNodeListItem] = RulesRepository.get_node_entities_by_trigger(node.data.flow.el.key)
+    return _list
