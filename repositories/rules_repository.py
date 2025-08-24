@@ -3,7 +3,7 @@ from starlette.exceptions import HTTPException
 
 from database.session import write_session
 from entities.camera_area import CameraAreaEntity
-from entities.device import Device
+from entities.device import DeviceEntity
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
 from models.rule_model import (
     RuleCreate,
@@ -199,8 +199,8 @@ class RulesRepository(BaseRepository):
                             )
                     elif trigger == RuleNodeTypeKeys.DEVICES_CHANGES:
                         devices = sess.exec(
-                            select(Device).where(
-                                col(Device.id).in_(ids)
+                            select(DeviceEntity).where(
+                                col(DeviceEntity.id).in_(ids)
                             )
                         ).all()
                         for device in devices:

@@ -57,7 +57,7 @@ class DeviceBase:
     )
 
 
-class Device(
+class DeviceEntity(
     TimeStampMixin,
     DeviceBase,
     IdColumnMixin,

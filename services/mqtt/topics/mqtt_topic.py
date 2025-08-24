@@ -2,7 +2,7 @@ from sqlmodel import select
 
 from database.session import write_session
 
-from entities.device import Device
+from entities.device import DeviceEntity
 from models.device_model import DeviceModelWithRelations
 
 
@@ -23,10 +23,10 @@ class MqttTopic:
             del expl[0:2]
             self.topic = "/".join(expl)
             with write_session() as session:
-                model: Device | None = session.exec(
-                    select(Device).where(Device.name == self.device)
+                model: DeviceEntity | None = session.exec(
+                    select(DeviceEntity).where(DeviceEntity.name == self.device)
                 ).first()
-                if isinstance(model, Device):
+                if isinstance(model, DeviceEntity):
                     self.device_model = DeviceModelWithRelations.model_validate(model.model_dump())
                 else:
                     self.device_model = None

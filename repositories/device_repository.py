@@ -1,62 +1,64 @@
 from fastapi import UploadFile
 from sqlmodel import select, col
 
-from classes.logger import logger
+from classes.logger import Logger
 from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
 from database.session import write_session
-from entities.device import Device
-from models.device_model import DeviceUpdateModel
+from entities.device import DeviceEntity
+from models.device_model import DeviceUpdateModel, DeviceModelWithRelations
 from repositories.base_repository import BaseRepository
-
-from sqlalchemy.orm import selectinload
 
 
 class DeviceRepository(BaseRepository):
     @classmethod
     def get_devices(cls):
         with write_session() as sess:
-            yield sess.exec(
-                select(Device).order_by(
-                    col(Device.id).desc()
+            devices_orm = sess.exec(
+                select(DeviceEntity).order_by(
+                    col(DeviceEntity.id).desc()
                 )
             ).all()
-
-    @classmethod
-    def get_devices_test(cls):
-        with write_session() as sess:
-            devices = sess.exec(
-                select(Device).order_by(
-                    col(Device.id).desc()
-                ).options(
-                    selectinload(Device.network_interfaces),
-                    selectinload(Device.sensors)
-                )
-            ).all()
-            return devices
+            return [
+                DeviceModelWithRelations.model_validate(
+                    _d.to_dict(
+                        include_relationships=True
+                    )
+                ) for _d in devices_orm
+            ]
 
     @classmethod
     def get_device(cls, device_id: int):
         with write_session() as sess:
-            yield sess.exec(
-                select(Device).where(Device.id == device_id)
+            device_orm = sess.exec(
+                select(DeviceEntity).where(DeviceEntity.id == device_id)
             ).first()
+            return DeviceModelWithRelations.model_validate(
+                device_orm.to_dict(
+                    include_relationships=True
+                )
+            )
 
     @classmethod
     def update_device(cls, device_id: int, model: DeviceUpdateModel):
         with write_session() as sess:
-            device = next(cls.get_device(device_id))
+            device = sess.get(DeviceEntity, device_id)
             device.title = model.title
             sess.add(device)
             sess.commit()
             sess.refresh(device)
-            yield device
+
+            return DeviceModelWithRelations.model_validate(
+                device.to_dict(
+                    include_relationships=True
+                )
+            )
 
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):
         with write_session() as sess:
             try:
-                device = next(cls.get_device(device_id))
+                device = sess.get(DeviceEntity, device_id)
                 photo = device_storage.cover_upload(
                     device=device,
                     file=cover
@@ -68,6 +70,12 @@ class DeviceRepository(BaseRepository):
                 sess.add(device)
                 sess.commit()
                 sess.refresh(device)
-                yield device
+
+                return DeviceModelWithRelations.model_validate(
+                    device.to_dict(
+                        include_relationships=True
+                    )
+                )
+
             except Exception as e:
-                logger.error(e)
+                Logger.err(e)

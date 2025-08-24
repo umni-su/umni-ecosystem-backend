@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import SQLModel, Field, Relationship
 from entities.mixins.created_updated import TimeStampMixin
-from entities.device import Device
+from entities.device import DeviceEntity
 from entities.mixins.id_column import IdColumnMixin
 
 
@@ -42,6 +42,6 @@ class DeviceNetworkInterface(
 ):
     __tablename__ = 'device_network_interfaces'
 
-    device: Device | None = Relationship(
+    device: DeviceEntity | None = Relationship(
         back_populates="network_interfaces"
     )

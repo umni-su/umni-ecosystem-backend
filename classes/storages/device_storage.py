@@ -1,22 +1,23 @@
 import os
 from typing import Union
 
-import cv2
 from fastapi import UploadFile
-from fastapi.responses import Response
 from classes.storages.storage import StorageBase
-from entities.device import Device
+from entities.device import DeviceEntity
 from entities.sensor import Sensor
 
 
 class DeviceStorage(StorageBase):
 
     @classmethod
-    def get_cover(cls, ent: Union[Device | Sensor], width: int):
-        return cls.image_response(os.path.abspath(ent.photo), width)
+    def get_cover(cls, ent: Union[DeviceEntity | Sensor], width: int):
+        path = ent.photo
+        if path is None:
+            path = 'static/images/no-image.jpg'
+        return cls.image_response(os.path.abspath(path), width)
 
     @classmethod
-    def cover_response(cls, device: Device, width: int):
+    def cover_response(cls, device: DeviceEntity, width: int):
         return cls.get_cover(device, width)
 
     @classmethod
@@ -24,7 +25,7 @@ class DeviceStorage(StorageBase):
         return cls.get_cover(sensor, width)
 
     @classmethod
-    def cover_upload(cls, device: Device, file: UploadFile):
+    def cover_upload(cls, device: DeviceEntity, file: UploadFile):
         return cls.upload_file(
             folder=str(device.id),
             file=file,

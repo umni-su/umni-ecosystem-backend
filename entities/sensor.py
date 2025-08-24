@@ -4,7 +4,7 @@ from typing import Optional, TYPE_CHECKING
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, Relationship
 
-from entities.device import Device
+from entities.device import DeviceEntity
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
@@ -58,7 +58,7 @@ class Sensor(
 ):
     __tablename__ = 'device_sensors'
 
-    device: Device | None = Relationship(
+    device: DeviceEntity | None = Relationship(
         back_populates="sensors"
     )
     history: list["SensorHistory"] = Relationship(

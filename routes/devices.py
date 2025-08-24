@@ -18,9 +18,9 @@ devices = APIRouter(
 @devices.get('', response_model=list[DeviceModelWithRelations])
 def get_devices(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        device_list: list[DeviceModelWithRelations] = Depends(DeviceRepository.get_devices)
 ):
     try:
+        device_list: list[DeviceModelWithRelations] = DeviceRepository.get_devices()
         return device_list
 
     except Exception as e:
@@ -29,10 +29,11 @@ def get_devices(
 
 @devices.get('/{device_id}', response_model=DeviceModelWithRelations)
 def get_device(
+        device_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        device: DeviceModelWithRelations = Depends(DeviceRepository.get_device)
 ):
     try:
+        device: DeviceModelWithRelations = DeviceRepository.get_device(device_id)
         return device
 
     except Exception as e:
@@ -46,11 +47,12 @@ Save device
 
 @devices.patch('/{device_id}', response_model=DeviceModelWithRelations)
 def update_device(
+        device_id: int,
         model: DeviceUpdateModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        device: DeviceModelWithRelations = Depends(DeviceRepository.update_device),
 ):
     try:
+        device: DeviceModelWithRelations = DeviceRepository.update_device(device_id, model)
         return device
 
     except Exception as e:
@@ -59,11 +61,12 @@ def update_device(
 
 @devices.post('/{device_id}/cover', response_model=DeviceModelWithRelations)
 def update_device_cover(
+        device_id: int,
         cover: UploadFile,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        device: DeviceModelWithRelations = Depends(DeviceRepository.upload_device_cover),
 ):
     try:
+        device: DeviceModelWithRelations = DeviceRepository.upload_device_cover(device_id, cover)
         return device
 
     except Exception as e:
@@ -72,11 +75,12 @@ def update_device_cover(
 
 @devices.get('/{device_id}/cover/{width}')
 def update_device_cover(
+        device_id: int,
         width: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        device: DeviceModelWithRelations = Depends(DeviceRepository.get_device),
 ):
     try:
+        device: DeviceModelWithRelations = DeviceRepository.get_device(device_id)
         return device_storage.cover_response(device, width)
 
     except Exception as e:

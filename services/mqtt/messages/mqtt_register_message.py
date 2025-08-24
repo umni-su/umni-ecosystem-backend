@@ -4,7 +4,7 @@ from pydantic_core import ValidationError
 
 from classes.logger import Logger
 from database.session import write_session
-from entities.device import Device
+from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_register_model import MqttRegisterModel
@@ -51,9 +51,9 @@ class MqttRegisterMessage(BaseMessage):
         try:
             with write_session() as session:
                 if self.topic.device_model is not None:
-                    device = session.get(Device, self.topic.device_model.id)
+                    device = session.get(DeviceEntity, self.topic.device_model.id)
                 else:
-                    device = Device()
+                    device = DeviceEntity()
                 device.name = self.model.name
                 device.type = self.model.type
                 device.fw_ver = self.model.systeminfo.fw_ver
