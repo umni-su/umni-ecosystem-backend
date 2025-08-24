@@ -1,6 +1,8 @@
 from enum import StrEnum
-from sqlmodel import Field, SQLModel
-from .mixins.created_updated import TimeStampMixin
+from typing import Optional
+
+from sqlmodel import Field
+from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
 
@@ -19,9 +21,20 @@ class ConfigurationKeys(StrEnum):
 
 
 class ConfigurationEntityBase:
-    key: ConfigurationKeys = Field(index=True)
-    value: str | None = Field(index=True, nullable=True)
+    key: Optional[str] = Field(
+        unique=True,
+        index=True
+    )
+    value: str | None = Field(
+        index=True,
+        nullable=True
+    )
 
 
-class ConfigurationEntity(TimeStampMixin, ConfigurationEntityBase, IdColumnMixin, table=True):
+class ConfigurationEntity(
+    TimeStampMixin,
+    ConfigurationEntityBase,
+    IdColumnMixin,
+    table=True
+):
     __tablename__ = 'configuration'

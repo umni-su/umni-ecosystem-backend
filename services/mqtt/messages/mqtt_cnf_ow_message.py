@@ -32,7 +32,7 @@ class MqttCnfOwMessage(BaseMessage):
                     sensor.options = ow.model_dump()
                     sensor.device_id = self.topic.device_model.id
                     sensor.last_sync = datetime.datetime.now()
-                    sensor.type = MqttSensorTypeEnum.DS18B20
+                    sensor.type = MqttSensorTypeEnum.DS18B20.value
                     session.add(sensor)
                 session.commit()
 

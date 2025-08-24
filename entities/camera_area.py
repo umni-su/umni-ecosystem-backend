@@ -13,24 +13,57 @@ if TYPE_CHECKING:
 
 
 class CameraAreaEntityBase:
-    camera_id: int = Field(nullable=False, index=True, foreign_key="cameras.id")
-    name: str = Field(nullable=False)
-    priority: EventPriorityEnum = Field(nullable=False, default=EventPriorityEnum.ALERT)
-    active: bool = Field(sa_column=Column(Boolean, nullable=False, server_default=false()))
-    points: list[list[int]] = Field(sa_column=Column(JSON, nullable=True))
-    color: str = Field(nullable=False, default='#2D90B869')
-    options: Optional[dict] = Field(sa_column=Column(JSON, nullable=True))
+    camera_id: int = Field(
+        nullable=False,
+        index=True,
+        foreign_key="cameras.id"
+    )
+    name: str = Field(
+        nullable=False
+    )
+    priority: Optional[int] = Field(
+        nullable=False,
+        default=EventPriorityEnum.ALERT
+    )
+    active: bool = Field(
+        sa_column=Column(
+            Boolean,
+            index=True,
+            nullable=False,
+            server_default=false())
+    )
+    points: list[list[int]] = Field(
+        sa_column=Column(
+            JSON,
+            nullable=True
+        )
+    )
+    color: str = Field(
+        nullable=False,
+        default='#2D90B869'
+    )
+    options: Optional[dict] = Field(
+        sa_column=Column(
+            JSON,
+            nullable=True
+        )
+    )
 
 
-class CameraAreaEntity(TimeStampMixin, CameraAreaEntityBase, IdColumnMixin, table=True):
+class CameraAreaEntity(
+    TimeStampMixin,
+    CameraAreaEntityBase,
+    IdColumnMixin,
+    table=True
+):
     __tablename__ = 'camera_areas'
     camera: CameraEntity | None = Relationship(
-        sa_relationship_kwargs=dict(lazy="subquery"),
+        # sa_relationship_kwargs=dict(lazy="selectin"),
         back_populates="areas")
 
     events: list["CameraEventEntity"] = Relationship(
         sa_relationship_kwargs=dict(
-            lazy="subquery",
+            # lazy="selectin",
             cascade="all, delete-orphan"
         ),
         back_populates="area",

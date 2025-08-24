@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from models.device_netif import DeviceNetif
 from models.sensor_model import SensorModel
@@ -38,4 +38,6 @@ class DeviceModelWithNetif(DeviceModel):
 
 
 class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif):
-    pass
+    model_config = ConfigDict(
+        from_attributes=True
+    )

@@ -35,5 +35,6 @@ class CamerasService(BaseService):
             time.sleep(5)
 
     def run(self):
+        return
         Logger.debug('Starting camera streams...')
         self.daemon = Daemon(self.cameras_list_task)

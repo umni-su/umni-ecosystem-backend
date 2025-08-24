@@ -11,6 +11,8 @@ class SchedulerService(BaseService):
     def run(self):
         # Создаем планировщик
 
+        return
+
         def camera_cleanup_task():
             cleanup_manager = CameraCleanupManager()
             cleanup_manager.run_cleanup_for_all_cameras()

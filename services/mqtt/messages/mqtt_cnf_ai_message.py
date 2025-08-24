@@ -35,7 +35,7 @@ class MqttCnfAiMessage(BaseMessage):
                     sensor = self.get_or_new_sensor(identifier)
                     sensor.device_id = self.topic.device_model.id
                     sensor.identifier = identifier
-                    sensor.type = _key
+                    sensor.type = _key.value
                     sensor.name = ai_port.label
                     sensor.options = ai_port.model_dump()
                     sensor.last_sync = datetime.datetime.now()

@@ -30,7 +30,7 @@ class MqttCnfRfMessage(BaseMessage):
                     sensor.device_id = self.topic.device_model.id
                     sensor.identifier = identifier
                     sensor.name = rf.label
-                    sensor.type = MqttSensorTypeEnum.RF433
+                    sensor.type = MqttSensorTypeEnum.RF433.value
                     sensor.options = rf.model_dump()
                     sensor.last_sync = datetime.datetime.now()
                     sensor.value = str(rf.state)

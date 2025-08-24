@@ -26,7 +26,7 @@ class MqttService(BaseService):
 
     def run(self):
         host = self.config.get_setting(ConfigurationKeys.MQTT_HOST).value
-        port = self.config.get_setting(ConfigurationKeys.MQTT_PORT).value
+        port = int(self.config.get_setting(ConfigurationKeys.MQTT_PORT).value)
         username = self.config.get_setting(ConfigurationKeys.MQTT_USER).value
         password = self.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value
         self.mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)

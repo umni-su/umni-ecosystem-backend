@@ -9,21 +9,36 @@ from entities.device import Device
 from models.device_model import DeviceUpdateModel
 from repositories.base_repository import BaseRepository
 
+from sqlalchemy.orm import selectinload
+
 
 class DeviceRepository(BaseRepository):
     @classmethod
     def get_devices(cls):
         with write_session() as sess:
-            return sess.exec(
+            yield sess.exec(
                 select(Device).order_by(
                     col(Device.id).desc()
                 )
             ).all()
 
     @classmethod
+    def get_devices_test(cls):
+        with write_session() as sess:
+            devices = sess.exec(
+                select(Device).order_by(
+                    col(Device.id).desc()
+                ).options(
+                    selectinload(Device.network_interfaces),
+                    selectinload(Device.sensors)
+                )
+            ).all()
+            return devices
+
+    @classmethod
     def get_device(cls, device_id: int):
         with write_session() as sess:
-            return sess.exec(
+            yield sess.exec(
                 select(Device).where(Device.id == device_id)
             ).first()
 
@@ -35,7 +50,7 @@ class DeviceRepository(BaseRepository):
             sess.add(device)
             sess.commit()
             sess.refresh(device)
-            return device
+            yield device
 
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):

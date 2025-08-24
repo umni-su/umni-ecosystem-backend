@@ -31,7 +31,7 @@ class MqttCnfDioMessage(BaseMessage):
         sensor.device_id = self.topic.device_model.id
         sensor.identifier = identifier
         sensor.name = port.label
-        sensor.type = sensor_type
+        sensor.type = sensor_type.value
         sensor.value = str(port.state)
         sensor.last_sync = datetime.datetime.now()
         sensor.options = port.model_dump()
