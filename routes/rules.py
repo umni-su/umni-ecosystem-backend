@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Body
 
 from classes.auth.auth import Auth
 from classes.rules.rule_executor import ExecutionResult, RuleExecutor
-from database.database import write_session
+from database.session import write_session
 from entities.rule_entity import RuleEntity
 from models.rule_model import (
     RuleCreate,

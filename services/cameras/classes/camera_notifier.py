@@ -2,7 +2,6 @@ import os
 import traceback
 from threading import Thread
 from typing import Callable, Any, TYPE_CHECKING
-import database.database as db
 
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
@@ -11,6 +10,7 @@ from classes.websockets.messages.ws_message_detection import (
     WebsocketMessageDetectionEnd
 )
 from classes.websockets.websockets import WebSockets
+from database.session import write_session
 
 from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
@@ -98,7 +98,7 @@ class CameraNotifier:
         Args:
             event (ROIDetectionEvent): Событие обнаружения движения
         """
-        with db.write_session() as sess:
+        with write_session() as sess:
             camera = sess.get(CameraEntity, event.camera.id)
             area = sess.get(CameraAreaEntity, event.roi.id)
             if area is None:
@@ -172,7 +172,7 @@ class CameraNotifier:
         Args:
             event (ROIDetectionEvent): Событие окончания движения
         """
-        with db.write_session() as sess:
+        with write_session() as sess:
             key = event.roi.id
 
             # Находим активное событие для завершения
@@ -218,7 +218,7 @@ class CameraNotifier:
         Args:
             event (ROIRecordEvent): Событие окончания записи
         """
-        with db.write_session() as sess:
+        with write_session() as sess:
             founded_record = CameraNotifier._find_active_recording(event.camera.id)
             if isinstance(founded_record, CameraRecordingEntity):
                 recording = sess.get(CameraRecordingEntity, founded_record.id)

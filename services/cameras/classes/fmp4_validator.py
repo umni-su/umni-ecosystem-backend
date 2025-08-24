@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlmodel import Session, select
 from typing import Optional
 
-from database.database import write_session
+from database.session import write_session
 
 
 class FMP4Validator:

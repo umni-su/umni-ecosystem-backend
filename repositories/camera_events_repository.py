@@ -10,7 +10,7 @@ from fastapi import HTTPException
 
 from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
-from database.database import write_session
+from database.session import write_session
 from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum

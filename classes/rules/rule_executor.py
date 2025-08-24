@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Iterator, Optional
 import json
 from sqlmodel import Session, select
 
-from database.database import write_session
+from database.session import write_session
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
 from models.rule_model import RuleNodeTypes, RuleEntityType, RuleNodeTypeKeys
 from pydantic import BaseModel, Field

@@ -1,6 +1,6 @@
 from sqlmodel import select
 
-from database.database import write_session
+from database.session import write_session
 
 from entities.device import Device
 from models.device_model import DeviceModelWithRelations

@@ -4,7 +4,7 @@ from sqlmodel import delete
 from classes.crypto.hasher import Hasher
 from config.dependencies import get_ecosystem
 from classes.logger import Logger
-from database.database import write_session
+from database.session import write_session
 from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
 from responses.account import AccountBody

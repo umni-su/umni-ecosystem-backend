@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from sqlmodel import select
 
-from database.database import write_session
+from database.session import write_session
 from entities.camera_recording import CameraRecordingEntity
 from repositories.base_repository import BaseRepository
 

@@ -1,15 +1,10 @@
 import datetime
 import re
-
-from sqlmodel import select
-
-import database.database as db
 from classes.logger import Logger
-from entities.sensor import Sensor
+from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ai_ntc_model import MqttCnfAnalogPortsModel, MqttCnfAnalogPortModel
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
-from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
 
 
 class MqttCnfAiMessage(BaseMessage):
@@ -24,7 +19,7 @@ class MqttCnfAiMessage(BaseMessage):
     def save(self):
         if self.model is None:
             return
-        with db.write_session() as session:
+        with write_session() as session:
             for (key, item) in self.model:
                 _key = MqttSensorTypeEnum.NTC
                 if key == 'ai1' or key == 'ai2':

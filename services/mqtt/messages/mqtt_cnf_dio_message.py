@@ -1,10 +1,9 @@
 import datetime
 
-from sqlmodel import select, Session
+from sqlmodel import Session
 
-import database.database as db
 from classes.logger import Logger
-from entities.sensor import Sensor
+from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_dio_cnf_model import MqttDioCngModel
 from services.mqtt.models.mqtt_dio_port_model import MqttDioPort
@@ -39,7 +38,7 @@ class MqttCnfDioMessage(BaseMessage):
         session.add(sensor)
 
     def save(self):
-        with db.write_session() as session:
+        with write_session() as session:
             try:
                 for di in self.model.di:
                     self.create_update(session, di, MqttSensorTypeEnum.INPUT)

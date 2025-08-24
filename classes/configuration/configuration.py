@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 
-from database.database import write_session
+from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 
 

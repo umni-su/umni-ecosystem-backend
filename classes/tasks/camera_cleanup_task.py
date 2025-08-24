@@ -1,12 +1,11 @@
 import os
 import threading
-import database.database as db
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pydantic import BaseModel, field_validator
 
 from classes.logger import Logger
-from database.database import write_session
+from database.session import write_session
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_recording_repository import CameraRecordingRepository
 from repositories.camera_repository import CameraRepository
@@ -95,7 +94,7 @@ class CameraCleanupManager:
 
     def _clean_camera_events(self, camera, cutoff_time):
         """Очистка событий камеры"""
-        with db.write_session() as session:
+        with write_session() as session:
 
             events = CameraEventsRepository.get_old_events(camera)
 

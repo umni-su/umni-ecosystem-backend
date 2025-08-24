@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlmodel import select, col, asc
 
-from database.database import write_session
+from database.session import write_session
 from entities.sensor import Sensor
 from entities.sensor_history import SensorHistory
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel

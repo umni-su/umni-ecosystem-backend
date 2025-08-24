@@ -1,5 +1,5 @@
 from classes.logger import Logger
-from database.database import write_session
+from database.session import write_session
 from entities.notification import NotificationEntity
 from models.notification_model import NotificationModel
 from repositories.base_repository import BaseRepository

@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 from numpy import ndarray
 from pydantic import BaseModel
 
-import database.database as db
 import cv2
 
 from classes.logger import Logger
 from classes.storages.filesystem import Filesystem
 from classes.storages.storage import StorageBase
+from database.session import write_session
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
@@ -26,7 +26,7 @@ class ScreenshotResultModel(BaseModel):
 class CameraStorage(StorageBase):
     @classmethod
     def upload_cover(cls, camera: "CameraEntity", frame: cv2.Mat):
-        with db.write_session() as sess:
+        with write_session() as sess:
             try:
                 cls.path = camera.storage.path
                 rel_path = os.path.join(

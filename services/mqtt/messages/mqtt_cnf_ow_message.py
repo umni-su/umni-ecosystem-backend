@@ -1,11 +1,9 @@
 import datetime
 from typing import List
 from pydantic import RootModel
-from sqlmodel import select
 
-import database.database as db
 from classes.logger import Logger
-from entities.sensor import Sensor
+from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ow_model import MqttCnfOwModel
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
@@ -19,7 +17,7 @@ class MqttCnfOwMessage(BaseMessage):
         self.model = RootModel[List[MqttCnfOwModel]].model_validate_json(self.original_message)
 
     def save(self):
-        with db.write_session() as session:
+        with write_session() as session:
             try:
                 for ow in self.model.root:
                     identifier = '.'.join([

@@ -8,12 +8,15 @@ from typing import List, Optional, Dict, Callable, TYPE_CHECKING
 
 from numpy import ndarray
 from pydantic import BaseModel, Field, field_validator, ConfigDict
+
+from database.session import write_session
+
 from entities.camera import CameraEntity
+from entities.camera_area import CameraAreaEntity
 
 from classes.logger import Logger
 
-if TYPE_CHECKING:
-    from entities.camera_area import CameraAreaEntity
+from sqlmodel import col, select
 
 
 class ROIEventType(Enum):
@@ -611,6 +614,32 @@ class ROITracker:
                     Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}")
                     return False
         return False
+
+    def update_rois_by_ids(self, area_ids: List[int]):
+        """Обновляет только конкретные ROI без полной перезагрузки"""
+        with write_session() as session:
+            # ОДИН запрос вместо множественных
+            areas = session.exec(
+                select(CameraAreaEntity)
+                .where(col(CameraAreaEntity.id).in_(area_ids))
+            ).all()
+
+            current_roi_ids = {roi.id for roi in self.rois}
+
+            for area in areas:
+                roi_data = ROI(
+                    id=area.id,
+                    name=area.name,
+                    points=area.points,
+                    camera_id=area.camera_id,
+                    color=area.color,
+                    options=ROISettings.model_validate(area.options) if area.options else ROISettings()
+                )
+
+                if area.id in current_roi_ids:
+                    self.update_roi(area.id, roi_data)
+                else:
+                    self.add_roi(roi_data)
 
     def update_all_rois(self, new_rois: List["CameraAreaEntity"]) -> bool:
         """Полное обновление всех ROI с сохранением состояния"""

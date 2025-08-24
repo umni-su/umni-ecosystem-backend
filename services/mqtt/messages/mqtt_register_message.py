@@ -3,7 +3,7 @@ import datetime
 from pydantic_core import ValidationError
 
 from classes.logger import Logger
-from database.database import write_session
+from database.session import write_session
 from entities.device import Device
 from entities.device_network_interfaces import DeviceNetworkInterface
 from services.mqtt.messages.base_message import BaseMessage

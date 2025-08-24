@@ -3,7 +3,7 @@ import typing
 from cryptography.fernet import Fernet
 
 from classes.logger import logger
-from database.database import write_session
+from database.session import write_session
 from entities.configuration import ConfigurationKeys
 
 if typing.TYPE_CHECKING:

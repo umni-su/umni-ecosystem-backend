@@ -1,4 +1,4 @@
-from database.database import write_session
+from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel
 from repositories.base_repository import BaseRepository

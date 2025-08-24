@@ -1,5 +1,5 @@
 from classes.storages.filesystem import Filesystem
-from database.database import write_session
+from database.session import write_session
 from entities.storage import StorageEntity
 from models.storage_model import StorageModel, StorageModelBase
 from repositories.base_repository import BaseRepository

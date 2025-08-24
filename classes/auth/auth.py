@@ -14,10 +14,10 @@ from sqlmodel import select
 from classes.crypto.hasher import Hasher
 from config.dependencies import get_ecosystem
 from classes.logger import Logger
+from database.session import write_session
 from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
 
-import database.database as db
 from responses.unauthenticated_response import UnauthenticatedResponse
 from responses.user import UserResponseOut
 
@@ -45,7 +45,7 @@ class Auth:
 
     @staticmethod
     def get_user(username: str):
-        with db.write_session() as session:
+        with write_session() as session:
             user = session.exec(
                 select(UserEntity).where(UserEntity.username == username)
             ).first()

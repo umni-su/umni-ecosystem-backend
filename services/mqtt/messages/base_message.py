@@ -2,8 +2,7 @@ import datetime
 
 from sqlmodel import select
 
-import database.database as db
-from entities.device import Device
+from database.session import write_session
 from entities.sensor import Sensor
 from services.mqtt.topics.mqtt_topic import MqttTopic
 
@@ -45,7 +44,7 @@ class BaseMessage:
         pass
 
     def get_or_new_sensor(self, identifier: str) -> Sensor:
-        with db.write_session() as session:
+        with write_session() as session:
             sensor = Sensor()
             existing = session.exec(
                 select(Sensor).where(Sensor.identifier == identifier)

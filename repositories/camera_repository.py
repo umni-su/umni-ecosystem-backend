@@ -1,6 +1,6 @@
 from config.dependencies import get_ecosystem
 from classes.logger import Logger
-from database.database import write_session
+from database.session import write_session
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel

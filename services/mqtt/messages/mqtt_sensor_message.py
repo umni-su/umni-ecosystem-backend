@@ -2,9 +2,9 @@ import datetime
 
 from sqlmodel import select
 
-import database.database as db
 from config.dependencies import get_ecosystem
 from classes.logger import Logger
+from database.session import write_session
 from entities.configuration import ConfigurationKeys
 
 from entities.sensor import Sensor
@@ -26,7 +26,7 @@ class MqttSensorMessage(BaseMessage):
     def save(self):
         ecosystem = get_ecosystem()
         if self.identifier is not None and self.has_device:
-            with db.write_session() as session:
+            with write_session() as session:
                 founded = session.exec(
                     select(Sensor).where(Sensor.identifier == self.identifier)
                 ).first()

@@ -1,7 +1,7 @@
 import time
 from starlette.exceptions import HTTPException
 
-from database.database import write_session
+from database.session import write_session
 from entities.camera_area import CameraAreaEntity
 from entities.device import Device
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge

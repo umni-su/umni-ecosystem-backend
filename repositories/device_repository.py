@@ -4,7 +4,7 @@ from sqlmodel import select, col
 from classes.logger import logger
 from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
-from database.database import write_session
+from database.session import write_session
 from entities.device import Device
 from models.device_model import DeviceUpdateModel
 from repositories.base_repository import BaseRepository
