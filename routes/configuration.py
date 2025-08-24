@@ -16,9 +16,5 @@ conf = APIRouter(
 @conf.get('', response_model=list[ConfigurationModel])
 def get_configuration(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        config: Annotated[
-            list[ConfigurationModel],
-            Depends(ConfigurationRepository.get_configuration)
-        ]
 ):
-    return config
+    return ConfigurationRepository.get_configuration()

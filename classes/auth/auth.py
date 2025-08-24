@@ -19,7 +19,7 @@ from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
 
 from responses.unauthenticated_response import UnauthenticatedResponse
-from responses.user import UserResponseOut
+from responses.user import UserResponseOut, UserResponseInDb
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -44,12 +44,14 @@ class Auth:
         return Hasher.hash(password)
 
     @staticmethod
-    def get_user(username: str):
+    def get_user(username: str) -> UserResponseInDb:
         with write_session() as session:
             user = session.exec(
                 select(UserEntity).where(UserEntity.username == username)
             ).first()
-            return user
+            if not user:
+                raise HTTPException(detail="User not found", status_code=404)
+            return UserResponseInDb.model_validate(user.model_dump())
 
     @staticmethod
     def authenticate_user(username: str, password: str):

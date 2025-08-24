@@ -1,20 +1,22 @@
-from sqlmodel import Session, select
+from sqlmodel import select
 
 from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
+from models.configuration_model import ConfigurationModel
 
 
 class EcosystemDatabaseConfiguration:
-    db_config: [ConfigurationEntity] = []
+    db_config: [ConfigurationModel] = []
 
     def __init__(self):
         self.reread()
 
     def reread(self):
         with write_session() as sess:
-            self.db_config = sess.exec(
+            all_config = sess.exec(
                 select(ConfigurationEntity)
             ).all()
+            self.db_config = [ConfigurationModel.model_validate(conf.to_dict()) for conf in all_config]
             self.check_and_create_configuration_values()
             self.is_installed()
 
@@ -46,7 +48,7 @@ class EcosystemDatabaseConfiguration:
             if len(created) > 0:
                 print(f'Created {len(created)} items: {",".join(created)}')
 
-    def get_setting(self, key: str) -> ConfigurationEntity | None:
+    def get_setting(self, key: str) -> ConfigurationModel | None:
         for conf in self.db_config:
             if conf.key == key:
                 return conf

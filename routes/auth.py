@@ -25,7 +25,7 @@ def check_auth(
     return AuthCheckResponse(
         installed=installed,
         authenticated=True,
-        user=user.model_dump())
+        user=UserResponseOut.model_validate(user.model_dump()))
 
 
 @auth.post("/login", response_model=Token)
@@ -35,7 +35,7 @@ def login(
 
 ):
     user = Auth.authenticate_user(body.username, body.password)
-    if not isinstance(user, UserEntity):
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",

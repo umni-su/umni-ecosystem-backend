@@ -9,22 +9,20 @@ from sqlmodel import col
 class ConfigurationRepository(BaseRepository):
     @classmethod
     def get_configuration(cls):
-        with write_session() as sess:
-            config = sess.exec(
-                select(ConfigurationEntity).where(
-                    col(ConfigurationEntity.key).not_in(
-                        [
-                            ConfigurationKeys.APP_KEY,
-                            ConfigurationKeys.APP_INSTALLED,
-                            ConfigurationKeys.APP_INSTALL_DATE
-                        ]
-                    )
-                )
-            ).all()
-            res: list[ConfigurationModel] = []
-            for c in config:
+        with write_session() as session:
+            excluded_keys = [
+                ConfigurationKeys.APP_KEY,
+                ConfigurationKeys.APP_INSTALLED,
+                ConfigurationKeys.APP_INSTALL_DATE
+            ]
+            query = select(ConfigurationEntity)
+            query = query.where(
+                col(ConfigurationEntity.key).not_in(excluded_keys)
+            )
+            _config = session.exec(query).all()
+            res: list[ConfigurationModel] = [ConfigurationModel.model_validate(conf.to_dict()) for conf in _config]
+            for index, c in enumerate(res):
                 if c.key == ConfigurationKeys.MQTT_PASSWORD and c.value is None:
-                    c.value = '**********'
-                res.append(c)
+                    res[index].value = '**********'
 
-            yield res
+            return res

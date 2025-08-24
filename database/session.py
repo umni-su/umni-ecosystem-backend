@@ -12,7 +12,7 @@ from database.engine import engine
 
 
 @contextmanager
-def write_session(expire_on_commit: bool = False) -> AbstractContextManager[Session]:
+def write_session(expire_on_commit: bool = True) -> AbstractContextManager[Session]:
     session = None
     for attempt in range(MAX_RETRIES):
         try:
