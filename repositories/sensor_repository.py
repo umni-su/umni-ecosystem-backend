@@ -3,9 +3,8 @@ from starlette.exceptions import HTTPException
 from classes.storages.device_storage import device_storage
 from database.session import write_session
 from entities.sensor import Sensor
-from models.sensor_model import SensorUpdateModel
+from models.sensor_model import SensorUpdateModel, SensorModel
 from repositories.base_repository import BaseRepository
-from fastapi import UploadFile
 from starlette.status import HTTP_404_NOT_FOUND
 
 
@@ -14,20 +13,23 @@ class SensorRepository(BaseRepository):
     @classmethod
     def get_sensor(cls, sensor_id):
         with write_session() as sess:
-            yield sess.exec(
-                select(Sensor).where(Sensor.id == sensor_id)
-            ).first()
+            sensor_orm = sess.exec(select(Sensor).where(Sensor.id == sensor_id)).first()
+            if sensor_orm is not None:
+                return SensorModel.model_validate(
+                    sensor_orm.to_dict()
+                )
+            raise HTTPException(
+                status_code=404,
+                detail="Sensor not found"
+            )
 
     @classmethod
     def update_sensor(cls, model: SensorUpdateModel):
-
         with write_session() as sess:
-            sensor = sess.exec(
-                select(Sensor).where(Sensor.id == model.id)
-            ).first()
+            sensor = sess.get(Sensor, model.id)
+            print(sensor)
             if isinstance(sensor, Sensor):
                 sensor.name = model.name
-                print(isinstance(model.cover, UploadFile))
 
                 if model.cover is not None:
                     photo = device_storage.sensor_cover_upload(
@@ -39,8 +41,11 @@ class SensorRepository(BaseRepository):
                 sess.add(sensor)
                 sess.commit()
                 sess.refresh(sensor)
-                yield sensor
+
+                return SensorModel.model_validate(
+                    sensor.to_dict()
+                )
             else:
                 raise HTTPException(
-                    status_code=HTTP_404_NOT_FOUND, detail="Not found"
+                    status_code=HTTP_404_NOT_FOUND, detail="Sensor not found"
                 )

@@ -39,5 +39,9 @@ class SensorHistoryRepository(BaseRepository):
             ).order_by(
                 asc(SensorHistory.created)
             )
-            history = sess.exec(query)
-            yield history
+            history: list[SensorHistory] = sess.exec(query).all()
+            return [
+                SensorHistoryModel.model_validate(
+                    item.to_dict()
+                )
+                for item in history]
