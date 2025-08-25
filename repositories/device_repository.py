@@ -14,45 +14,54 @@ class DeviceRepository(BaseRepository):
     @classmethod
     def get_devices(cls):
         with write_session() as sess:
-            devices_orm = sess.exec(
-                select(DeviceEntity).order_by(
-                    col(DeviceEntity.id).desc()
-                )
-            ).all()
-            return [
-                DeviceModelWithRelations.model_validate(
-                    _d.to_dict(
-                        include_relationships=True
+            try:
+                devices_orm = sess.exec(
+                    select(DeviceEntity).order_by(
+                        col(DeviceEntity.id).desc()
                     )
-                ) for _d in devices_orm
-            ]
+                ).all()
+                return [
+                    DeviceModelWithRelations.model_validate(
+                        _d.to_dict(
+                            include_relationships=True
+                        )
+                    ) for _d in devices_orm
+                ]
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def get_device(cls, device_id: int):
         with write_session() as sess:
-            device_orm = sess.exec(
-                select(DeviceEntity).where(DeviceEntity.id == device_id)
-            ).first()
-            return DeviceModelWithRelations.model_validate(
-                device_orm.to_dict(
-                    include_relationships=True
+            try:
+                device_orm = sess.exec(
+                    select(DeviceEntity).where(DeviceEntity.id == device_id)
+                ).first()
+                return DeviceModelWithRelations.model_validate(
+                    device_orm.to_dict(
+                        include_relationships=True
+                    )
                 )
-            )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def update_device(cls, device_id: int, model: DeviceUpdateModel):
         with write_session() as sess:
-            device = sess.get(DeviceEntity, device_id)
-            device.title = model.title
-            sess.add(device)
-            sess.commit()
-            sess.refresh(device)
+            try:
+                device = sess.get(DeviceEntity, device_id)
+                device.title = model.title
+                sess.add(device)
+                sess.commit()
+                sess.refresh(device)
 
-            return DeviceModelWithRelations.model_validate(
-                device.to_dict(
-                    include_relationships=True
+                return DeviceModelWithRelations.model_validate(
+                    device.to_dict(
+                        include_relationships=True
+                    )
                 )
-            )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):

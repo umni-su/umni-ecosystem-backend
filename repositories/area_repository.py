@@ -1,33 +1,37 @@
+import typing
+
 from fastapi import HTTPException
 from sqlmodel import select, col
 
 from classes.logger import Logger
 from database.session import write_session
-from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
 from repositories.base_repository import BaseRepository
 
 from models.camera_area_model import CameraAreaBaseModel
 from repositories.camera_repository import CameraRepository
-from services.cameras.classes.stream_registry import StreamRegistry
+
+if typing.TYPE_CHECKING:
+    from models.camera_model import CameraModelWithRelations
 
 
 class CameraAreaRepository(BaseRepository):
     @classmethod
-    def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: CameraEntity):
+    def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: "CameraModelWithRelations"):
         from services.cameras.classes.stream_registry import StreamRegistry
 
         try:
             # ВСЯ работа с БД в отдельном блоке
             with write_session() as session:
-                camera = session.merge(camera)
                 existing_area_ids = [a.id for a in areas if a.id is not None]
                 existing_areas = {}
 
                 if existing_area_ids:
                     existing_areas = {a.id: a for a in session.exec(
                         select(CameraAreaEntity)
-                        .where(CameraAreaEntity.id.in_(existing_area_ids))
+                        .where(
+                            col(CameraAreaEntity.id).in_(existing_area_ids)
+                        )
                     ).all()}
 
                 result_areas = []

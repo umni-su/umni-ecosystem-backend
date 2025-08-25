@@ -9,7 +9,7 @@ import os
 from typing import Annotated
 
 from classes.auth.auth import Auth
-from models.camera_event_model import CameraEventBase, CameraEventModel
+from models.camera_event_model import CameraEventBaseModel
 from repositories.camera_events_repository import CameraEventsRepository
 from responses.success import SuccessResponse
 from responses.user import UserResponseOut
@@ -20,27 +20,33 @@ events = APIRouter(
 )
 
 
-@events.get("/{event_id}", response_model=CameraEventBase)
+@events.get("/{event_id}", response_model=CameraEventBaseModel)
 async def stream_video(
+        event_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        event: Annotated[CameraEventBase, Depends(CameraEventsRepository.get_event)]
 ):
+    event = CameraEventsRepository.get_event(event_id)
     return event
 
 
 @events.delete("/{event_id}", response_model=SuccessResponse)
 async def stream_video(
+        event_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        event: Annotated[CameraEventBase, Depends(CameraEventsRepository.delete_event)]
 ):
-    return SuccessResponse(success=True)
+    event: CameraEventsRepository.delete_event(event_id)
+    return SuccessResponse(
+        success=True
+    )
 
 
 @events.get("/{event_id}/download")
 async def download_camera_event(
+        event_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.validate_token)],
-        event: Annotated[CameraEventBase, Depends(CameraEventsRepository.get_event)]
 ):
+    event = CameraEventsRepository.get_event(event_id)
+
     # Предположим, у нас есть пути к файлам события
     screenshot_path = Path(event.resized)
     original_path = Path(event.original)
@@ -83,10 +89,11 @@ async def download_camera_event(
 
 @events.get("/{event_id}/play")
 async def stream_video(
+        event_id: int,
         request: Request,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        event: Annotated[CameraEventModel, Depends(CameraEventsRepository.get_event)]
 ):
+    event = CameraEventsRepository.get_event(event_id)
     if not event or not event.recording:
         raise HTTPException(status_code=404, detail="Event has no recording")
 

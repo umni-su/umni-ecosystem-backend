@@ -1,7 +1,7 @@
 from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from entities.camera import CameraEntity
+    from models.camera_model import CameraModelWithRelations
     from services.cameras.classes.camera_stream import CameraStream
 
 
@@ -17,7 +17,7 @@ class StreamRegistry:
         cls._streams.remove(stream)
 
     @classmethod
-    def find_by_camera(cls, camera: "CameraEntity") -> Optional["CameraStream"]:
+    def find_by_camera(cls, camera: "CameraModelWithRelations") -> Optional["CameraStream"]:
         for stream in cls._streams:
             if stream.id == camera.id:
                 return stream

@@ -28,8 +28,9 @@ def get_db():
 @rules.get("", response_model=list[RuleModel])
 def get_rules(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        all_rules: list[RuleEntity] = Depends(RulesRepository.get_rules)
+
 ):
+    all_rules = RulesRepository.get_rules()
     return all_rules
 
 
