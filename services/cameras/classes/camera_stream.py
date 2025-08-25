@@ -23,7 +23,7 @@ from repositories.camera_events_repository import CameraEventsRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
 
 if TYPE_CHECKING:
-    from entities.camera_event import CameraEventEntity
+    from models.camera_event_model import CameraEventModel
     from services.cameras.classes.roi_tracker import ROIRecordEvent
     from classes.ecosystem import Ecosystem
 
@@ -108,7 +108,7 @@ class CameraStream:
         self.last_restart_time = 0
 
         # For permanent events
-        self.permanent_event: Optional["CameraEventEntity"] = None
+        self.permanent_event: Optional["CameraEventModel"] = None
 
         self._container_lock = threading.Lock()
 

@@ -21,6 +21,7 @@ class CameraAreaRepository(BaseRepository):
         from services.cameras.classes.stream_registry import StreamRegistry
 
         try:
+            result_areas = []
             # ВСЯ работа с БД в отдельном блоке
             with write_session() as session:
                 existing_area_ids = [a.id for a in areas if a.id is not None]
@@ -34,7 +35,6 @@ class CameraAreaRepository(BaseRepository):
                         )
                     ).all()}
 
-                result_areas = []
                 for area_data in areas:
                     if area_data.id is not None and area_data.id in existing_areas:
                         area = existing_areas[area_data.id]
@@ -45,26 +45,33 @@ class CameraAreaRepository(BaseRepository):
                     area.name = area_data.name
                     area.active = area_data.active
                     area.color = area_data.color
-                    area.priority = area_data.priority
+                    area.priority = area_data.priority.value
                     area.points = area_data.points
                     area.options = area_data.options.model_dump() if area_data.options else None
 
                     session.add(area)
-                    result_areas.append(area)
+                    session.flush()  # Важно: получаем ID без коммита
+
+                    area_model = CameraAreaBaseModel.model_validate(
+                        area.to_dict()
+                    )
+                    result_areas.append(area_model)
 
                 session.commit()
-                area_ids = [a.id for a in result_areas]
+
+            area_ids = [a.id for a in result_areas]
 
             # ✅ ВНЕ СЕССИИ обновляем трекер
             stream = StreamRegistry.find_by_camera(camera)
-            if stream and hasattr(stream, 'tracker'):
-                # Отложенное обновление без блокировки
-                import threading
-                threading.Thread(
-                    target=stream.tracker.update_rois_by_ids,
-                    args=(area_ids,),
-                    daemon=True
-                ).start()
+            if stream is not None:
+                if stream and hasattr(stream, 'tracker'):
+                    # Отложенное обновление без блокировки
+                    import threading
+                    threading.Thread(
+                        target=stream.tracker.update_rois_by_ids,
+                        args=(area_ids,),
+                        daemon=True
+                    ).start()
 
             return result_areas
 

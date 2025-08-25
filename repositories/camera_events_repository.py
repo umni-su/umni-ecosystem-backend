@@ -14,12 +14,10 @@ from database.session import write_session
 from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
-from models.camera_area_model import CameraAreaModel
-from models.camera_event_model import CameraEventBaseModel
+from models.camera_event_model import CameraEventModel
 from models.pagination_model import EventsPageParams, PaginatedResponse, EventsPageType, TimelineParams
-from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
-from services.cameras.classes.roi_tracker import ROIEvent, ROIEventType
+from services.cameras.classes.roi_tracker import ROIEventType
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
@@ -37,7 +35,7 @@ class CameraEventsRepository(BaseRepository):
             camera: "CameraModelWithRelations",
             frame: np.ndarray,
             record_path: str | None = None
-    ) -> CameraAreaModel:
+    ):
         with write_session() as session:
             try:
                 has_record = False
@@ -73,14 +71,14 @@ class CameraEventsRepository(BaseRepository):
                 session.commit()
                 session.refresh(event)
 
-                return CameraAreaModel.model_validate(
+                return CameraEventModel.model_validate(
                     event.to_dict()
                 )
             except Exception as e:
                 Logger.err(f'[{camera.name}] Error adding permanent event: {e}')
 
     @classmethod
-    def close_permanent_event(cls, event: CameraEventEntity) -> CameraEventEntity:
+    def close_permanent_event(cls, event: CameraEventModel):
         with write_session() as session:
             try:
                 event = session.get(CameraEventEntity, event.id)
@@ -91,38 +89,41 @@ class CameraEventsRepository(BaseRepository):
                     event.recording.end = event.end
                     event.recording.duration = event.duration
                 session.commit()
-                return event
+                return CameraEventModel.model_validate(
+                    event.to_dict()
+                )
             except Exception as e:
                 event_id = event.id  # Сохраняем ID до закрытия сессии
                 Logger.err(f'Error update end for permanent event #ID{event_id}: {e}')
 
             # (event.timestamp - recording.start).total_seconds()
 
-    @classmethod
-    def add_event(cls, model: "ROIEvent"):
-        with write_session() as sess:
-            if hasattr(model, 'roi'):
-                area = CameraAreaRepository.get_area(model.roi.id)
-                camera = area.camera
-            else:
-                area = None
-                camera = model.camera
-            try:
-                event = CameraEventEntity()
-                event.camera = camera
-                event.area = area
-                event.start = datetime.now()
-                event.action = model.event
-                event.type = camera.record_mode
-
-                sess.add(event)
-                sess.commit()
-                sess.refresh(event)
-                sess.close()
-
-                return event
-            except Exception as e:
-                Logger.err(e)
+    # @classmethod
+    # def add_event(cls, model: "ROIEvent"):
+    #     with write_session() as sess:
+    #         try:
+    #             # if hasattr(model, 'roi'):
+    #             #     area = CameraAreaRepository.get_area(model.roi.id)
+    #             #     camera = area.camera
+    #             # else:
+    #             area = None
+    #             camera = model.camera
+    #
+    #             event = CameraEventEntity()
+    #             event.camera = camera
+    #             event.area = area
+    #             event.start = datetime.now()
+    #             event.action = model.event
+    #             event.type = camera.record_mode
+    #
+    #             sess.add(event)
+    #             sess.commit()
+    #             sess.refresh(event)
+    #             sess.close()
+    #
+    #             return event
+    #         except Exception as e:
+    #             Logger.err(e)
 
     @classmethod
     def update_event_end(cls, event: CameraEventEntity):
@@ -138,13 +139,15 @@ class CameraEventsRepository(BaseRepository):
                 Logger.err(f"update_event_end error - {e}")
 
     @classmethod
-    def get_event(cls, event_id: int):
+    def get_event(cls, event_id: int, relations: bool = False):
         with (write_session() as sess):
             event = sess.get(CameraEventEntity, event_id)
             if not event:
                 raise HTTPException(status_code=404)
-            return CameraEventBaseModel.model_validate(
-                event.to_dict()
+            return CameraEventModel.model_validate(
+                event.to_dict(
+                    include_relationships=relations
+                )
             )
 
     @classmethod
@@ -183,79 +186,100 @@ class CameraEventsRepository(BaseRepository):
     @classmethod
     def get_timeline(cls, params: TimelineParams, camera: "CameraModelWithRelations"):
         with write_session() as sess:
-            query = (
-                select(CameraEventEntity)
-                .where(CameraEventEntity.camera_id == camera.id)
-                .where(CameraEventEntity.start >= params.start)
-                .where(CameraEventEntity.end <= params.end)
-            )
+            try:
+                query = (
+                    select(CameraEventEntity)
+                    .where(CameraEventEntity.camera_id == camera.id)
+                    .where(CameraEventEntity.start >= params.start)
+                    .where(CameraEventEntity.end <= params.end)
+                )
 
-            return sess.exec(query).all()
+                timeline_entries = sess.exec(query).all()
+                return [
+                    CameraEventModel.model_validate(
+                        ev.to_dict()
+                    )
+                    for ev in timeline_entries
+                ]
+            except Exception as e:
+                print(e)
+                raise HTTPException(
+                    status_code=500,
+                    detail='Error get event timeline'
+                )
 
     @classmethod
     def get_events(cls, params: EventsPageParams, camera: "CameraModelWithRelations"):
         with write_session() as sess:
-            # Подготавливаем базовый запрос
-            query = (
-                select(CameraEventEntity)
-                .where(CameraEventEntity.camera_id == camera.id)
-            )
-
-            count = select(func.count(col(CameraEventEntity.id))).where(CameraEventEntity.camera_id == camera.id)
-
-            if params.event_id is not None:
-                event = cls.get_event(params.event_id)
-                if event is not None:
-                    if params.direction == 'start':
-                        query = query.where(CameraEventEntity.start >= event.start).where(
-                            CameraEventEntity.id != event.id)
-                        count = count.where(CameraEventEntity.start >= event.start).where(
-                            CameraEventEntity.id != event.id)
-                    elif params.direction == 'end':
-                        query = query.where(CameraEventEntity.start <= event.start).where(
-                            CameraEventEntity.id != event.id)
-                        count = count.where(CameraEventEntity.start <= event.start).where(
-                            CameraEventEntity.id != event.id)
-                    else:
-                        query = query.where(CameraEventEntity.start <= event.start)
-                        count = count.where(CameraEventEntity.start <= event.start)
-
-            if params.type == EventsPageType.STREAM:
-                _col = col(CameraEventEntity.type).in_(
-                    [
-                        CameraRecordTypeEnum.VIDEO,
-                        CameraRecordTypeEnum.SCREENSHOTS
-                    ]
+            try:
+                # Подготавливаем базовый запрос
+                query = (
+                    select(CameraEventEntity)
+                    .where(CameraEventEntity.camera_id == camera.id)
                 )
-                query = query.where(_col)
-                count = count.where(_col)
-            elif params.type == EventsPageType.EVENTS:
-                _col = col(CameraEventEntity.type).in_(
-                    [
-                        CameraRecordTypeEnum.DETECTION_VIDEO,
-                        CameraRecordTypeEnum.DETECTION_SCREENSHOTS
-                    ]
+
+                count = select(func.count(col(CameraEventEntity.id))).where(CameraEventEntity.camera_id == camera.id)
+
+                if params.event_id is not None:
+                    event = cls.get_event(params.event_id)
+                    if event is not None:
+                        if params.direction == 'start':
+                            query = query.where(CameraEventEntity.start >= event.start).where(
+                                CameraEventEntity.id != event.id)
+                            count = count.where(CameraEventEntity.start >= event.start).where(
+                                CameraEventEntity.id != event.id)
+                        elif params.direction == 'end':
+                            query = query.where(CameraEventEntity.start <= event.start).where(
+                                CameraEventEntity.id != event.id)
+                            count = count.where(CameraEventEntity.start <= event.start).where(
+                                CameraEventEntity.id != event.id)
+                        else:
+                            query = query.where(CameraEventEntity.start <= event.start)
+                            count = count.where(CameraEventEntity.start <= event.start)
+
+                if params.type == EventsPageType.STREAM:
+                    _col = col(CameraEventEntity.type).in_(
+                        [
+                            CameraRecordTypeEnum.VIDEO,
+                            CameraRecordTypeEnum.SCREENSHOTS
+                        ]
+                    )
+                    query = query.where(_col)
+                    count = count.where(_col)
+                elif params.type == EventsPageType.EVENTS:
+                    _col = col(CameraEventEntity.type).in_(
+                        [
+                            CameraRecordTypeEnum.DETECTION_VIDEO,
+                            CameraRecordTypeEnum.DETECTION_SCREENSHOTS
+                        ]
+                    )
+                    query = query.where(_col)
+                    count = count.where(_col)
+                # Получаем общее количество дочерних элементов
+                total = sess.exec(count).first()
+
+                # Вычисляем количество страниц
+                pages = ceil(total / params.size) if params.size else 0
+
+                items = sess.exec(
+                    query.order_by(
+                        col(CameraEventEntity.start).desc()
+                    )
+                    .offset((params.page - 1) * params.size)
+                    .limit(params.size)
+                ).all()
+
+                model_items = [
+                    CameraEventModel.model_validate(ev.to_dict())
+                    for ev in items
+                ]
+
+                return PaginatedResponse[CameraEventModel](
+                    items=model_items,
+                    total=total,
+                    page=params.page,
+                    size=params.size,
+                    pages=pages
                 )
-                query = query.where(_col)
-                count = count.where(_col)
-            # Получаем общее количество дочерних элементов
-            total = sess.exec(count).first()
-
-            # Вычисляем количество страниц
-            pages = ceil(total / params.size) if params.size else 0
-
-            items = sess.exec(
-                query.order_by(
-                    col(CameraEventEntity.start).desc()
-                )
-                .offset((params.page - 1) * params.size)
-                .limit(params.size)
-            ).all()
-
-            return PaginatedResponse[CameraEventEntity](
-                items=items,
-                total=total,
-                page=params.page,
-                size=params.size,
-                pages=pages
-            )
+            except Exception as e:
+                Logger.err(str(e))

@@ -157,13 +157,16 @@ def get_camera_area_preview(
         type: str,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
-    event = CameraEventsRepository.get_event(event_id)
-    if type == 'original':
-        frame = cv2.imread(event.original, cv2.IMREAD_UNCHANGED)
-    else:
-        frame = cv2.imread(event.resized, cv2.IMREAD_UNCHANGED)
-    success, im = cv2.imencode(ext='.jpg', img=frame)
-    if success:
-        headers = {'Content-Disposition': f'inline; filename="{event.id}"'}
-        return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
-    return None
+    try:
+        event = CameraEventsRepository.get_event(event_id)
+        if type == 'original':
+            frame = cv2.imread(event.original, cv2.IMREAD_UNCHANGED)
+        else:
+            frame = cv2.imread(event.resized, cv2.IMREAD_UNCHANGED)
+        success, im = cv2.imencode(ext='.jpg', img=frame)
+        if success:
+            headers = {'Content-Disposition': f'inline; filename="{event.id}"'}
+            return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
+        return None
+    except Exception as e:
+        print(e)

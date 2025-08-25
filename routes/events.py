@@ -9,7 +9,7 @@ import os
 from typing import Annotated
 
 from classes.auth.auth import Auth
-from models.camera_event_model import CameraEventBaseModel
+from models.camera_event_model import CameraEventModel
 from repositories.camera_events_repository import CameraEventsRepository
 from responses.success import SuccessResponse
 from responses.user import UserResponseOut
@@ -20,12 +20,12 @@ events = APIRouter(
 )
 
 
-@events.get("/{event_id}", response_model=CameraEventBaseModel)
+@events.get("/{event_id}", response_model=CameraEventModel)
 async def stream_video(
         event_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
-    event = CameraEventsRepository.get_event(event_id)
+    event = CameraEventsRepository.get_event(event_id, True)
     return event
 
 
@@ -93,7 +93,7 @@ async def stream_video(
         request: Request,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
-    event = CameraEventsRepository.get_event(event_id)
+    event = CameraEventsRepository.get_event(event_id, True)
     if not event or not event.recording:
         raise HTTPException(status_code=404, detail="Event has no recording")
 
