@@ -1,0 +1,71 @@
+This software is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+Copyright (C) 2025 Mikhail Sazanov (umni.su)
+
+The project includes and uses the following open-source components:
+
+-------------------------------------------------------------------------------
+
+*   Alembic (MIT License) - https://alembic.sqlalchemy.org
+*   Annotated Types (MIT License) - https://github.com/annotated-types/annotated-types
+*   AnyIO (MIT License) - https://github.com/agronholm/anyio
+*   Av (PyAV) (BSD 2-Clause "Simplified" License) - https://github.com/PyAV-Org/PyAV
+    // Includes dependencies from FFmpeg licensed under LGPLv2.1 and others
+*   bcrypt (Apache License 2.0) - https://github.com/pyca/bcrypt
+*   certifi (Mozilla Public License 2.0) - https://github.com/certifi/python-certifi
+*   cffi (MIT License) - https://github.com/python-cffi/cffi
+*   click (BSD 3-Clause "New" or "Revised" License) - https://github.com/pallets/click
+*   colorama (BSD 3-Clause "New" or "Revised" License) - https://github.com/tartley/colorama
+*   cryptography (Apache License 2.0 / BSD 3-Clause) - https://github.com/pyca/cryptography
+*   dnspython (BSD 3-Clause "New" or "Revised" License) - https://github.com/rthalley/dnspython
+*   email-validator (CC0 1.0 Universal / MIT License) - https://github.com/JoshData/python-email-validator
+*   FastAPI (MIT License) - https://github.com/tiangolo/fastapi
+*   fastapi-cli (MIT License) - https://github.com/tiangolo/fastapi-cli
+*   greenlet (MIT License) - https://github.com/python-greenlet/greenlet
+*   h11 (MIT License) - https://github.com/python-hyper/h11
+*   httpcore (BSD 3-Clause "New" or "Revised" License) - https://github.com/encode/httpcore
+*   httptools (MIT License) - https://github.com/MagicStack/httptools
+*   httpx (BSD 3-Clause "New" or "Revised" License) - https://github.com/encode/httpx
+*   idna (BSD 3-Clause "New" or "Revised" License) - https://github.com/kjd/idna
+*   imutils (MIT License) - https://github.com/PyImageSearch/imutils
+*   Jinja2 (BSD 3-Clause "New" or "Revised" License) - https://github.com/pallets/jinja
+*   Mako (MIT License) - https://github.com/sqlalchemy/mako
+*   markdown-it-py (MIT License) - https://github.com/executablebooks/markdown-it-py
+*   MarkupSafe (BSD 3-Clause "New" or "Revised" License) - https://github.com/pallets/markupsafe
+*   mdurl (MIT License) - https://github.com/executablebooks/mdurl
+*   Nuitka (Apache License 2.0) - https://github.com/Nuitka/Nuitka
+*   NumPy (BSD 3-Clause "New" or "Revised" License) - https://numpy.org
+*   OpenCV-Python (Apache License 2.0) - https://github.com/opencv/opencv-python
+    // Links dynamically to OpenCV library licensed under Apache 2.0 and BSD licenses
+*   ordered-set (MIT License) - https://github.com/ordered-set/ordered-set
+*   paho-mqtt (Eclipse Dual License 1.0 / Eclipse Distribution License 1.0) - https://github.com/eclipse/paho.mqtt.python
+*   psutil (BSD 3-Clause "New" or "Revised" License) - https://github.com/giampaolo/psutil
+*   psycopg2 (LGPLv3 License) - https://github.com/psycopg/psycopg2
+*   pycparser (BSD 3-Clause "New" or "Revised" License) - https://github.com/eliben/pycparser
+*   pydantic (MIT License) - https://github.com/pydantic/pydantic
+*   pydantic-settings (MIT License) - https://github.com/pydantic/pydantic-settings
+*   pydantic_core (MIT License) - https://github.com/pydantic/pydantic-core
+*   Pygments (BSD 2-Clause "Simplified" License) - https://github.com/pygments/pygments
+*   PyJWT (MIT License) - https://github.com/jpadilla/pyjwt
+*   python-dotenv (BSD 3-Clause "New" or "Revised" License) - https://github.com/theskumar/python-dotenv
+*   python-multipart (Apache License 2.0) - https://github.com/andrew-d/python-multipart
+*   PyYAML (MIT License) - https://github.com/yaml/pyyaml
+*   rich (MIT License) - https://github.com/Textualize/rich
+*   rich-toolkit (MIT License) - https://github.com/Textualize/rich-toolkit
+*   schedule (MIT License) - https://github.com/dbader/schedule
+*   shellingham (ISC License) - https://github.com/sarugaku/shellingham
+*   sniffio (MIT License) - https://github.com/python-trio/sniffio
+*   SQLAlchemy (MIT License) - https://github.com/sqlalchemy/sqlalchemy
+*   sqlmodel (MIT License) - https://github.com/tiangolo/sqlmodel
+*   starlette (BSD 3-Clause "New" or "Revised" License) - https://github.com/encode/starlette
+*   typer (MIT License) - https://github.com/tiangolo/typer
+*   typing-inspection (MIT License) - https://github.com/ilevkivskyi/typing_inspection
+*   typing_extensions (Apache License 2.0) - https://github.com/python/typing_extensions
+*   uvicorn (BSD 3-Clause "New" or "Revised" License) - https://github.com/encode/uvicorn
+*   watchdog (Apache License 2.0) - https://github.com/gorakhargosh/watchdog
+*   watchfiles (MIT License) - https://github.com/samuelcolvin/watchfiles
+*   websockets (BSD 3-Clause "New" or "Revised" License) - https://github.com/aaugustin/websockets
+*   zstandard (BSD 3-Clause "New" or "Revised" License) - https://github.com/indygreg/python-zstandard
+
+-------------------------------------------------------------------------------
+
+For full license texts of these components, please see the corresponding source distributions or visit the provided links.
