@@ -1,10 +1,11 @@
 from typing import Annotated
 
 import cv2
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from starlette.responses import Response
 
+from classes.app.lifespan_manager import lifespan_manager
 from classes.auth.auth import Auth
 from classes.logger import Logger
 from models.camera_area_model import CameraAreaBaseModel
@@ -24,6 +25,62 @@ cameras = APIRouter(
     prefix='/cameras',
     tags=['cameras']
 )
+
+# Менеджер для статичных заставок
+import asyncio
+import threading
+
+
+class StaticStreamManager:
+    _instance = None
+    _lock = threading.Lock()
+    _active_streams: dict[int, bool] = {}
+
+    @classmethod
+    def get_instance(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls()
+            return cls._instance
+
+    async def generate_static_placeholder(self, camera_id: int, camera_name: str):
+        """Генерирует статичную заставку с периодической проверкой доступности потока"""
+        check_interval = 3
+        max_retries = 100
+
+        retry_count = 0
+        self._active_streams[camera_id] = True
+
+        try:
+            while (self._active_streams.get(camera_id, False) and
+                   retry_count < max_retries and
+                   not lifespan_manager.is_shutting_down):
+
+                # Проверяем, доступен ли поток
+                camera = CameraRepository.get_camera(camera_id)
+                stream = StreamRegistry.find_by_camera(camera)
+
+                if stream and stream.opened and StreamRegistry.is_running():
+                    break
+
+                # Генерируем заставку
+                placeholder = get_no_signal_frame(width=640)
+                ret, buffer = cv2.imencode('.jpg', placeholder)
+
+                if ret:
+                    frame_data = (b'--frame\r\n'
+                                  b'Content-Type: image/jpeg\r\n\r\n' +
+                                  buffer.tobytes() + b'\r\n')
+                    yield frame_data
+
+                retry_count += 1
+                await asyncio.sleep(check_interval)
+
+        finally:
+            self._active_streams.pop(camera_id, None)
+
+
+static_stream_manager = StaticStreamManager.get_instance()
 
 
 @cameras.get('', response_model=list[CameraModelWithRelations])
@@ -88,21 +145,39 @@ def get_camera_cover(
 
 
 @cameras.get('/{camera_id}/stream')
-def get_camera_stream(
+async def get_camera_stream(
         camera_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.validate_token)],
+        background_tasks: BackgroundTasks,
 ):
-    camera = CameraRepository.get_camera(camera_id)
-    for stream in StreamRegistry.get_all_streams():
-        if stream.id == camera.id and stream.opened:
-            return StreamingResponse(
-                content=stream.generate_frames_async(),
-                media_type='multipart/x-mixed-replace; boundary=frame'
-            )
+    # Проверяем глобальное состояние shutdown
+    if lifespan_manager.is_shutting_down:
+        raise HTTPException(status_code=503, detail="Service is shutting down")
 
-    raise HTTPException(
-        status_code=422,
-        detail='Stream can not be open'
+    # Проверяем состояние потоков
+    if StreamRegistry.is_shutting_down():
+        raise HTTPException(status_code=503, detail="Streams are shutting down")
+
+    camera = CameraRepository.get_camera(camera_id)
+    stream = StreamRegistry.find_by_camera(camera)
+
+    if stream and stream.opened and StreamRegistry.is_running():
+        # Добавляем задачу для очистки
+        background_tasks.add_task(
+            lambda: stream.stop_frame_generation()
+            if hasattr(stream, 'stop_frame_generation')
+            else None
+        )
+
+        return StreamingResponse(
+            content=stream.generate_frames_async(),
+            media_type='multipart/x-mixed-replace; boundary=frame'
+        )
+
+    # Возвращаем статичную заставку вместо исключения
+    return StreamingResponse(
+        content=static_stream_manager.generate_static_placeholder(camera_id, camera.name),
+        media_type='multipart/x-mixed-replace; boundary=frame'
     )
 
 

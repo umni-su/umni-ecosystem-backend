@@ -1,4 +1,5 @@
 from entities.camera_recording import CameraRecordingEntity
+from entities.location import LocationEntity
 from entities.storage import StorageEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -95,6 +96,11 @@ class CameraEntity(
     table=True
 ):
     __tablename__ = 'cameras'
+
+    location: LocationEntity | None = Relationship(
+        # sa_relationship_kwargs=dict(lazy="selectin"),
+        back_populates="cameras"
+    )
     storage: StorageEntity | None = Relationship(
         # sa_relationship_kwargs=dict(lazy="selectin"),
         back_populates="cameras"

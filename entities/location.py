@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
+
+if TYPE_CHECKING:
+    from entities.camera import CameraEntity
 
 
 class LocationEntityBase:
@@ -23,3 +28,7 @@ class LocationEntity(
     table=True
 ):
     __tablename__ = 'locations'
+
+    cameras: list["CameraEntity"] = Relationship(
+        back_populates="location"
+    )
