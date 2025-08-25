@@ -18,6 +18,7 @@ from responses.user import UserResponseOut
 from starlette.exceptions import HTTPException
 
 from services.cameras.classes.stream_registry import StreamRegistry
+from services.cameras.utils.cameras_helpers import get_no_signal_frame
 
 cameras = APIRouter(
     prefix='/cameras',
@@ -70,19 +71,16 @@ def get_camera_cover(
     stream = StreamRegistry.find_by_camera(camera)
 
     if stream is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Camera stream not found"
-        )
-
-    try:
-        if not stream.is_opened() and not stream.resized:
+        frame = get_no_signal_frame(width=640)
+    else:
+        try:
+            if not stream.is_opened() and not stream.resized:
+                frame = stream.get_no_signal_frame()
+            else:
+                frame = stream.resized
+        except cv2.error as e:
             frame = stream.get_no_signal_frame()
-        else:
-            frame = stream.resized
-    except cv2.error as e:
-        frame = stream.get_no_signal_frame()
-        Logger.err(f"[{camera.name}] can not get cover with message {e}")
+            Logger.err(f"[{camera.name}] can not get cover with message {e}")
 
     success, im = cv2.imencode('.jpg', frame)
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
@@ -98,9 +96,10 @@ def get_camera_stream(
     for stream in StreamRegistry.get_all_streams():
         if stream.id == camera.id and stream.opened:
             return StreamingResponse(
-                content=stream.generate_frames(),
+                content=stream.generate_frames_async(),
                 media_type='multipart/x-mixed-replace; boundary=frame'
             )
+
     raise HTTPException(
         status_code=422,
         detail='Stream can not be open'

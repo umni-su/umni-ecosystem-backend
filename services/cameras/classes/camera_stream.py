@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 import threading
@@ -21,6 +22,7 @@ from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_model import CameraModelWithRelations
 from repositories.camera_events_repository import CameraEventsRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
+from services.cameras.utils.cameras_helpers import get_no_signal_frame
 
 if TYPE_CHECKING:
     from models.camera_event_model import CameraEventModel
@@ -648,32 +650,46 @@ class CameraStream:
             self.last_restart_time = time.time()
 
     def get_no_signal_frame(self):
-        try:
-            frame = cv2.imread(os.path.abspath('static/images/no-signal.jpg'))
-            frame = imutils.resize(frame, width=640)
-        except Exception:
-            frame = np.zeros((640, 360, 1), dtype="uint8")
-        return frame
+        return get_no_signal_frame(width=640)
 
     def generate_frames(self):
-        time_prev = 0
-        fps = 15
 
         while True:
             if self.input_container is None or self.resized is None:
                 frame = self.get_no_signal_frame()
             else:
                 frame = self.resized
-
-            time_elapsed = time.time() - time_prev
-            time_prev = time.time()
-
             ret, buffer = cv2.imencode('.jpg', frame)
             if not ret:
                 continue
 
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+    async def generate_frames_async(self):
+        """Асинхронная генерация кадров"""
+        while self.opened:
+            try:
+                if self.input_container is None or self.resized is None:
+                    frame = self.get_no_signal_frame()
+                else:
+                    frame = self.resized
+
+                ret, buffer = cv2.imencode('.jpg', frame)
+                if not ret:
+                    await asyncio.sleep(0.03)  # Небольшая задержка
+                    continue
+
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+                # Даем возможность другим задачам выполняться
+                await asyncio.sleep(0.03)
+
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                break
 
     def save_event(self):
         pass
