@@ -1,3 +1,4 @@
+from classes.logger import Logger
 from classes.storages.filesystem import Filesystem
 from database.session import write_session
 from entities.storage import StorageEntity
@@ -23,48 +24,74 @@ class StorageRepository(BaseRepository):
     @classmethod
     def get_storages(cls):
         with write_session() as sess:
-            return sess.exec(
-                select(StorageEntity)
-            ).all()
+            try:
+                storages_orm = sess.exec(
+                    select(StorageEntity)
+                ).all()
+                return [
+                    StorageModel.model_validate(
+                        storage.to_dict()
+                    )
+                    for storage in storages_orm
+                ]
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def get_storage(cls, storage_id: int):
         with write_session() as sess:
-            return sess.exec(
-                select(StorageEntity).where(StorageEntity.id == storage_id)
-            ).first()
+            try:
+                storage = sess.get(StorageEntity, storage_id)
+                return StorageModel.model_validate(
+                    storage.to_dict()
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def add_storage(cls, model: StorageModelBase):
         with write_session() as sess:
-            cls.path_exists(model.path)
-            storage = StorageEntity()
-            storage.name = model.name
-            storage.path = model.path
-            storage.active = model.active
-            sess.add(storage)
-            sess.commit()
-            sess.refresh(storage)
-            return storage
+            try:
+                cls.path_exists(model.path)
+                storage = StorageEntity()
+                storage.name = model.name
+                storage.path = model.path
+                storage.active = model.active
+                sess.add(storage)
+                sess.commit()
+                sess.refresh(storage)
+                return StorageModel.model_validate(
+                    storage.to_dict()
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def update_storage(cls, model: StorageModel):
         with write_session() as sess:
-            cls.path_exists(model.path)
-            storage = cls.get_storage(model.id)
-            storage.name = model.name
-            storage.path = model.path
-            storage.active = model.active
-            sess.add(storage)
-            sess.commit()
-            sess.refresh(storage)
-            return storage
+            try:
+                cls.path_exists(model.path)
+                storage = cls.get_storage(model.id)
+                storage.name = model.name
+                storage.path = model.path
+                storage.active = model.active
+                sess.add(storage)
+                sess.commit()
+                sess.refresh(storage)
+                return StorageModel.model_validate(
+                    storage.to_dict()
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def delete_storage(cls, storage_id: int):
         with write_session() as sess:
-            storage = cls.get_storage(storage_id)
-            if isinstance(storage, StorageEntity):
-                sess.delete(storage)
-                sess.commit()
-            return SuccessResponse(success=True)
+            try:
+                storage = cls.get_storage(storage_id)
+                if isinstance(storage, StorageEntity):
+                    sess.delete(storage)
+                    sess.commit()
+                return SuccessResponse(success=True)
+            except Exception as e:
+                Logger.err(str(e))

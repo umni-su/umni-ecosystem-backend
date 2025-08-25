@@ -17,8 +17,9 @@ storages = APIRouter(
 @storages.get('', response_model=list[StorageModel])
 def get_storages(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        items: list[StorageModel] = Depends(StorageRepository.get_storages)
+
 ):
+    items: list[StorageModel] = StorageRepository.get_storages()
     return items
 
 
@@ -26,22 +27,24 @@ def get_storages(
 def add_storage(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         model: StorageModelBase,
-        storage: StorageModel = Depends(StorageRepository.add_storage)
 ):
-    return model
+    storage: StorageModel = StorageRepository.add_storage(model)
+    return storage
 
 
 @storages.put('/{id}')
 def update_storage(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        model: StorageModel = Depends(StorageRepository.update_storage)
+        model: StorageModel,
 ):
-    return model
+    storage: StorageModel = StorageRepository.update_storage(model)
+    return storage
 
 
 @storages.delete('/{storage_id}', response_model=SuccessResponse)
 def update_storage(
+        storage_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        res: SuccessResponse = Depends(StorageRepository.delete_storage)
 ):
+    res: SuccessResponse = StorageRepository.delete_storage(storage_id)
     return res
