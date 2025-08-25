@@ -2,8 +2,10 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from sqlmodel import select
 
+from classes.logger import Logger
 from database.session import write_session
 from entities.camera_recording import CameraRecordingEntity
+from models.camera_recording import CameraRecordingBaseModel
 from repositories.base_repository import BaseRepository
 
 if TYPE_CHECKING:
@@ -12,13 +14,17 @@ if TYPE_CHECKING:
 
 class CameraRecordingRepository(BaseRepository):
     @classmethod
-    def get_old_recordings(cls, camera: "CameraEntity") -> list[CameraRecordingEntity]:
+    def get_old_recordings(cls, camera: "CameraEntity") -> list[CameraRecordingBaseModel]:
         with write_session() as sess:
-            cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
-            return sess.exec(
-                select(CameraRecordingEntity)
-                .where(
-                    (CameraRecordingEntity.camera == camera) &
-                    (CameraRecordingEntity.end < cutoff_time)
-                )
-            ).all()
+            try:
+                cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
+                old_recordings = sess.exec(
+                    select(CameraRecordingEntity)
+                    .where(
+                        (CameraRecordingEntity.camera == camera) &
+                        (CameraRecordingEntity.end < cutoff_time)
+                    )
+                ).all()
+                return [CameraRecordingBaseModel.model_validate(r) for r in old_recordings]
+            except Exception as e:
+                Logger.err(str(e))

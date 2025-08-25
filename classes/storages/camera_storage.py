@@ -10,10 +10,9 @@ import cv2
 from classes.logger import Logger
 from classes.storages.filesystem import Filesystem
 from classes.storages.storage import StorageBase
-from database.session import write_session
 
 if TYPE_CHECKING:
-    from entities.camera import CameraEntity
+    from models.camera_model import CameraModelWithRelations
 
 
 class ScreenshotResultModel(BaseModel):
@@ -25,43 +24,39 @@ class ScreenshotResultModel(BaseModel):
 
 class CameraStorage(StorageBase):
     @classmethod
-    def upload_cover(cls, camera: "CameraEntity", frame: cv2.Mat):
-        with write_session() as sess:
-            try:
-                cls.path = camera.storage.path
-                rel_path = os.path.join(
-                    str(camera.id),
-                    'cover.jpg'
-                )
-                image_path = os.path.join(
-                    cls.path,
-                    rel_path
-                )
-                if not cls.exists(os.path.dirname(image_path)):
-                    Filesystem.mkdir(os.path.dirname(image_path))
-                if cv2.imwrite(image_path, frame):
-                    camera.cover = rel_path
-                    sess.add(camera)
-                    # sess.commit()
-                return camera
-            except Exception as e:
-                Logger.err(f"[{camera.name}] upload_cover error - {e}")
-                raise e
+    def upload_cover(cls, camera: "CameraModelWithRelations", frame: cv2.Mat):
 
-        return None
+        try:
+            cls.path = camera.storage.path
+            rel_path = os.path.join(
+                str(camera.id),
+                'cover.jpg'
+            )
+            image_path = os.path.join(
+                cls.path,
+                rel_path
+            )
+            if not cls.exists(os.path.dirname(image_path)):
+                Filesystem.mkdir(os.path.dirname(image_path))
+            if cv2.imwrite(image_path, frame):
+                return camera
+        except Exception as e:
+            Logger.err(f"[{camera.name}] upload_cover error - {e}")
+            raise e
 
     @classmethod
     def date_filename(cls):
         return datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
     @classmethod
-    def take_detection_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None,
+    def take_detection_screenshot(cls, camera: "CameraModelWithRelations", frame: cv2.Mat | ndarray | None = None,
                                   prefix: str = None):
         path = cls.screenshots_detections_path(camera)
         return cls._save_camera_image(path, frame, prefix)
 
     @classmethod
-    def take_screenshot(cls, camera: "CameraEntity", frame: cv2.Mat | ndarray | None = None, prefix: str = None):
+    def take_screenshot(cls, camera: "CameraModelWithRelations", frame: cv2.Mat | ndarray | None = None,
+                        prefix: str = None):
         path = cls.screenshots_path(camera)
         return cls._save_camera_image(path, frame, prefix)
 
@@ -91,7 +86,7 @@ class CameraStorage(StorageBase):
         )
 
     @classmethod
-    def get_cover(cls, camera: "CameraEntity", width: int):
+    def get_cover(cls, camera: "CameraModelWithRelations", width: int):
         path = os.path.join(
             camera.storage.path,
             camera.cover
@@ -99,14 +94,14 @@ class CameraStorage(StorageBase):
         return cls.image_response(path, width)
 
     @classmethod
-    def camera_path(cls, camera: "CameraEntity"):
+    def camera_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
             camera.storage.path,
             str(camera.id)
         )
 
     @classmethod
-    def video_path(cls, camera: "CameraEntity"):
+    def video_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
             cls.camera_path(camera),
             'recordings',
@@ -114,7 +109,7 @@ class CameraStorage(StorageBase):
         )
 
     @classmethod
-    def screenshots_path(cls, camera: "CameraEntity"):
+    def screenshots_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
             cls.camera_path(camera),
             'screenshots',
@@ -122,7 +117,7 @@ class CameraStorage(StorageBase):
         )
 
     @classmethod
-    def video_detections_path(cls, camera: "CameraEntity"):
+    def video_detections_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
             cls.camera_path(camera),
             'recordings',
@@ -130,7 +125,7 @@ class CameraStorage(StorageBase):
         )
 
     @classmethod
-    def screenshots_detections_path(cls, camera: "CameraEntity"):
+    def screenshots_detections_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
             cls.camera_path(camera),
             'screenshots',

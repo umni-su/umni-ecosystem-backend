@@ -16,9 +16,9 @@ from classes.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
 from classes.thread.Daemon import Daemon
-from entities.camera import CameraEntity
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
+from models.camera_model import CameraModelWithRelations
 from repositories.camera_events_repository import CameraEventsRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
 
@@ -39,14 +39,14 @@ class ScreenshotResultModel(BaseModel):
 
 
 class CameraStream:
-    def __init__(self, camera: CameraEntity):
+    def __init__(self, camera: CameraModelWithRelations):
         self.ecosystem = get_ecosystem()
         self.id: int = 0
         self.video_pts = 0
         self.audio_pts = 0
         self.tracker: Optional[ROITracker] = None
         self.opened: bool = True
-        self.camera: Optional[CameraEntity] = None
+        self.camera: Optional[CameraModelWithRelations] = None
         self.link: Optional[str] = None
 
         # Video processing settings
@@ -139,7 +139,7 @@ class CameraStream:
     def handle_recording_end(self, event: "ROIRecordEvent"):
         CameraNotifier.handle_recording_end(event, self)
 
-    def prepare_link(self, camera: CameraEntity, secondary: bool = False):
+    def prepare_link(self, camera: CameraModelWithRelations, secondary: bool = False):
         userinfo = ''
         if camera.username is not None and camera.password is not None:
             password = self.ecosystem.crypto.decrypt(camera.password)
@@ -155,7 +155,7 @@ class CameraStream:
             proto = camera.protocol
         return f'{proto.lower()}://{userinfo}{camera.ip}:{port}/{stream}'
 
-    def set_camera(self, camera: CameraEntity):
+    def set_camera(self, camera: CameraModelWithRelations):
         self.need_skip = True
         if self.camera is not None and self.camera.model_dump() != camera.model_dump():
             changed_fields = {

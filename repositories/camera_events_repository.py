@@ -14,6 +14,8 @@ from database.session import write_session
 from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
+from models.camera_area_model import CameraAreaModel
+from models.camera_event_model import CameraEventBaseModel
 from models.pagination_model import EventsPageParams, PaginatedResponse, EventsPageType, TimelineParams
 from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
@@ -21,6 +23,7 @@ from services.cameras.classes.roi_tracker import ROIEvent, ROIEventType
 
 if TYPE_CHECKING:
     from entities.camera import CameraEntity
+    from models.camera_model import CameraModelWithRelations
 
 
 class CameraEventsRepository(BaseRepository):
@@ -29,8 +32,12 @@ class CameraEventsRepository(BaseRepository):
     """
 
     @classmethod
-    def add_permanent_event(cls, camera: "CameraEntity", frame: np.ndarray,
-                            record_path: str | None = None) -> CameraEventEntity:
+    def add_permanent_event(
+            cls,
+            camera: "CameraModelWithRelations",
+            frame: np.ndarray,
+            record_path: str | None = None
+    ) -> CameraAreaModel:
         with write_session() as session:
             try:
                 has_record = False
@@ -41,6 +48,7 @@ class CameraEventsRepository(BaseRepository):
                     has_record = True
                     action = ROIEventType.STATIC_VIDEO
                 resized = imutils.resize(frame, width=640)
+
                 original_file = CameraStorage.take_screenshot(camera, frame).full_path
                 resized_file = CameraStorage.take_screenshot(camera, resized).full_path
 
@@ -49,8 +57,8 @@ class CameraEventsRepository(BaseRepository):
                 event.area = None
                 event.resized = resized_file
                 event.original = original_file
-                event.type = camera.record_mode
-                event.action = action
+                event.type = camera.record_mode.value
+                event.action = action.value
                 event.start = datetime.now()
 
                 # Добавляем событие
@@ -65,7 +73,9 @@ class CameraEventsRepository(BaseRepository):
                 session.commit()
                 session.refresh(event)
 
-                return event
+                return CameraAreaModel.model_validate(
+                    event.to_dict()
+                )
             except Exception as e:
                 Logger.err(f'[{camera.name}] Error adding permanent event: {e}')
 
@@ -133,7 +143,9 @@ class CameraEventsRepository(BaseRepository):
             event = sess.get(CameraEventEntity, event_id)
             if not event:
                 raise HTTPException(status_code=404)
-            return event
+            return CameraEventBaseModel.model_validate(
+                event.to_dict()
+            )
 
     @classmethod
     def delete_event(cls, event_id: int):
@@ -148,15 +160,13 @@ class CameraEventsRepository(BaseRepository):
                     count = len(other_events_with_same_record)
                     if count == 1 and recording.id == other_events_with_same_record[0].id:
                         sess.delete(recording)
-
                 sess.delete(event)
+                return True
             except Exception as e:
                 raise HTTPException(
                     status_code=500,
                     detail=str(e)
                 )
-
-            return event
 
     @classmethod
     def get_old_events(cls, camera: "CameraEntity") -> list[CameraEventEntity]:
@@ -171,7 +181,7 @@ class CameraEventsRepository(BaseRepository):
             ).all()
 
     @classmethod
-    def get_timeline(cls, params: TimelineParams, camera: "CameraEntity"):
+    def get_timeline(cls, params: TimelineParams, camera: "CameraModelWithRelations"):
         with write_session() as sess:
             query = (
                 select(CameraEventEntity)
@@ -183,7 +193,7 @@ class CameraEventsRepository(BaseRepository):
             return sess.exec(query).all()
 
     @classmethod
-    def get_events(cls, params: EventsPageParams, camera: "CameraEntity"):
+    def get_events(cls, params: EventsPageParams, camera: "CameraModelWithRelations"):
         with write_session() as sess:
             # Подготавливаем базовый запрос
             query = (

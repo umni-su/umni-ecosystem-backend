@@ -4,18 +4,18 @@ from typing import TYPE_CHECKING
 from classes.logger import Logger
 from classes.thread.Daemon import Daemon
 from services.cameras.classes.stream_registry import StreamRegistry
-from services.cameras.utils.stream_utils import find_stream_by_camera
 
-if TYPE_CHECKING:
-    from entities.camera import CameraEntity
 from repositories.camera_repository import CameraRepository
 from services.base_service import BaseService
 from services.cameras.classes.camera_stream import CameraStream
 
+if TYPE_CHECKING:
+    from models.camera_model import CameraModelWithRelations
+
 
 class CamerasService(BaseService):
     name = "cameras"
-    cameras: list["CameraEntity"]
+    cameras: list["CameraModelWithRelations"]
     streams: list[CameraStream] = []
     checking_thread: Daemon | None = None
     daemon: Daemon | None = None
@@ -35,6 +35,5 @@ class CamerasService(BaseService):
             time.sleep(5)
 
     def run(self):
-        return
         Logger.debug('Starting camera streams...')
         self.daemon = Daemon(self.cameras_list_task)

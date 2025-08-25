@@ -3,7 +3,7 @@ from classes.logger import Logger
 from database.session import write_session
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
-from models.camera_model import CameraBaseModel
+from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from repositories.base_repository import BaseRepository
 from sqlmodel import select
 
@@ -14,47 +14,82 @@ class CameraRepository(BaseRepository):
     @classmethod
     def get_cameras(cls):
         with write_session() as sess:
-            cameras = sess.exec(
-                select(CameraEntity)
-            ).all()
-            return cameras
+            try:
+                cameras = sess.exec(
+                    select(CameraEntity)
+                ).all()
+
+                return [
+                    CameraModelWithRelations.model_validate(
+                        camera.to_dict(
+                            include_relationships=True
+                        )
+                    )
+                    for camera in cameras
+                ]
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
-    def get_camera(cls, camera_id: int) -> CameraEntity | None:
+    def get_camera(cls, camera_id: int) -> CameraModelWithRelations | None:
         with write_session() as sess:
-            return sess.exec(
-                select(CameraEntity).where(CameraEntity.id == camera_id)
-            ).first()
+            try:
+                camera = sess.exec(
+                    select(CameraEntity).where(CameraEntity.id == camera_id)
+                ).first()
+
+                return CameraModelWithRelations.model_validate(
+                    camera.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def add_camera(cls, model: CameraBaseModel):
-        camera = cls.prepare_camera(model, CameraEntity())
         with write_session() as sess:
-            sess.add(camera)
-            sess.commit()
-            sess.refresh(camera)
-            return camera
+            try:
+                camera = cls.prepare_camera(model, CameraEntity())
+                sess.add(camera)
+                sess.commit()
+                sess.refresh(camera)
+
+                return CameraModelWithRelations.model_validate(
+                    camera.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def update_camera(cls, model: CameraBaseModel):
         with write_session() as sess:
-            cam = cls.get_camera(model.id)
-            camera = cls.prepare_camera(model, cam)
-            sess.add(camera)
-            return camera
+            try:
+                cam = cls.get_camera(model.id)
+                camera_orm = sess.get(CameraEntity, cam.id)
+                camera = cls.prepare_camera(model, camera_orm)
+                sess.add(camera)
+
+                return CameraModelWithRelations.model_validate(
+                    camera.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e))
 
     @classmethod
     def prepare_camera(cls, model: CameraBaseModel, target: CameraEntity):
         camera = target
         try:
-            storage = StorageRepository.get_storage(model.storage_id)
-            if camera.storage != storage:
-                camera.storage = storage
+            camera.storage_id = model.storage_id
             camera.name = model.name
             camera.active = model.active
             camera.alerts = model.active
             camera.record = model.record
-            camera.record_mode = model.record_mode
+            camera.record_mode = model.record_mode.value
             camera.record_duration = model.record_duration
             camera.delete_after = model.delete_after
             if model.protocol is not CameraProtocolEnum.USB:

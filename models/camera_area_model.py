@@ -1,10 +1,9 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 from entities.enums.event_priority_enum import EventPriorityEnum
-
-from services.cameras.classes.roi_tracker import ROISettings
+from services.cameras.models.roi_models import ROISettings
 
 
 class CameraAreaModel(BaseModel):
