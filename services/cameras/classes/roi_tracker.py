@@ -48,7 +48,8 @@ class ROITracker:
         self.recording = False
         self.triggered = False
         self.recording_start_time: Optional[datetime] = None
-        self.last_movement_time: Dict[int, datetime / None] = {}
+        # self.last_movement_time: Dict[int, datetime | None] = {}
+        self.last_movement_time: Dict[int, Optional[datetime]] = {}
         self.active_movements: set[int] = set()
 
         # Параметры обработки
@@ -268,8 +269,9 @@ class ROITracker:
             return False
 
         # 2. Проверка стабильности во времени
-        if roi.id in self.last_movement_time:
-            time_since_last = (datetime.now() - self.last_movement_time[roi.id]).total_seconds()
+        last_movement_time = self.last_movement_time.get(roi.id)
+        if last_movement_time is not None:  # Добавьте проверку на None
+            time_since_last = (datetime.now() - last_movement_time).total_seconds()
             if time_since_last < 0.5:  # Слишком частые срабатывания
                 return False
 
@@ -519,6 +521,7 @@ class ROITracker:
     def update_rois_by_ids(self, area_ids: List[int]):
         """Обновляет только конкретные ROI без полной перезагрузки"""
         with write_session() as session:
+            Logger.debug(f'Start update rois by ids: {area_ids}')
             # ОДИН запрос вместо множественных
             areas = session.exec(
                 select(CameraAreaEntity)
@@ -539,8 +542,10 @@ class ROITracker:
 
                 if area.id in current_roi_ids:
                     self.update_roi(area.id, roi_data)
+                    Logger.debug(f'Update roi: #{area.id}')
                 else:
                     self.add_roi(roi_data)
+                    Logger.debug(f'Add roi: #{area.id}')
 
     def update_all_rois(self, new_rois: List["CameraAreaBaseModel"]) -> bool:
         """Полное обновление всех ROI с сохранением состояния"""

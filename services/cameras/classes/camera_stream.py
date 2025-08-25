@@ -183,6 +183,7 @@ class CameraStream:
             self.time_part_start = 0
 
         if isinstance(self.tracker, ROITracker):
+            Logger.debug(f'[{self.camera.name}] Update areas for camera')
             self.tracker.update_all_rois(self.camera.areas)
 
         self.need_skip = False
