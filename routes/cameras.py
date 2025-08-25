@@ -7,7 +7,6 @@ from starlette.responses import Response
 
 from classes.auth.auth import Auth
 from classes.logger import Logger
-from entities.camera import CameraEntity
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel, CameraEventBaseModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations

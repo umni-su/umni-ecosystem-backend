@@ -15,7 +15,8 @@ from sqlmodel import col, select
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_model import CameraModelWithRelations
 from services.cameras.enums.roi_enum import ROIEventType
-from services.cameras.models.roi_models import ROIEvent, ROIDetectionEvent, ROIRecordEvent, ROI, ROISettings
+from services.cameras.models.roi_models import ROIEvent, ROIDetectionEvent, ROIRecordEvent, ROI
+from services.cameras.models.roi_settings import ROISettings
 
 
 class ROITracker:

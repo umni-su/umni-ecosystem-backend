@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_area_model import CameraAreaModel
 from models.camera_model import CameraGetModel
-from models.camera_recording import CameraRecordingBaseModel
+from models.camera_recording import CameraRecordingModel
 from services.cameras.classes.roi_tracker import ROIEventType
 
 
@@ -19,12 +19,13 @@ class CameraEventPost(BaseModel):
 
 class CameraEventModelRelations(BaseModel):
     area: CameraAreaModel | None = None
-    recording: CameraRecordingBaseModel | None = None
+    recording: CameraRecordingModel | None = None
     camera: CameraGetModel | None = None
 
 
 class CameraEventBaseModel(CameraEventModelRelations):
     id: int
+    area_id: int | None = None
     type: CameraRecordTypeEnum | None
     duration: float | None = None
     start: datetime | None = Field(default=None)

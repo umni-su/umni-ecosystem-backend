@@ -622,6 +622,7 @@ class CameraStream:
                 time.sleep(3)  # Увеличиваем паузу для серьезных ошибок
             except Exception as e:
                 Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}")
+                raise
                 self.need_restart = True
                 self.capture_error = True
                 time.sleep(5)
