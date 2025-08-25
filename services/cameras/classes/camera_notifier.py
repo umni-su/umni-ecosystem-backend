@@ -137,6 +137,7 @@ class CameraNotifier:
                 founded_record = CameraNotifier._find_active_recording(event.camera.id)
                 if founded_record is None:
                     new_record = True
+
                     recording = CameraRecordingEntity(
                         camera_id=event.camera.id,
                         start=event.timestamp
@@ -237,10 +238,9 @@ class CameraNotifier:
         """
         with write_session() as sess:
             founded_record = CameraNotifier._find_active_recording(event.camera.id)
-            if isinstance(founded_record, CameraRecordingEntity):
+            if isinstance(founded_record, CameraRecordingModel):
                 recording = sess.get(CameraRecordingEntity, founded_record.id)
                 if isinstance(recording, CameraRecordingEntity):
-                    recording = sess.get(CameraRecordingEntity, recording.id)
                     recording.end = event.timestamp
                     recording.duration = (event.timestamp - recording.start).total_seconds()
                     recording.path = stream.output_file

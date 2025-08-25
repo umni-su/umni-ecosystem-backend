@@ -5,7 +5,8 @@ from pydantic import BaseModel
 
 
 class CameraRecordingModel(BaseModel):
-    camera_id: int
+    id: int | None = None
+    camera_id: int | None = None
     start: datetime | None = None
     end: datetime | None = None
     duration: Optional[float] = None
