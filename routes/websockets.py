@@ -13,15 +13,14 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import asyncio
-from threading import Thread
 from typing import Annotated
 import cv2
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, WebSocketException
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from websockets.exceptions import ConnectionClosed
 
 from classes.auth.auth import Auth
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.websockets.websockets import WebSockets
 from entities.camera import CameraEntity
 from repositories.camera_repository import CameraRepository
@@ -43,14 +42,14 @@ async def websocket_endpoint(
 
 ):
     await WebSockets.add_client(websocket)
-    Logger.warn(f'Add client [{user.username}] to server')
+    Logger.debug(f'Add client [{user.username}] to server', LoggerType.WEBSOCKETS)
 
     try:
         while True:
             data = await websocket.receive_text()
             await websocket.send_text(f"Message text was: {data}")
     except (WebSocketDisconnect, ConnectionClosed):
-        Logger.warn(f'Client [{user.username}] closes connection')
+        Logger.debug(f'Client [{user.username}] closes connection', LoggerType.WEBSOCKETS)
         WebSockets.remove_client(websocket)
 
 
@@ -73,8 +72,7 @@ async def get_cameras(
                     # asyncio.run()
             except (WebSocketDisconnect, ConnectionClosed):
                 await websocket.close(code=1001)
-                Logger.debug(f'[WebSocketDisconnect] Client {user.username} disconnects')
+                Logger.debug(f'[WebSocketDisconnect] Client {user.username} disconnects', LoggerType.WEBSOCKETS)
             except Exception as e:
                 await websocket.close(code=1001)
-                Logger.err(f"@get_cameras err {e}")
-            print('While end')
+                Logger.err(f"@get_cameras err {e}", LoggerType.WEBSOCKETS)

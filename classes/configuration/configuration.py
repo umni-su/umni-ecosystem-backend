@@ -15,6 +15,8 @@
 
 from sqlmodel import select
 
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel
@@ -61,7 +63,7 @@ class EcosystemDatabaseConfiguration:
                     session.add(conf)
                     created.append(_key)
             if len(created) > 0:
-                print(f'Created {len(created)} items: {",".join(created)}')
+                Logger.debug(f'Created {len(created)} items: {",".join(created)}', LoggerType.APP)
 
     def get_setting(self, key: str) -> ConfigurationModel | None:
         for conf in self.db_config:

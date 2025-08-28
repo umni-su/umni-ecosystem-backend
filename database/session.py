@@ -17,7 +17,7 @@ import time
 from contextlib import contextmanager, AbstractContextManager
 from sqlmodel import Session
 from psycopg2 import OperationalError
-from classes.logger import Logger
+from classes.logger.logger import Logger
 
 MAX_RETRIES = 3
 RETRY_DELAY = 0.3

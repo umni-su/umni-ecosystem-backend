@@ -23,7 +23,8 @@ from sqlalchemy import func
 from sqlmodel import select, col
 from fastapi import HTTPException
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.camera_storage import CameraStorage
 from database.session import write_session
 from entities.camera_event import CameraEventEntity
@@ -35,7 +36,6 @@ from repositories.base_repository import BaseRepository
 from services.cameras.classes.roi_tracker import ROIEventType
 
 if TYPE_CHECKING:
-    from entities.camera import CameraEntity
     from models.camera_model import CameraModelWithRelations
 
 
@@ -90,7 +90,7 @@ class CameraEventsRepository(BaseRepository):
                     event.to_dict()
                 )
             except Exception as e:
-                Logger.err(f'[{camera.name}] Error adding permanent event: {e}')
+                Logger.err(f'[{camera.name}] Error adding permanent event: {e}', LoggerType.APP)
 
     @classmethod
     def close_permanent_event(cls, event: CameraEventModel):
@@ -109,36 +109,7 @@ class CameraEventsRepository(BaseRepository):
                 )
             except Exception as e:
                 event_id = event.id  # Сохраняем ID до закрытия сессии
-                Logger.err(f'Error update end for permanent event #ID{event_id}: {e}')
-
-            # (event.timestamp - recording.start).total_seconds()
-
-    # @classmethod
-    # def add_event(cls, model: "ROIEvent"):
-    #     with write_session() as sess:
-    #         try:
-    #             # if hasattr(model, 'roi'):
-    #             #     area = CameraAreaRepository.get_area(model.roi.id)
-    #             #     camera = area.camera
-    #             # else:
-    #             area = None
-    #             camera = model.camera
-    #
-    #             event = CameraEventEntity()
-    #             event.camera = camera
-    #             event.area = area
-    #             event.start = datetime.now()
-    #             event.action = model.event
-    #             event.type = camera.record_mode
-    #
-    #             sess.add(event)
-    #             sess.commit()
-    #             sess.refresh(event)
-    #             sess.close()
-    #
-    #             return event
-    #         except Exception as e:
-    #             Logger.err(e)
+                Logger.err(f'Error update end for permanent event #ID{event_id}: {e}', LoggerType.APP)
 
     @classmethod
     def update_event_end(cls, event: CameraEventEntity):
@@ -151,7 +122,7 @@ class CameraEventsRepository(BaseRepository):
 
                 return event
             except Exception as e:
-                Logger.err(f"update_event_end error - {e}")
+                Logger.err(f"update_event_end error - {e}", LoggerType.APP)
 
     @classmethod
     def get_event(cls, event_id: int, relations: bool = False):
@@ -187,16 +158,27 @@ class CameraEventsRepository(BaseRepository):
                 )
 
     @classmethod
-    def get_old_events(cls, camera: "CameraEntity") -> list[CameraEventEntity]:
+    def get_old_events(cls, camera: "CameraModelWithRelations") -> list["CameraEventModel"]:
         with write_session() as sess:
-            cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
-            return sess.exec(
-                select(CameraEventEntity)
-                .where(
-                    (CameraEventEntity.camera == camera) &
-                    (CameraEventEntity.end < cutoff_time)
-                )
-            ).all()
+            try:
+                cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
+                res = sess.exec(
+                    select(CameraEventEntity)
+                    .where(
+                        (CameraEventEntity.camera_id == camera.id) &
+                        (CameraEventEntity.end < cutoff_time)
+                    )
+                ).all()
+                return [
+                    CameraEventModel.model_validate(
+                        ev.to_dict(
+                            include_relationsips=True
+                        )
+                    ) for ev in res
+                ]
+            except Exception as e:
+                Logger.err(f"get_old_events error - {e}", LoggerType.APP)
+                return []
 
     @classmethod
     def get_timeline(cls, params: TimelineParams, camera: "CameraModelWithRelations"):
@@ -297,4 +279,4 @@ class CameraEventsRepository(BaseRepository):
                     pages=pages
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)

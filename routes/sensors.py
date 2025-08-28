@@ -19,10 +19,8 @@ from fastapi import APIRouter, Depends, Body, Form, HTTPException
 
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
-from classes.logger import Logger
-from classes.storages.device_storage import device_storage
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
-from models.sensor_model import SensorModelWithHistory, SensorUpdateModel, SensorModel
+from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
 from repositories.sensor_history_repository import SensorHistoryRepository
 from repositories.sensor_repository import SensorRepository
 from responses.user import UserResponseOut
@@ -73,4 +71,7 @@ def find_sensor_by_term(
     try:
         return SensorRepository.find_sensors(term)
     except Exception as e:
-        Logger.err(e)
+        raise HTTPException(
+            status_code=404,
+            detail='Sensors not found'
+        )

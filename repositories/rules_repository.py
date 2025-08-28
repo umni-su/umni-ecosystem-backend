@@ -16,7 +16,8 @@
 import time
 from starlette.exceptions import HTTPException
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.camera_area import CameraAreaEntity
 from entities.device import DeviceEntity
@@ -53,7 +54,7 @@ class RulesRepository(BaseRepository):
                     for rule in rules
                 ]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_rule(cls, rule_id: int):
@@ -68,7 +69,7 @@ class RulesRepository(BaseRepository):
                     )
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def add_rule(cls, rule_data: RuleCreate):
@@ -107,7 +108,7 @@ class RulesRepository(BaseRepository):
                     )
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def update_rule_graph(
@@ -175,7 +176,7 @@ class RulesRepository(BaseRepository):
                     )
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_node(cls, node_id: str):
@@ -188,7 +189,7 @@ class RulesRepository(BaseRepository):
                     node.model_dump()
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_node_entities_by_trigger(cls, trigger: str | None):
@@ -225,7 +226,7 @@ class RulesRepository(BaseRepository):
                     )
             return res
         except Exception as e:
-            Logger.err(str(e))
+            Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_node_entities_by_node(cls, node_id: str):
@@ -272,10 +273,10 @@ class RulesRepository(BaseRepository):
                                         )
                                     )
                         except Exception as e:
-                            Logger.err(str(e))
+                            Logger.err(str(e), LoggerType.APP)
 
                 return [RuleNodeListItem.model_validate(item) for item in res]
 
             raise HTTPException(status_code=404, detail="Node not found")
         except Exception as e:
-            Logger.err(str(e))
+            Logger.err(str(e), LoggerType.APP)

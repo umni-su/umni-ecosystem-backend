@@ -17,7 +17,7 @@ import datetime
 from typing import List
 from pydantic import RootModel
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ow_model import MqttCnfOwModel

@@ -13,7 +13,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
 from database.session import write_session
 from entities.storage import StorageEntity
@@ -50,7 +51,7 @@ class StorageRepository(BaseRepository):
                     for storage in storages_orm
                 ]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_storage(cls, storage_id: int):
@@ -61,7 +62,7 @@ class StorageRepository(BaseRepository):
                     storage.to_dict()
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def add_storage(cls, model: StorageModelBase):
@@ -79,7 +80,7 @@ class StorageRepository(BaseRepository):
                     storage.to_dict()
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def update_storage(cls, model: StorageModel):
@@ -97,7 +98,7 @@ class StorageRepository(BaseRepository):
                     storage.to_dict()
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def delete_storage(cls, storage_id: int):
@@ -109,4 +110,4 @@ class StorageRepository(BaseRepository):
                     sess.commit()
                 return SuccessResponse(success=True)
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)

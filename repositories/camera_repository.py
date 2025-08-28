@@ -12,17 +12,15 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from repositories.base_repository import BaseRepository
 from sqlmodel import select
-
-from repositories.storage_repository import StorageRepository
 
 
 class CameraRepository(BaseRepository):
@@ -43,7 +41,7 @@ class CameraRepository(BaseRepository):
                     for camera in cameras
                 ]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_camera(cls, camera_id: int) -> CameraModelWithRelations | None:
@@ -123,4 +121,4 @@ class CameraRepository(BaseRepository):
             return camera
 
         except Exception as e:
-            Logger.err(f"[{camera.name}] prepare_camera error - {e}")
+            Logger.err(f"[{camera.name}] prepare_camera error - {e}", LoggerType.APP)

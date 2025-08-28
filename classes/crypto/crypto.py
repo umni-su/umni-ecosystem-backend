@@ -17,7 +17,8 @@ import typing
 
 from cryptography.fernet import Fernet
 
-from classes.logger import logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.configuration import ConfigurationKeys
 
@@ -33,7 +34,7 @@ class Crypto:
 
     def init(self):
         self.load_key()
-        logger.info('Init crypto module...')
+        Logger.info('Init crypto module...', LoggerType.APP)
         return self
 
     def load_key(self):

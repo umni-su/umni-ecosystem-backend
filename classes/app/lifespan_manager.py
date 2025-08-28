@@ -18,12 +18,14 @@ import contextlib
 from typing import AsyncIterator, Any
 from fastapi import FastAPI
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from services.cameras.cameras_service import CamerasService
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
 
 from database.migrations import MigrationManager
 from classes.ecosystem import Ecosystem
+from services.rule.rule_service import RuleService
 
 
 class LifespanManager:
@@ -45,9 +47,10 @@ class LifespanManager:
 
     def _signal_handler(self, signum: int, frame: Any):
         """Обработчик сигналов для graceful shutdown"""
-        print(f"Received signal {signum}, initiating graceful shutdown...")
+        Logger.debug(f"Received signal {signum}, initiating graceful shutdown...", LoggerType.APP)
         self._shutting_down = True
         StreamRegistry.set_state(StreamState.SHUTTING_DOWN)
+        self._perform_shutdown()  # added
 
         # Вызываем оригинальный обработчик (для uvicorn)
         if signum in self._original_handlers and self._original_handlers[signum]:
@@ -59,12 +62,14 @@ class LifespanManager:
             return
 
         self._shutting_down = True
-        print("Stopping all streams gracefully...")
+        Logger.debug("Stopping all streams gracefully...", LoggerType.APP)
         StreamRegistry.stop_all_streams()
         for stream in CamerasService.streams:
             stream.opened = False
             stream.destroy_output_container()
-            Logger.warn(f'❌ {stream.camera.name} Force stop camera stream')
+            Logger.warn(f'❌ {stream.camera.name} Force stop camera stream', LoggerType.APP)
+
+        RuleService.task_manager.stop()
 
     @contextlib.asynccontextmanager
     async def lifespan(self, app: FastAPI) -> AsyncIterator[None]:
@@ -76,13 +81,13 @@ class LifespanManager:
         self._shutting_down = False
         self._setup_signal_handlers()
         StreamRegistry.set_state(StreamState.RUNNING)
-        print("Application starting up...")
+        Logger.debug("Application starting up...", LoggerType.APP)
 
         yield
 
         # Shutdown
         self._perform_shutdown()
-        print("Application shutting down...")
+        Logger.debug("Application shutting down...", LoggerType.APP)
 
 
 # Глобальный экземпляр

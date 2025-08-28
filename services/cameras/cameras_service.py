@@ -16,8 +16,8 @@
 import time
 from typing import TYPE_CHECKING
 
-from classes.logger import Logger
-from classes.thread.Daemon import Daemon
+from classes.logger.logger import Logger
+from classes.thread.daemon import Daemon
 from services.cameras.classes.stream_registry import StreamRegistry
 
 from repositories.camera_repository import CameraRepository

@@ -18,7 +18,7 @@ import datetime
 from sqlmodel import select
 
 from config.dependencies import get_ecosystem
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from entities.configuration import ConfigurationKeys
 

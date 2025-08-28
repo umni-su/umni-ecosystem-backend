@@ -18,7 +18,8 @@ import os
 from importlib import import_module
 
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
 from services.base_service import BaseService
 
@@ -46,12 +47,13 @@ class ServiceRunner:
                 if Filesystem.exists(service_main_file):
                     try:
                         service_module = import_module(f'{name}.{item}.{service_name}')
-                        Logger.debug(f'⏩  Run service {service_main_class} from {service_main_file}')
+                        Logger.debug(f'⏩  Run service {service_main_class} from {service_main_file}',
+                                     LoggerType.SERVICES)
                         service_class = getattr(service_module, service_main_class)
                         service_instance: BaseService = service_class(self.config)
                         self.services.append(service_instance)
                     except Exception as e:
-                        Logger.err(f"⏩ ServiceRunner __init__ {e}")
+                        Logger.err(f"⏩ ServiceRunner __init__ {e}", LoggerType.SERVICES)
 
     def get_service_class_name(self, name: str):
         __name__ = ''
@@ -61,4 +63,4 @@ class ServiceRunner:
         return __name__
 
     def create_service(self, name: str):
-        Logger.debug(f'⏩ Create service: {name}')
+        Logger.debug(f'⏩ Create service: {name}', LoggerType.SERVICES)

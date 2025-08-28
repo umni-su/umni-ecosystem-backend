@@ -17,7 +17,8 @@ from datetime import datetime
 
 from sqlmodel import select, col, asc
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
@@ -42,7 +43,7 @@ class SensorHistoryRepository(BaseRepository):
                     return SensorHistoryModel.model_validate(last.model_dump())
                 return None
             except Exception as e:
-                Logger.err(e)
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_sensor_history(cls, sensor_id: int, body: SearchHistoryModel):
@@ -67,4 +68,4 @@ class SensorHistoryRepository(BaseRepository):
                     for item in history
                 ]
             except Exception as e:
-                Logger.err(e)
+                Logger.err(str(e), LoggerType.APP)

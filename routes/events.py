@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import io
 import zipfile
 from datetime import datetime
@@ -20,11 +21,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
-import os
-from typing import Annotated
 
+from typing import Annotated
 from classes.auth.auth import Auth
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from models.camera_event_model import CameraEventModel
 from repositories.camera_events_repository import CameraEventsRepository
 from responses.success import SuccessResponse
@@ -103,7 +104,7 @@ async def download_camera_event(
             }
         )
     except Exception as e:
-        Logger.err(f'Error download event {str(e)}')
+        Logger.err(f'Error download event {str(e)}', LoggerType.APP)
         raise HTTPException(
             status_code=500,
             detail='Error download event'

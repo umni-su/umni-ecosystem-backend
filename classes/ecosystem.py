@@ -20,7 +20,7 @@ from typing import Optional
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
 from classes.crypto.crypto import Crypto
 
-from classes.logger import logger
+from classes.logger.logger import logger
 from services.service_runner import ServiceRunner
 
 

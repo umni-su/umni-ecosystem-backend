@@ -16,7 +16,8 @@
 from fastapi import UploadFile
 from sqlmodel import select, col
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
 from database.session import write_session
@@ -44,7 +45,7 @@ class DeviceRepository(BaseRepository):
                     ) for _d in devices_orm
                 ]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_device(cls, device_id: int):
@@ -59,7 +60,7 @@ class DeviceRepository(BaseRepository):
                     )
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def update_device(cls, device_id: int, model: DeviceUpdateModel):
@@ -77,7 +78,7 @@ class DeviceRepository(BaseRepository):
                     )
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def upload_device_cover(cls, device_id: int, cover: UploadFile):
@@ -103,4 +104,4 @@ class DeviceRepository(BaseRepository):
                 )
 
             except Exception as e:
-                Logger.err(e)
+                Logger.err(str(e), LoggerType.APP)

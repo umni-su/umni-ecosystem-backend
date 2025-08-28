@@ -22,7 +22,8 @@ from starlette.responses import Response
 
 from classes.app.lifespan_manager import lifespan_manager
 from classes.auth.auth import Auth
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel, CameraEventBaseModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
@@ -152,7 +153,7 @@ def get_camera_cover(
                 frame = stream.resized
         except cv2.error as e:
             frame = stream.get_no_signal_frame()
-            Logger.err(f"[{camera.name}] can not get cover with message {e}")
+            Logger.err(f"[{camera.name}] can not get cover with message {e}", LoggerType.APP)
 
     success, im = cv2.imencode('.jpg', frame)
     headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
@@ -257,4 +258,4 @@ def get_camera_area_preview(
             return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
         return None
     except Exception as e:
-        print(e)
+        Logger.err(str(e), LoggerType.APP)

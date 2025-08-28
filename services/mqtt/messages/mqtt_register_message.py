@@ -17,7 +17,7 @@ import datetime
 
 from pydantic_core import ValidationError
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface

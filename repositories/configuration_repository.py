@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel
@@ -44,4 +44,4 @@ class ConfigurationRepository(BaseRepository):
 
                 return res
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)

@@ -21,7 +21,7 @@ from functools import partial
 from threading import Thread, Event
 from typing import Callable, Dict, Optional, Any, List
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from services.scheduler.enums.schedule_frequency import ScheduleFrequency
 from services.scheduler.models.task_config import TaskConfig
 from services.scheduler.models.task_info import TaskInfo, TaskStatus

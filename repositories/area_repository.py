@@ -14,11 +14,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import typing
+from typing import List
 
 from fastapi import HTTPException
 from sqlmodel import select, col
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.camera_area import CameraAreaEntity
 from repositories.base_repository import BaseRepository
@@ -91,7 +93,7 @@ class CameraAreaRepository(BaseRepository):
             return result_areas
 
         except Exception as e:
-            Logger.err(f"Error saving areas: {e}")
+            Logger.err(f"Error saving areas: {e}", LoggerType.APP)
             raise
 
     @classmethod
@@ -119,7 +121,7 @@ class CameraAreaRepository(BaseRepository):
             ).all()
 
     @classmethod
-    def delete_area(cls, area_id: int) -> list["CameraAreaEntity"]:
+    def delete_area(cls, area_id: int) -> list[CameraAreaBaseModel] | None:
         with write_session() as session:
             try:
                 area = cls.get_area(area_id)

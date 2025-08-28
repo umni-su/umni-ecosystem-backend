@@ -13,16 +13,14 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import cv2
 import os
 from datetime import datetime
 from typing import TYPE_CHECKING
-
 from numpy import ndarray
 from pydantic import BaseModel
-
-import cv2
-
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
 from classes.storages.storage import StorageBase
 
@@ -56,7 +54,7 @@ class CameraStorage(StorageBase):
             if cv2.imwrite(image_path, frame):
                 return camera
         except Exception as e:
-            Logger.err(f"[{camera.name}] upload_cover error - {e}")
+            Logger.err(f"[{camera.name}] upload_cover error - {e}", LoggerType.STORAGES)
             raise e
 
     @classmethod

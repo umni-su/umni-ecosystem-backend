@@ -14,7 +14,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os.path
-from classes.logger import logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
 from fastapi import UploadFile, Response
 import cv2
@@ -26,7 +27,7 @@ class StorageBase:
     def __init__(self, path: str):
         root = os.path.abspath('./storage')
         StorageBase.path = os.path.join(root, os.path.normpath(path))
-        logger.debug(f'Init storage {StorageBase.path}')
+        Logger.debug(f'Init storage {StorageBase.path}', LoggerType.STORAGES)
         if not StorageBase.exists(StorageBase.path):
             Filesystem.mkdir(StorageBase.path)
 
@@ -55,7 +56,7 @@ class StorageBase:
                 f.write(contents)
                 return os.path.relpath(join_path)
         except Exception as e:
-            logger.err(f"Error uploading file {join_path}")
+            Logger.err(f"Error uploading file {join_path}", LoggerType.STORAGES)
             raise e
         finally:
             file.file.close()

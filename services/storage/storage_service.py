@@ -17,7 +17,7 @@ import os
 import time
 from threading import Thread
 from pydantic import BaseModel
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from classes.websockets.messages.ws_message_storage_size import WebsocketMessageStorageSize
 from classes.websockets.websockets import WebSockets
 from database.session import write_session

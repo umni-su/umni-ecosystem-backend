@@ -13,7 +13,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.notification import NotificationEntity
 from models.notification_model import NotificationModel
@@ -37,7 +38,7 @@ class NotificationRepository(BaseRepository):
                     for n in notifications_orm
                 ]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def save_notification(cls, model: NotificationModel, target: NotificationEntity):
@@ -54,7 +55,7 @@ class NotificationRepository(BaseRepository):
                 sess.refresh(target)
                 return target
             except Exception as e:
-                Logger.err(e)
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_notification(cls, notification_id: int):

@@ -19,8 +19,10 @@ from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pydantic import BaseModel, field_validator
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
+from entities.camera_event import CameraEventEntity
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_recording_repository import CameraRecordingRepository
 from repositories.camera_repository import CameraRepository
@@ -75,7 +77,10 @@ class CameraCleanupManager:
                 if camera.id in self._active_threads:
                     thread = self._active_threads[camera.id]
                     if thread.is_alive():
-                        Logger.debug(f"⚙️ [{camera.name}] Cleanup already running for camera {camera.id}")
+                        Logger.debug(
+                            f"⚙️ [{camera.name}] Cleanup already running for camera {camera.id}",
+                            LoggerType.TASKS
+                        )
                         continue
 
                 # Создаем и запускаем новый поток
@@ -86,12 +91,18 @@ class CameraCleanupManager:
                 )
                 self._active_threads[camera.id] = thread
                 thread.start()
-                Logger.info(f"⚙️ [{camera.name}] Started cleanup thread for camera {camera.id}")
+                Logger.debug(
+                    f"⚙️ [{camera.name}] Started cleanup thread for camera {camera.id}",
+                    LoggerType.TASKS
+                )
 
     def _clean_camera_data(self, camera):
         """Метод для очистки данных конкретной камеры"""
         try:
-            Logger.info(f"⚙️ [{camera.name}]Starting cleanup for camera {camera.id}")
+            Logger.debug(
+                f"⚙️ [{camera.name}]Starting cleanup for camera {camera.id}",
+                LoggerType.TASKS
+            )
             cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
 
             # Очистка событий камеры
@@ -100,9 +111,15 @@ class CameraCleanupManager:
             # Очистка записей камеры
             self._clean_camera_recordings(camera, cutoff_time)
 
-            Logger.info(f"⚙️ [{camera.name}]Cleanup completed for camera {camera.id}")
+            Logger.debug(
+                f"⚙️ [{camera.name}]Cleanup completed for camera {camera.id}",
+                LoggerType.TASKS
+            )
         except Exception as e:
-            Logger.err(f"⚙️ [{camera.name}]Error during cleanup for camera {camera.id}: {str(e)}")
+            Logger.err(
+                f"⚙️ [{camera.name}]Error during cleanup for camera {camera.id}: {str(e)}",
+                LoggerType.TASKS
+            )
         finally:
             with self._lock:
                 self._active_threads.pop(camera.id, None)
@@ -122,14 +139,21 @@ class CameraCleanupManager:
                             os.remove(file_path)
 
                     # Удаляем запись о событии
-                    session.delete(event)
+                    event_orm = session.get(CameraEventEntity, event.id)
+                    session.delete(event_orm)
                     deleted_count += 1
                 except Exception as e:
-                    Logger.err(f"🗑️ Error deleting event {event.id}: {str(e)}")
+                    Logger.err(
+                        f"🗑️ Error deleting event {event.id}: {str(e)}",
+                        LoggerType.TASKS
+                    )
 
             if deleted_count:
                 session.commit()
-                Logger.info(f"🗑️ Deleted {deleted_count} events for camera {camera.id}")
+                Logger.info(
+                    f"🗑️ Deleted {deleted_count} events for camera {camera.id}",
+                    LoggerType.TASKS
+                )
 
     def _clean_camera_recordings(self, camera, cutoff_time):
         """Очистка записей камеры"""
@@ -147,11 +171,17 @@ class CameraCleanupManager:
                     session.delete(recording)
                     deleted_count += 1
                 except Exception as e:
-                    Logger.err(f"🗑️ Error deleting recording {recording.id}: {str(e)}")
+                    Logger.err(
+                        f"🗑️ Error deleting recording {recording.id}: {str(e)}",
+                        LoggerType.TASKS
+                    )
 
             if deleted_count:
                 session.commit()
-                Logger.info(f"🗑️ Deleted {deleted_count} recordings for camera {camera.id}")
+                Logger.info(
+                    f"🗑️ Deleted {deleted_count} recordings for camera {camera.id}",
+                    LoggerType.TASKS
+                )
 
     def get_active_cleanups(self) -> List[int]:
         """Возвращает список ID камер, для которых идет очистка"""

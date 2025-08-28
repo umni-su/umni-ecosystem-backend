@@ -17,7 +17,8 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from sqlmodel import select
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.camera_recording import CameraRecordingEntity
 from models.camera_recording import CameraRecordingModel
@@ -42,4 +43,4 @@ class CameraRecordingRepository(BaseRepository):
                 ).all()
                 return [CameraRecordingModel.model_validate(r) for r in old_recordings]
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)

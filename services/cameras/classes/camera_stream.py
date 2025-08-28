@@ -29,10 +29,10 @@ from av import VideoFrame
 from pydantic import BaseModel
 
 from config.dependencies import get_ecosystem
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
-from classes.thread.Daemon import Daemon
+from classes.thread.daemon import Daemon
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_model import CameraModelWithRelations

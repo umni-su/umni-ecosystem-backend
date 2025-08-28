@@ -23,7 +23,7 @@ from database.session import write_session
 
 from entities.camera_area import CameraAreaEntity
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 
 from sqlmodel import col, select
 

@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     DB_DB: str = "app_db"
     APP_NAME: str = "UMNI Ecosystem"
     API_ROOT: str = "/api"
+    LOG_LEVEL: str = 'DEBUG'
+    DEBUG_MODE: str = ''
 
     # Автоматически создаем DSN строку
     @property

@@ -14,14 +14,16 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sqlmodel import SQLModel
+
+from classes.logger.logger_types import LoggerType
 from database.migrations import MigrationManager
-from classes.logger import Logger
+from classes.logger.logger import Logger
 
 # Импортируем engine из отдельного файла
 from database.engine import engine
 
+
 # IMPORT MODELS #
-import database.entities_imports
 
 
 class DatabaseManager:
@@ -34,9 +36,9 @@ class DatabaseManager:
     def _create_tables(self):
         try:
             SQLModel.metadata.create_all(self.engine)
-            Logger.info("⏭️ Таблицы созданы (режим разработки)")
+            Logger.info("⏭️ Таблицы созданы (режим разработки)", LoggerType.APP)
         except Exception as e:
-            Logger.err(f"⏭️ Ошибка при создании таблиц: {e}")
+            Logger.err(f"⏭️ Ошибка при создании таблиц: {e}", LoggerType.APP)
             raise
 
 

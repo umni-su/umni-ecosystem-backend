@@ -19,7 +19,8 @@ from alembic.config import Config
 from alembic import command
 from typing import Optional
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from config.settings import settings
 
 
@@ -34,7 +35,7 @@ class MigrationManager:
     def should_run_migrations() -> bool:
         """Определяем нужно ли запускать миграции"""
         if settings.APP_MODE.lower() != "production":
-            Logger.debug("⏭️ Skipping migrations in non-production mode")
+            Logger.debug("⏭️ Skipping migrations in non-production mode", LoggerType.APP)
             return False
         return True
 
@@ -55,12 +56,12 @@ class MigrationManager:
             return
 
         try:
-            Logger.info("⏭️ Starting database migrations...")
+            Logger.info("⏭️ Starting database migrations...", LoggerType.APP)
             alembic_cfg = cls.get_alembic_config()
             command.upgrade(alembic_cfg, "head")
-            Logger.info("⏭️ Migrations completed successfully")
+            Logger.info("⏭️ Migrations completed successfully", LoggerType.APP)
         except Exception as e:
-            Logger.err(f"⏭️ Migration failed: {e}")
+            Logger.err(f"⏭️ Migration failed: {e}", LoggerType.APP)
             # Дополнительные действия при ошибке
             cls.on_migration_failure(e)
             raise

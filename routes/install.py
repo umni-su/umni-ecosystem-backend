@@ -17,8 +17,9 @@ import datetime
 from fastapi import APIRouter, Response, status
 from sqlmodel import delete
 from classes.crypto.hasher import Hasher
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
@@ -93,11 +94,11 @@ def install_ecosystem(body: InstallBody, response: Response):
 
     except InvalidToken:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        print('Token error')
+        Logger.err('Token error, failed to install Ecosystem', LoggerType.APP)
         return SuccessResponse(success=False)
     except Exception as e:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        Logger.err(f'Error install {e}')
+        Logger.err(f'Error install {e}', LoggerType.APP)
         return SuccessResponse(success=False)
 
     response.status_code = 201

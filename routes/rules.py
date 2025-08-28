@@ -13,12 +13,12 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Annotated, Any, Dict
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, HTTPException
 
 from classes.auth.auth import Auth
-from classes.rules.rule_executor import ExecutionResult, RuleExecutor
+from classes.rules.rule_executor import RuleExecutor
 from database.session import write_session
 from entities.rule_entity import RuleEntity
 from models.rule_model import (
@@ -28,6 +28,7 @@ from models.rule_model import (
 )
 from repositories.rules_repository import RulesRepository
 from responses.user import UserResponseOut
+from services.rule.rule_service import RuleService
 
 rules = APIRouter(
     prefix="/rules",
@@ -85,30 +86,37 @@ def update_rule_graph(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         rule_id: int,
         graph_data: RuleGraphUpdate,
-        rule: RuleModel = Depends(RulesRepository.update_rule_graph)
+
 ):
+    rule: RuleModel = RulesRepository.update_rule_graph(rule_id, graph_data)
     return rule
 
 
-@rules.post("/{rule_id}/execute", response_model=ExecutionResult)
-async def execute_rule(
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        rule_id: int,
-        trigger_data: Dict[str, Any] = Body(...),
-        executor: RuleExecutor = Depends(RuleExecutor)
-):
-    """Выполняет правило и возвращает детальный результат"""
-    return await executor.execute_rule(rule_id, trigger_data)
+def start_rule(rule: RuleModel):
+    rule_executor = RuleExecutor(rule)
+    rule_executor.parse_rule()
 
 
-@rules.post("/{rule_id}/execute-from-start")
-async def execute_from_start(
+def rule_cb(task_id, result):
+    print(task_id, result)
+
+
+@rules.get("/{rule_id}/execute", response_model=RuleModel)
+def execute_rule(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        rule_id: int,
-        executor: RuleExecutor = Depends(RuleExecutor)
+        rule_id: int
 ):
-    """Выполняет правило с START ноды"""
-    return await executor.execute_from_start(rule_id)
+    try:
+        rule = RulesRepository.get_rule(rule_id)
+        if rule:
+            RuleService.task_manager.submit(
+                func=start_rule,
+                rule=rule,
+                callback=rule_cb,
+            )
+            return rule
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @rules.get("/nodes/{node_id}", response_model=RuleNodeModel)

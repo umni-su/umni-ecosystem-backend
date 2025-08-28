@@ -17,12 +17,13 @@ from sqlmodel import select, col, or_
 from sqlalchemy.orm import selectinload
 from starlette.exceptions import HTTPException
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.sensor_entity import SensorEntity
-from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice, SensorModelWithHistory
+from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice
 from repositories.base_repository import BaseRepository
 from starlette.status import HTTP_404_NOT_FOUND
 
@@ -43,7 +44,7 @@ class SensorRepository(BaseRepository):
                     detail="Sensor not found"
                 )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def update_sensor(cls, model: SensorUpdateModel):
@@ -72,7 +73,7 @@ class SensorRepository(BaseRepository):
                         status_code=HTTP_404_NOT_FOUND, detail="Sensor not found"
                     )
             except Exception as e:
-                Logger.err(str(e))
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def find_sensors(cls, term: str):
@@ -98,7 +99,7 @@ class SensorRepository(BaseRepository):
                     ) for s in sensors
                 ]
             except Exception as e:
-                print(e)
+                Logger.err(str(e), LoggerType.APP)
                 raise HTTPException(
                     status_code=500, detail="Error fetching sensors"
                 )

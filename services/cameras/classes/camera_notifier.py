@@ -18,7 +18,7 @@ import traceback
 from threading import Thread
 from typing import Callable, Any, TYPE_CHECKING
 
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.websockets.messages.ws_message_detection import (
     WebsocketMessageDetectionStart,
@@ -27,7 +27,6 @@ from classes.websockets.messages.ws_message_detection import (
 from classes.websockets.websockets import WebSockets
 from database.session import write_session
 
-from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum

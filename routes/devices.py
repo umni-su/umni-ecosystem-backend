@@ -13,11 +13,11 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os.path
 from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile
 from classes.auth.auth import Auth
-from classes.logger import Logger
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
 from models.device_model import DeviceUpdateModel
 from models.device_model_relations import DeviceModelWithRelations
@@ -39,7 +39,7 @@ def get_devices(
         return device_list
 
     except Exception as e:
-        Logger.err(e)
+        Logger.err(str(e), LoggerType.APP)
 
 
 @devices.get('/{device_id}', response_model=DeviceModelWithRelations)
@@ -52,7 +52,7 @@ def get_device(
         return device
 
     except Exception as e:
-        Logger.err(e)
+        Logger.err(str(e), LoggerType.APP)
 
 
 '''
@@ -71,7 +71,7 @@ def update_device(
         return device
 
     except Exception as e:
-        Logger.err(e)
+        Logger.err(str(e), LoggerType.APP)
 
 
 @devices.post('/{device_id}/cover', response_model=DeviceModelWithRelations)
@@ -85,7 +85,7 @@ def update_device_cover(
         return device
 
     except Exception as e:
-        Logger.err(e)
+        Logger.err(str(e), LoggerType.APP)
 
 
 @devices.get('/{device_id}/cover/{width}')
@@ -99,4 +99,4 @@ def update_device_cover(
         return device_storage.cover_response(device, width)
 
     except Exception as e:
-        Logger.err(e)
+        Logger.err(str(e), LoggerType.APP)

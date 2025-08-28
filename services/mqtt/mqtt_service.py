@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import paho.mqtt.client as mqtt
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from config.dependencies import get_crypto
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody

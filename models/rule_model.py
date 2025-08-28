@@ -14,9 +14,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import StrEnum
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, field_validator
 
 """
 Rule Node types
@@ -178,6 +178,12 @@ class NodeVisualize(NodeCreate):
     type: str
     position: NodePosition | None
     data: NodeDataWithList
+    children: list["NodeVisualize"] = Field(default_factory=list)
+    source: str | None = None
+
+
+class EggeStyle(BaseModel):
+    stroke: Optional[str] = 'grey'
 
 
 class EdgeCreate(BaseModel):
@@ -186,6 +192,8 @@ class EdgeCreate(BaseModel):
     target: str
     source_handle: Optional[str] = Field(None, alias="sourceHandle")
     target_handle: Optional[str] = Field(None, alias="targetHandle")
+    animated: bool = Field(False)
+    style: EggeStyle = Field(default_factory=EggeStyle)
 
     class Config:
         populate_by_name = True
@@ -211,6 +219,3 @@ class RuleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     enabled: Optional[bool] = None
-
-# { "operand": "or", "items": [], "flow": { "el": { "type": "condition", "title": "Состояние", "icon": "mdi-circle-outline", "key": "rule.condition" }, "index": 2, "group": "conditions" } }
-# { "flow": { "el": { "type": "trigger", "title": "Данные сенсора", "icon": "mdi-database-import", "key": "sensors.changes.state" }, "index": 0, "group": "triggers" } }

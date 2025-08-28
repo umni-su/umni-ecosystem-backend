@@ -15,7 +15,7 @@
 
 import datetime
 import re
-from classes.logger import Logger
+from classes.logger.logger import Logger
 from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ai_ntc_model import MqttCnfAnalogPortsModel, MqttCnfAnalogPortModel

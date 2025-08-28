@@ -15,8 +15,8 @@
 
 import time
 
-from classes.logger import Logger
-from classes.thread.Daemon import Daemon
+from classes.logger.logger import Logger
+from classes.thread.daemon import Daemon
 from services.base_service import BaseService
 import psutil
 
