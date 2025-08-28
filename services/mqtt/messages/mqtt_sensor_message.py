@@ -22,7 +22,7 @@ from classes.logger import Logger
 from database.session import write_session
 from entities.configuration import ConfigurationKeys
 
-from entities.sensor import Sensor
+from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
 from repositories.sensor_history_repository import SensorHistoryRepository
 from services.mqtt.messages.base_message import BaseMessage
@@ -43,9 +43,9 @@ class MqttSensorMessage(BaseMessage):
         if self.identifier is not None and self.has_device:
             with write_session() as session:
                 founded = session.exec(
-                    select(Sensor).where(Sensor.identifier == self.identifier)
+                    select(SensorEntity).where(SensorEntity.identifier == self.identifier)
                 ).first()
-                if isinstance(founded, Sensor):
+                if isinstance(founded, SensorEntity):
                     try:
                         sensor = founded
                         sensor.device_id = self.topic.device_model.id

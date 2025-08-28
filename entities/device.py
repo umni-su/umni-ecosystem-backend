@@ -24,7 +24,7 @@ from entities.mixins.id_column import IdColumnMixin
 
 if TYPE_CHECKING:
     from entities.device_network_interfaces import DeviceNetworkInterface
-    from entities.sensor import Sensor
+    from entities.sensor_entity import SensorEntity
 
 
 class DeviceBase:
@@ -79,16 +79,10 @@ class DeviceEntity(
     table=True
 ):
     __tablename__ = 'devices'
-    sensors: list["Sensor"] = Relationship(
-        sa_relationship_kwargs=dict(
-            # lazy="selectin"
-        ),
+    sensors: list["SensorEntity"] = Relationship(
         back_populates="device"
     )
     network_interfaces: list["DeviceNetworkInterface"] = Relationship(
-        sa_relationship_kwargs=dict(
-            # lazy="selectin"
-        ),
         back_populates="device"
     )
 

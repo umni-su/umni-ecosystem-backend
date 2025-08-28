@@ -19,13 +19,13 @@ from typing import Union
 from fastapi import UploadFile
 from classes.storages.storage import StorageBase
 from entities.device import DeviceEntity
-from entities.sensor import Sensor
+from entities.sensor_entity import SensorEntity
 
 
 class DeviceStorage(StorageBase):
 
     @classmethod
-    def get_cover(cls, ent: Union[DeviceEntity | Sensor], width: int):
+    def get_cover(cls, ent: Union[DeviceEntity | SensorEntity], width: int):
         path = ent.photo
         if path is None:
             path = 'static/images/no-image.jpg'
@@ -36,7 +36,7 @@ class DeviceStorage(StorageBase):
         return cls.get_cover(device, width)
 
     @classmethod
-    def sensor_cover_response(cls, sensor: Sensor, width: int):
+    def sensor_cover_response(cls, sensor: SensorEntity, width: int):
         return cls.get_cover(sensor, width)
 
     @classmethod
@@ -48,7 +48,7 @@ class DeviceStorage(StorageBase):
         )
 
     @classmethod
-    def sensor_cover_upload(cls, sensor: Sensor, file: UploadFile):
+    def sensor_cover_upload(cls, sensor: SensorEntity, file: UploadFile):
         path = os.path.join(
             str(sensor.device.id),
             'sensors',

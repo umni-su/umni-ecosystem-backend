@@ -65,14 +65,12 @@ def get_sensors_history(
         )
 
 
-@sensors.get('/{sensor_id}/cover/{width}')
-def update_device_cover(
-        sensor_id: int,
-        width: int,
+@sensors.get('/{term}', description="Find sensor with device data by term")
+def find_sensor_by_term(
+        term: str,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     try:
-        sensor: SensorModel = SensorRepository.get_sensor(sensor_id)
-        return device_storage.sensor_cover_response(sensor, width)
+        return SensorRepository.find_sensors(term)
     except Exception as e:
         Logger.err(e)

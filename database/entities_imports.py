@@ -17,7 +17,7 @@ from entities.storage import StorageEntity
 from entities.user import UserEntity
 from entities.configuration import ConfigurationEntity
 from entities.device import DeviceEntity
-from entities.sensor import Sensor
+from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
 from entities.device_network_interfaces import DeviceNetworkInterface
 

@@ -65,7 +65,7 @@ class SensorBase:
     )
 
 
-class Sensor(
+class SensorEntity(
     TimeStampMixin,
     SensorBase,
     IdColumnMixin,

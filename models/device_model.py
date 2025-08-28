@@ -15,17 +15,17 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
-
-from models.device_netif import DeviceNetif
-from models.sensor_model import SensorModel
+from pydantic import BaseModel
 
 
-class DeviceModel(BaseModel):
+class DeviceModelMain(BaseModel):
     id: int | None = None
     name: str | None = None
     title: str | None = None
     description: str | None = None
+
+
+class DeviceModel(DeviceModelMain):
     location_id: int | None = None
     photo: str | None = None
     type: int | None = None
@@ -42,17 +42,3 @@ class DeviceModel(BaseModel):
 class DeviceUpdateModel(BaseModel):
     id: int | None = None
     title: str | None = None
-
-
-class DeviceModelWithSensors(DeviceModel):
-    sensors: list[SensorModel] | None = None
-
-
-class DeviceModelWithNetif(DeviceModel):
-    network_interfaces: list[DeviceNetif] | None = None
-
-
-class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif):
-    model_config = ConfigDict(
-        from_attributes=True
-    )

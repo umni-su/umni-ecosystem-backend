@@ -19,7 +19,7 @@ from sqlmodel import select, col, asc
 
 from classes.logger import Logger
 from database.session import write_session
-from entities.sensor import Sensor
+from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from repositories.base_repository import BaseRepository
@@ -27,7 +27,7 @@ from repositories.base_repository import BaseRepository
 
 class SensorHistoryRepository(BaseRepository):
     @classmethod
-    def get_last_record(cls, sensor: Sensor) -> None | SensorHistoryModel:
+    def get_last_record(cls, sensor: SensorEntity) -> None | SensorHistoryModel:
         with write_session() as sess:
             try:
                 last = sess.exec(

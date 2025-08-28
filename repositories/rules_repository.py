@@ -46,7 +46,9 @@ class RulesRepository(BaseRepository):
                 ).all()
                 return [
                     RuleModel.model_validate(
-                        rule.to_dict()
+                        rule.to_dict(
+                            include_relationships=True
+                        )
                     )
                     for rule in rules
                 ]
@@ -61,7 +63,9 @@ class RulesRepository(BaseRepository):
                 if not rule:
                     raise HTTPException(status_code=404, detail="Rule not found")
                 return RuleModel.model_validate(
-                    rule.to_dict()
+                    rule.to_dict(
+                        include_relationships=True
+                    )
                 )
             except Exception as e:
                 Logger.err(str(e))
@@ -98,7 +102,9 @@ class RulesRepository(BaseRepository):
                 sess.refresh(db_rule)
 
                 return RuleModel.model_validate(
-                    db_rule.to_dict()
+                    db_rule.to_dict(
+                        include_relationships=True
+                    )
                 )
             except Exception as e:
                 Logger.err(str(e))
@@ -164,7 +170,9 @@ class RulesRepository(BaseRepository):
                 session.commit()
                 rule = session.get(RuleEntity, rule_id)
                 return RuleModel.model_validate(
-                    rule.to_dict()
+                    rule.to_dict(
+                        include_relationships=True
+                    )
                 )
             except Exception as e:
                 Logger.err(str(e))

@@ -17,7 +17,7 @@ from sqlmodel import Field, Relationship
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from entities.sensor import Sensor
+from entities.sensor_entity import SensorEntity
 
 
 class SensorHistoryBase:
@@ -39,6 +39,6 @@ class SensorHistory(
 ):
     __tablename__ = 'device_sensors_history'
 
-    sensor: Sensor | None = Relationship(
+    sensor: SensorEntity | None = Relationship(
         back_populates="history"
     )

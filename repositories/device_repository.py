@@ -21,7 +21,8 @@ from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
 from database.session import write_session
 from entities.device import DeviceEntity
-from models.device_model import DeviceUpdateModel, DeviceModelWithRelations
+from models.device_model import DeviceUpdateModel
+from models.device_model_relations import DeviceModelWithRelations
 from repositories.base_repository import BaseRepository
 
 

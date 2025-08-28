@@ -43,7 +43,6 @@ def get_db():
 @rules.get("", response_model=list[RuleModel])
 def get_rules(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-
 ):
     all_rules = RulesRepository.get_rules()
     return all_rules
@@ -51,9 +50,10 @@ def get_rules(
 
 @rules.get("/{rule_id}", response_model=RuleModel)
 def get_rule(
+        rule_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        rule: RuleEntity = Depends(RulesRepository.get_rule)
 ):
+    rule: RuleEntity = RulesRepository.get_rule(rule_id)
     rule_data = {
         "id": rule.id,
         "name": rule.name,
@@ -75,8 +75,8 @@ def get_rule(
 def create_rule(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
         rule_data: RuleCreate,
-        rule: RuleModel = Depends(RulesRepository.add_rule)
 ):
+    rule: RuleModel = RulesRepository.add_rule(rule_data)
     return rule
 
 
@@ -121,8 +121,9 @@ def get_node(
 
 @rules.get("/nodes/{node_id}/list", response_model=list[RuleNodeListItem])
 def get_node(
+        node_id: str,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-        node: RuleNodeModel = Depends(RulesRepository.get_node),
 ):
+    node: RuleNodeModel = RulesRepository.get_node(node_id)
     _list: list[RuleNodeListItem] = RulesRepository.get_node_entities_by_trigger(node.data.flow.el.key)
     return _list

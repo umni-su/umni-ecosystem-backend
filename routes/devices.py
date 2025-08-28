@@ -16,11 +16,11 @@
 import os.path
 from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile
-from fastapi.responses import FileResponse
 from classes.auth.auth import Auth
 from classes.logger import Logger
 from classes.storages.device_storage import device_storage
-from models.device_model import DeviceModelWithRelations, DeviceUpdateModel
+from models.device_model import DeviceUpdateModel
+from models.device_model_relations import DeviceModelWithRelations
 from repositories.device_repository import DeviceRepository
 from responses.user import UserResponseOut
 

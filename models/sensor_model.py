@@ -14,12 +14,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
-
 from pydantic import BaseModel
 
 from models.sensor_history_model import SensorHistoryModel
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 from fastapi import UploadFile
+
+from models.device_model import DeviceModelMain
 
 
 class SensorModel(BaseModel):
@@ -43,3 +44,7 @@ class SensorUpdateModel(BaseModel):
 
 class SensorModelWithHistory(SensorModel):
     history: list[SensorHistoryModel]
+
+
+class SensorModelWithDevice(SensorModel):
+    device: DeviceModelMain = None
