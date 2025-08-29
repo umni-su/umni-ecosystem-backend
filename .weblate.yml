@@ -1,0 +1,4 @@
+component: "messages"
+file_format: po
+filemask: "l10n/*/LC_MESSAGES/messages.po"
+new_base: "l10n/templates/messages.pot"

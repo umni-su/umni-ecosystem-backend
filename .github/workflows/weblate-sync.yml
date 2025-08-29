@@ -1,0 +1,43 @@
+# .github/workflows/weblate-sync.yml
+name: Weblate Sync
+
+on:
+  push:
+    paths:
+      - 'l10n/**'
+    branches: [ main ]
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install Babel
+        run: pip install babel
+
+      - name: Extract new strings
+        run: pybabel extract -o l10n/templates/messages.pot .
+
+      - name: Update PO files
+        run: pybabel update -i l10n/templates/messages.pot -d l10n
+
+      - name: Compile MO files
+        run: pybabel compile -d l10n
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add l10n/
+          git diff --staged --quiet || git commit -m "🌍 Update translations from Weblate"
+          git push
