@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from collections import deque
 from pydantic import BaseModel, Field
 import cv2

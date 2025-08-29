@@ -15,7 +15,6 @@
 
 import time
 
-from classes.logger.logger import Logger
 from classes.thread.daemon import Daemon
 from services.base_service import BaseService
 import psutil
@@ -39,7 +38,6 @@ class SysteminfoService(BaseService):
     info: SysteminfoModel | None = None
 
     def run(self):
-        Logger.debug('Hi from systeminfo')
         self.memory.swap = MemoryModel()
         self.memory.virtual = MemoryModel()
         self.daemon = Daemon(self.collect_systeminfo)

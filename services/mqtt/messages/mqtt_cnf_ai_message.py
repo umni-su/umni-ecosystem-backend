@@ -16,6 +16,7 @@
 import datetime
 import re
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_cnf_ai_ntc_model import MqttCnfAnalogPortsModel, MqttCnfAnalogPortModel
@@ -56,6 +57,8 @@ class MqttCnfAiMessage(BaseMessage):
                     sensor.last_sync = datetime.datetime.now()
                     session.add(sensor)
                 except Exception as e:
-                    print(e)
-            Logger.info(f'📟⚙️ [{self.topic.original_topic}] AI config saved successfully')
+                    Logger.err(f'MqttCnfAiMessage->save: {str(e)}', LoggerType.CAMERAS)
+            Logger.info(
+                f'📟⚙️ [{self.topic.original_topic}] AI config saved successfully',
+                LoggerType.DEVICES)
             session.commit()

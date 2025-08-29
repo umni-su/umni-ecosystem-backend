@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, Body, Form, HTTPException
 
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
+from classes.l10n.l10n import _
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
 from repositories.sensor_history_repository import SensorHistoryRepository
@@ -59,7 +60,7 @@ def get_sensors_history(
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=str(e)
+            detail=_('Error getting sensors history')
         )
 
 

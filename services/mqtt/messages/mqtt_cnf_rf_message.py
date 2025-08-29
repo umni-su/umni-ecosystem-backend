@@ -18,6 +18,7 @@ from typing import List
 from pydantic import RootModel
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_rf_item_model import MqttRfItemModel
@@ -51,6 +52,6 @@ class MqttCnfRfMessage(BaseMessage):
                     sensor.value = str(rf.state)
                     session.add(sensor)
                 session.commit()
-                Logger.info(f'📟⚙️ [{self.topic.original_topic}] RF433 config saved successfully')
+                Logger.info(f'📟⚙️ [{self.topic.original_topic}] RF433 config saved successfully', LoggerType.DEVICES)
             except Exception as e:
-                print(e)
+                Logger.err(f'MqttCnfRfMessage->save() {str(e)}', LoggerType.DEVICES)

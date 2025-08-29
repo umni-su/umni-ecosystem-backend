@@ -15,7 +15,6 @@
 
 from typing import List, Optional, TYPE_CHECKING
 import threading
-import time
 from enum import Enum
 
 if TYPE_CHECKING:

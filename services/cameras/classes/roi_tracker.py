@@ -19,14 +19,11 @@ from datetime import datetime
 from collections import deque
 from typing import List, Optional, Dict, Callable
 
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
-
 from entities.camera_area import CameraAreaEntity
-
 from classes.logger.logger import Logger
-
 from sqlmodel import col, select
-
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_model import CameraModelWithRelations
 from services.cameras.enums.roi_enum import ROIEventType
@@ -63,7 +60,6 @@ class ROITracker:
         self.recording = False
         self.triggered = False
         self.recording_start_time: Optional[datetime] = None
-        # self.last_movement_time: Dict[int, datetime | None] = {}
         self.last_movement_time: Dict[int, Optional[datetime]] = {}
         self.active_movements: set[int] = set()
 
@@ -114,7 +110,7 @@ class ROITracker:
             try:
                 self.on_motion_start(roi_event)
             except Exception as e:
-                Logger.err(f"Ошибка в callback on_motion_start: {e}")
+                Logger.err(f"Ошибка в callback on_motion_start: {e}", LoggerType.CAMERAS)
 
     def _trigger_motion_end(self, roi_event: ROIDetectionEvent) -> None:
         """Вызывается при окончании движения в ROI"""
@@ -130,7 +126,7 @@ class ROITracker:
             try:
                 self.on_recording_start(roi_event)
             except Exception as e:
-                Logger.err(f"Ошибка в callback on_recording_start: {e}")
+                Logger.err(f"Ошибка в callback on_recording_start: {e}", LoggerType.CAMERAS)
 
     def _trigger_recording_end(self, roi_event: ROIRecordEvent) -> None:
         """Вызывается при окончании записи"""
@@ -138,7 +134,7 @@ class ROITracker:
             try:
                 self.on_recording_end(roi_event)
             except Exception as e:
-                Logger.err(f"Ошибка в callback on_recording_end: {e}")
+                Logger.err(f"Ошибка в callback on_recording_end: {e}", LoggerType.CAMERAS)
 
     def reset_states(self):
         """Сброс всех состояний трекера"""
@@ -325,7 +321,7 @@ class ROITracker:
                             original=self.original_frame
                         )
                         self._trigger_motion_start(event)
-                        Logger.info(f"🏃 [{self.camera.name}] Подтверждено движение в ROI {roi_id}")
+                        Logger.debug(f"🏃 [{self.camera.name}] Подтверждено движение в ROI {roi_id}", LoggerType.CAMERAS)
                 else:
                     self._pending_movements[roi_id] = 1
             else:
@@ -354,7 +350,7 @@ class ROITracker:
                     )
                     self._trigger_motion_end(event)
 
-                    Logger.info(f"🏃 [{self.camera.name}] Движение завершено в ROI {roi_id}")
+                    Logger.debug(f"🏃 [{self.camera.name}] Движение завершено в ROI {roi_id}", LoggerType.CAMERAS)
 
     def _process_contours(self, contours, settings: ROISettings) -> List[dict]:
         """Обработка и фильтрация контуров с учетом чувствительности ROI"""
@@ -425,7 +421,8 @@ class ROITracker:
                 )
                 self._trigger_recording_start(event)
 
-                Logger.warn(f"[{self.camera.name}]🔴️ НАЧАЛО ЗАПИСИ! Активированы ROI: {active_names}")
+                Logger.debug(f"[{self.camera.name}]🔴️ НАЧАЛО ЗАПИСИ! Активированы ROI: {active_names}",
+                             LoggerType.CAMERAS)
 
         elif self.recording and not self.active_movements:
             if self.triggered:
@@ -441,7 +438,8 @@ class ROITracker:
                 )
                 self._trigger_recording_end(event)
 
-                Logger.warn(f"⬛ [{self.camera.name}] ️КОНЕЦ ЗАПИСИ! Длительность: {duration:.1f} сек")
+                Logger.debug(f"⬛ [{self.camera.name}] ️КОНЕЦ ЗАПИСИ! Длительность: {duration:.1f} сек",
+                             LoggerType.CAMERAS)
                 self.recording = False
                 self.recording_start_time = None
                 self.triggered = False
@@ -506,7 +504,7 @@ class ROITracker:
             self.last_movement_time[roi.id] = None
             return True
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}")
+            Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}", LoggerType.CAMERAS)
             return False
 
     # Основные методы обновления ROI
@@ -529,7 +527,7 @@ class ROITracker:
 
                     return True
                 except Exception as e:
-                    Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}")
+                    Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}", LoggerType.CAMERAS)
                     return False
         return False
 
@@ -593,7 +591,7 @@ class ROITracker:
 
             return True
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}")
+            Logger.err(f"[{self.camera.name}] Ошибка валидации ROI: {e}", LoggerType.CAMERAS)
             return False
 
     def remove_roi(self, roi_id: int) -> bool:

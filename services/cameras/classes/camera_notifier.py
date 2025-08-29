@@ -19,6 +19,7 @@ from threading import Thread
 from typing import Callable, Any, TYPE_CHECKING
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.storages.camera_storage import CameraStorage
 from classes.websockets.messages.ws_message_detection import (
     WebsocketMessageDetectionStart,
@@ -118,7 +119,7 @@ class CameraNotifier:
             # camera = sess.get(CameraEntity, event.camera.id)
             area = sess.get(CameraAreaEntity, event.roi.id)
             if area is None:
-                Logger.err(f"⚠️ [{event.camera.name}] area is None")
+                Logger.err(f"⚠️ [{event.camera.name}] area is None", LoggerType.CAMERAS)
                 return
             key = area.id
 
@@ -183,7 +184,8 @@ class CameraNotifier:
             WebSockets.send_broadcast(message)
 
             Logger.debug(
-                f"👋 [{event.camera.name} EvID#{event_model.id}] Начало движения в {event_model.area.name}. Время: {event_model.start}")
+                f"👋 [{event.camera.name} EvID#{event_model.id}] Начало движения в {event_model.area.name}. Время: {event_model.start}"
+                , LoggerType.CAMERAS)
             if new_record and recording is not None:
                 recording_model = CameraRecordingModel.model_validate(
                     recording.to_dict()
@@ -232,7 +234,8 @@ class CameraNotifier:
 
             CameraNotifier.active_events.remove(founded_event)
             Logger.debug(
-                f"🤚 [{event_model.camera.name} EvID#{event_model.id}] Конец движения в {event_model.area.name}. Время: {event_model.end}")
+                f"🤚 [{event_model.camera.name} EvID#{event_model.id}] Конец движения в {event_model.area.name}. Время: {event_model.end}",
+                LoggerType.CAMERAS)
 
     @staticmethod
     def _on_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):
@@ -274,7 +277,8 @@ class CameraNotifier:
                     sess.commit()
                     CameraNotifier.active_recordings.remove(founded_record)
                     Logger.debug(
-                        f"[{recording.end}] Завершена запись с {event.camera.name}. Длительность: {recording.duration:.2f} сек")
+                        f"[{recording.end}] Завершена запись с {event.camera.name}. Длительность: {recording.duration:.2f} сек",
+                        LoggerType.CAMERAS)
                     stream.stop_write_video()
 
     @staticmethod
@@ -302,7 +306,7 @@ class CameraNotifier:
                     f"Аргументы: args={args}, kwargs={kwargs}\n"
                     f"Трейсбэк:\n{traceback.format_exc()}"
                 )
-                Logger.err(error_msg)
+                Logger.err(error_msg, LoggerType.CAMERAS)
 
         thread = Thread(
             daemon=True,
@@ -310,4 +314,4 @@ class CameraNotifier:
             name=f"CameraNotifierThread-{target.__name__}"  # Полезно для отладки
         )
         thread.start()
-        Logger.debug(f"🐍 Запущен поток для обработки {target.__name__} (ID: {thread.native_id})")
+        Logger.debug(f"🐍 Запущен поток для обработки {target.__name__} (ID: {thread.native_id})", LoggerType.CAMERAS)

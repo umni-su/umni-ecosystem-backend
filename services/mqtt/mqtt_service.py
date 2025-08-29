@@ -15,6 +15,7 @@
 
 import paho.mqtt.client as mqtt
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_crypto
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody
@@ -58,7 +59,7 @@ class MqttService(BaseService):
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client: mqtt.Client, userdata, flags, reason_code, properties):
-        Logger.debug(f"Connected with result code {reason_code}")
+        Logger.debug(f"Connected with result code {reason_code}", LoggerType.DEVICES)
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         client.subscribe("#")
@@ -90,7 +91,7 @@ class MqttService(BaseService):
             message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
         else:
             # message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
-            Logger.debug(msg.topic + " " + str(msg.payload))
+            Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.DEVICES)
 
             message: BaseMessage = BaseMessage(msg.topic, msg.payload)
 
@@ -107,7 +108,7 @@ class MqttService(BaseService):
                     username=model.user,
                     password=pwd
                 )
-            Logger.info(f'Run MQTT with: {model.host}:{model.port}')
+            Logger.info(f'Run MQTT with: {model.host}:{model.port}', LoggerType.DEVICES)
 
             self.mqttc.connect(
                 model.host,

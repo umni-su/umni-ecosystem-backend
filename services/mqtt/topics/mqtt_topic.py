@@ -14,9 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sqlmodel import select
-
 from database.session import write_session
-
 from entities.device import DeviceEntity
 from models.device_model_relations import DeviceModelWithRelations
 

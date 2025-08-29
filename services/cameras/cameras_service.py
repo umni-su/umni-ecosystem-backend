@@ -17,6 +17,7 @@ import time
 from typing import TYPE_CHECKING
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.thread.daemon import Daemon
 from services.cameras.classes.stream_registry import StreamRegistry
 
@@ -42,13 +43,13 @@ class CamerasService(BaseService):
                 current_stream = StreamRegistry.find_by_camera(cam)  # Используем StreamRegistry
                 if current_stream:
                     current_stream.set_camera(cam)
-                    Logger.info(f'[{cam.name}] Обновлена камера в списке потоков')
+                    Logger.debug(f'[{cam.name}] Update camera in camera registry', LoggerType.CAMERAS)
                 else:
                     new_stream = CameraStream(camera=cam)
                     StreamRegistry.add_stream(new_stream)  # Добавляем поток в реестр
-                    Logger.info(f'[{cam.name}] Добавлен новый поток')
+                    Logger.debug(f'[{cam.name}] New stream added', LoggerType.CAMERAS)
             time.sleep(5)
 
     def run(self):
-        Logger.debug('Starting camera streams...')
+        Logger.debug('Starting camera streams...', LoggerType.CAMERAS)
         self.daemon = Daemon(self.cameras_list_task)

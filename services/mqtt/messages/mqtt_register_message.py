@@ -18,6 +18,7 @@ import datetime
 from pydantic_core import ValidationError
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
@@ -60,7 +61,7 @@ class MqttRegisterMessage(BaseMessage):
         try:
             self.model = MqttRegisterModel.model_validate_json(self.original_message)
         except ValidationError as e:
-            print(e)
+            Logger.err(f'MqttRegisterMessage->prepare_message() {str(e)}', LoggerType.DEVICES)
 
     def save(self):
         try:
@@ -100,7 +101,7 @@ class MqttRegisterMessage(BaseMessage):
                     #     ni = founded
                 session.commit()
 
-                Logger.info(f'📟💡 [Device ID{device.id} / {device.name}] - registration success')
+                Logger.info(f'📟💡 [Device ID{device.id} / {device.name}] - registration success', LoggerType.DEVICES)
 
         except Exception as e:
-            print(e)
+            Logger.err(f'MqttRegisterMessage->save() {str(e)}', LoggerType.DEVICES)

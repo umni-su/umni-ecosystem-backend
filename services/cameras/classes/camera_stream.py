@@ -28,6 +28,7 @@ import numpy as np
 from av import VideoFrame
 from pydantic import BaseModel
 
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
@@ -152,7 +153,7 @@ class CameraStream:
 
         if self.daemon is None:
             self.daemon = Daemon(self.loop_frames)
-            Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}")
+            Logger.debug(f"👻 [{self.camera.name}] Daemon was created, reason={dmn}", LoggerType.CAMERAS)
 
     def _handle_registry_state_change(self, new_state: StreamState):
         """Обрабатывает изменения состояния реестра"""
@@ -211,10 +212,8 @@ class CameraStream:
             }
 
             if changed_fields:
-                print(f"Changes detected in {self.camera.name}: {changed_fields}")
-                self.need_restart = True
-                time.sleep(2)
-                Logger.warn(f'{self.camera.name} was changed! Changes: {changed_fields}')
+                Logger.debug(f"Changes detected in {self.camera.name}: {changed_fields}", LoggerType.CAMERAS)
+                Logger.debug(f'{self.camera.name} was changed! Changes: {changed_fields}', LoggerType.CAMERAS)
                 self.need_restart = True
 
         self.camera = camera
@@ -265,7 +264,7 @@ class CameraStream:
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
         except Exception as e:
             self.capture_error = True
-            Logger.debug(f"⚠️ [{self.camera.name}] Failed to open stream: {e}")
+            Logger.err(f"⚠️ [{self.camera.name}] Failed to open stream: {e}", LoggerType.CAMERAS)
             time.sleep(3)
             self._create_input_container()
 
@@ -335,7 +334,7 @@ class CameraStream:
         except EOFError as e:
             self.destroy_output_container()
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] PyAV Writer Error: {e}")
+            Logger.err(f"[{self.camera.name}] PyAV Writer Error: {e}", LoggerType.CAMERAS)
             self.destroy_output_container()
             return False
 
@@ -364,7 +363,8 @@ class CameraStream:
             # Затем закрываем контейнер
             if self.output_container is not None:
                 self.output_container.close()
-                Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}")
+                Logger.debug(f"🔳️ [{self.camera.name}] Output container stopped: {self.output_file}",
+                             LoggerType.CAMERAS)
 
             # Обработка постоянных событий
             if self.is_record_permanent() and self.permanent_event is not None:
@@ -374,10 +374,10 @@ class CameraStream:
                     )
                     Logger.debug(f'🎬 [{self.camera.name}] Permanent event end: #ID{self.permanent_event.id}]')
                 except Exception as e:
-                    Logger.debug(f"[{self.camera.name}] Error closing permanent event: {e}")
+                    Logger.debug(f"[{self.camera.name}] Error closing permanent event: {e}", LoggerType.CAMERAS)
 
         except Exception as e:
-            Logger.debug(f"[{self.camera.name}] Error during container destruction: {e}")
+            Logger.debug(f"[{self.camera.name}] Error during container destruction: {e}", LoggerType.CAMERAS)
         finally:
             # Всегда сбрасываем состояние
             self.output_container = None
@@ -451,11 +451,11 @@ class CameraStream:
                 self.output_stream.pix_fmt = 'yuv420p'
 
             self.output_file = full_path
-            Logger.debug(f"[{self.camera.name}] Output container started: {full_path}")
+            Logger.debug(f"[{self.camera.name}] Output container started: {full_path}", LoggerType.CAMERAS)
             return True
 
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] Failed to initialize output container: {e}")
+            Logger.err(f"[{self.camera.name}] Failed to initialize output container: {e}", LoggerType.CAMERAS)
             self.output_container = None
             self.output_stream = None
             self.audio_output_stream = None
@@ -477,7 +477,7 @@ class CameraStream:
                     self.output_container.mux(packet)
 
         except Exception as e:
-            Logger.err(f"[{self.camera.name}] Error during flush: {e}")
+            Logger.err(f"[{self.camera.name}] Error during flush: {e}", LoggerType.CAMERAS)
 
     def is_stream_alive(self):
         """Проверяет, активен ли поток, включая проверку на зависание"""
@@ -487,7 +487,8 @@ class CameraStream:
         # Проверка на зависание (нет новых кадров)
         current_time = time.time()
         if current_time - self.last_frame_time > self.heartbeat_timeout:
-            Logger.warn(f"⚠️ [{self.camera.name}] Stream frozen - no frames for {self.heartbeat_timeout} sec")
+            Logger.warn(f"⚠️ [{self.camera.name}] Stream frozen - no frames for {self.heartbeat_timeout} sec",
+                        LoggerType.CAMERAS)
             return False
 
         try:
@@ -504,7 +505,7 @@ class CameraStream:
         if current_time - self.last_heartbeat_check > self.heartbeat_check_interval:
             self.last_heartbeat_check = current_time
             if not self.is_stream_alive():
-                Logger.warn(f"❤️🩹 [{self.camera.name}] Heartbeat check failed - restarting stream")
+                Logger.warn(f"❤️🩹 [{self.camera.name}] Heartbeat check failed - restarting stream", LoggerType.CAMERAS)
                 self.need_restart = True
 
     def is_opened(self):
@@ -523,7 +524,7 @@ class CameraStream:
 
             if need_create_input:
                 self.create_input_container()
-                Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}')
+                Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}', LoggerType.CAMERAS)
 
             self.tracker = ROITracker(camera=self.camera)
             self.tracker.set_callbacks(
@@ -577,8 +578,9 @@ class CameraStream:
                         # Демультиплексируем пакеты в фреймы
                         for frame in packet.decode():
                             self.last_frame_time = time.time()  # Обновляем время последнего кадра
-                            if isinstance(frame, av.AudioFrame) and hasattr(self,
-                                                                            'audio_output_stream') and self.audio_output_stream is not None:
+                            if (isinstance(frame, av.AudioFrame)
+                                    and hasattr(self, 'audio_output_stream')
+                                    and self.audio_output_stream is not None):
                                 # Обработка аудиофреймов
                                 if self.output_container is not None and self.write:
                                     # Устанавливаем PTS для аудио
@@ -609,7 +611,8 @@ class CameraStream:
                                     if self.is_screenshots_mode():
                                         res = CameraStorage.take_screenshot(self.camera, self.original)
                                         Logger.debug(
-                                            f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]")
+                                            f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]",
+                                            LoggerType.CAMERAS)
                                     elif self.is_video_mode() and (self.output_container is None):
                                         self.create_output_container(CameraStorage.video_path(self.camera))
                                         self.write = True
@@ -620,10 +623,12 @@ class CameraStream:
                                             record_path=self.output_file
                                         )
                                         Logger.debug(
-                                            f'🎬 [{self.camera.name}] Permanent event start: #ID{self.permanent_event.id}]')
+                                            f'🎬 [{self.camera.name}] Permanent event start: #ID{self.permanent_event.id}]',
+                                            LoggerType.CAMERAS)
 
                                     Logger.debug(
-                                        f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}')
+                                        f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}',
+                                        LoggerType.CAMERAS)
 
                                 # Take cover
                                 now = time.time()
@@ -651,22 +656,24 @@ class CameraStream:
                                     record_part_diff = time.time() - self.time_part_start
                                     if record_part_diff > self.camera.record_duration * 60:
                                         self.destroy_output_container()
-                                        Logger.debug(f'Camera {self.camera.name} end record video part')
+                                        Logger.debug(f'Camera {self.camera.name} end record video part',
+                                                     LoggerType.CAMERAS)
 
                                 first_run = False
 
                 except EOFError as e:
-                    Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}")
+                    Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
+                                LoggerType.CAMERAS)
                     self.need_restart = True
                     time.sleep(1)  # Добавляем небольшую паузу перед следующей попыткой
                     pass
                 except av.error.FFmpegError as e:
-                    Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}")
+                    Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
                     self.need_restart = True
                     self.capture_error = True
                     time.sleep(3)  # Увеличиваем паузу для серьезных ошибок
                 except Exception as e:
-                    Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}")
+                    Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
                     self.need_restart = True
                     self.capture_error = True
                     time.sleep(5)
@@ -674,20 +681,20 @@ class CameraStream:
             self.stop_input_container()
             self.output_container = None
             self.input_container = None
-            Logger.warn(f'⛔️ [{self.camera.name}] stop stream')
+            Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
         finally:
             self.stop_frame_generation()
 
     def _perform_restart(self):
         """Выполняет полный перезапуск потока"""
-        Logger.debug(f"🔄 [{self.camera.name}] Performing full restart...")
+        Logger.debug(f"🔄 [{self.camera.name}] Performing full restart...", LoggerType.CAMERAS)
         try:
             self.destroy_output_container()
             self.stop_input_container()
             self.create_input_container()
             self.last_frame_time = time.time()  # Сбрасываем таймер кадров
         except Exception as e:
-            Logger.err(f"⚠️ [{self.camera.name}] Restart failed: {e}")
+            Logger.err(f"⚠️ [{self.camera.name}] Restart failed: {e}", LoggerType.CAMERAS)
         finally:
             self.need_restart = False
             self.last_restart_time = time.time()
@@ -750,7 +757,7 @@ class CameraStream:
                 time.sleep(0.03)
 
             except Exception as e:
-                Logger.debug(f"[{self.camera.name}] Frame generation error: {e}")
+                Logger.debug(f"[{self.camera.name}] Frame generation error: {e}", LoggerType.CAMERAS)
                 break
 
     def generate_frames(self):
@@ -813,7 +820,7 @@ class CameraStream:
                                    b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
                     await asyncio.sleep(0.5)
                 except Exception as e:
-                    Logger.debug(f"[{self.camera.name}] Async frame error: {e}")
+                    Logger.debug(f"[{self.camera.name}] Async frame error: {e}", LoggerType.CAMERAS)
                     break
         finally:
             if not StreamRegistry.is_restarting():

@@ -22,6 +22,7 @@ from threading import Thread, Event
 from typing import Callable, Dict, Optional, Any, List
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from services.scheduler.enums.schedule_frequency import ScheduleFrequency
 from services.scheduler.models.task_config import TaskConfig
 from services.scheduler.models.task_info import TaskInfo, TaskStatus
@@ -59,11 +60,11 @@ class TaskScheduler:
         name = task_name or func.__name__
 
         if name in self.tasks:
-            Logger.err(f"Task '{name}' already exists")
+            Logger.err(f"Task '{name}' already exists", LoggerType.SCHEDULER)
             return False
 
         self.task_registry[name] = func
-        Logger.info(f"📆 Registered task function: {name}")
+        Logger.info(f"📆 Registered task function: {name}", LoggerType.SCHEDULER)
 
         task_config = TaskConfig(
             name=name,
@@ -138,10 +139,10 @@ class TaskScheduler:
             # Сохраняем job в задаче для последующего доступа
             if job:
                 task['job'] = job
-                Logger.info(f"📆 Task '{task_name}' scheduled. Next run: {job.next_run}")
+                Logger.info(f"📆 Task '{task_name}' scheduled. Next run: {job.next_run}", LoggerType.SCHEDULER)
 
         except Exception as e:
-            Logger.err(f"📆 Failed to schedule task '{task_name}': {str(e)}")
+            Logger.err(f"📆 Failed to schedule task '{task_name}': {str(e)}", LoggerType.SCHEDULER)
 
     def _run_task(self, task_name: str):
         """Выполнение задачи с корректным отображением next_run"""
@@ -154,7 +155,7 @@ class TaskScheduler:
         job = self._find_schedule_job(task_name)
 
         if not func:
-            Logger.err(f"Function not found for task '{task_name}'")
+            Logger.err(f"Function not found for task '{task_name}'", LoggerType.SCHEDULER)
             return
 
         try:
@@ -172,15 +173,15 @@ class TaskScheduler:
                 # Вручную вычисляем next_run для логирования
                 if hasattr(job, 'period'):
                     next_run = start_time + job.period
-                    Logger.info(f"✅ Task '{task_name}' completed. Next run: {next_run}")
+                    Logger.info(f"✅ Task '{task_name}' completed. Next run: {next_run}", LoggerType.SCHEDULER)
                 else:
-                    Logger.info(f"✅ Task '{task_name}' completed")
+                    Logger.info(f"✅ Task '{task_name}' completed", LoggerType.SCHEDULER)
 
             return result
 
         except Exception as e:
             error_msg = str(e)
-            Logger.err(f"❌ Task '{task_name}' failed: {error_msg}")
+            Logger.err(f"❌ Task '{task_name}' failed: {error_msg}", LoggerType.SCHEDULER)
             if job:
                 job.last_run = datetime.now()
                 job.last_result = f"error: {error_msg}"
@@ -192,22 +193,22 @@ class TaskScheduler:
     def start(self) -> bool:
         """Запуск планировщика"""
         if self._scheduler_thread and self._scheduler_thread.is_alive():
-            Logger.warn("📆 Scheduler already running")
+            Logger.warn("📆 Scheduler already running", LoggerType.SCHEDULER)
             return False
 
         self._stop_event.clear()
 
         def run_scheduler():
-            Logger.info("📆 Scheduler started")
+            Logger.info("📆 Scheduler started", LoggerType.SCHEDULER)
             while not self._stop_event.is_set():
                 try:
                     schedule.run_pending()
                     time.sleep(1)
                 except Exception as e:
-                    Logger.err(f"📆 Scheduler error: {str(e)}")
+                    Logger.err(f"📆 Scheduler error: {str(e)}", LoggerType.SCHEDULER)
                     time.sleep(5)
 
-            Logger.info("📆 Scheduler stopped")
+            Logger.info("📆 Scheduler stopped", LoggerType.SCHEDULER)
 
         self._scheduler_thread = Thread(target=run_scheduler, daemon=True)
         self._scheduler_thread.start()
@@ -216,18 +217,18 @@ class TaskScheduler:
     def stop(self) -> bool:
         """Остановка планировщика"""
         if not self._scheduler_thread or not self._scheduler_thread.is_alive():
-            Logger.warn("Scheduler not running")
+            Logger.warn("Scheduler not running", LoggerType.SCHEDULER)
             return False
 
         self._stop_event.set()
         self._scheduler_thread.join(timeout=5)
-        Logger.info("Scheduler stopped successfully")
+        Logger.info("Scheduler stopped successfully", LoggerType.SCHEDULER)
         return True
 
     def run_task_now(self, task_name: str) -> bool:
         """Немедленный запуск задачи"""
         if task_name not in self.tasks:
-            Logger.err(f"Task '{task_name}' not found")
+            Logger.err(f"Task '{task_name}' not found", LoggerType.SCHEDULER)
             return False
 
         Thread(target=self._run_task, args=(task_name,), daemon=True).start()

@@ -15,8 +15,6 @@
 
 import threading
 import av
-from datetime import datetime
-from sqlmodel import Session, select
 from typing import Optional
 
 from database.session import write_session

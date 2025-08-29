@@ -38,5 +38,4 @@ class BaseService:
         self.run()
 
     def run(self):
-        print('Base')
         return

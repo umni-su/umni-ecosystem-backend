@@ -17,6 +17,7 @@ import datetime
 
 from sqlmodel import select
 
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
 from database.session import write_session
@@ -30,13 +31,6 @@ from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 
 
 class MqttSensorMessage(BaseMessage):
-
-    def __init__(self, topic: str, message: bytes):
-        super().__init__(topic, message)
-
-    # def prepare_message(self):
-    #     print(self.model)
-    #     self.model.model_validate_json(self.original_message)
 
     def save(self):
         ecosystem = get_ecosystem()
@@ -78,9 +72,10 @@ class MqttSensorMessage(BaseMessage):
                             session.refresh(history)
 
                             Logger.info(
-                                f"📟📄 [{self.topic.original_topic} / ID#{history.id} / {history.sensor.identifier}], type:{sensor.type}: {self.identifier} -> {self.sensor_value()}")
+                                f"📟📄 [{self.topic.original_topic} / ID#{history.id} / {history.sensor.identifier}], type:{sensor.type}: {self.identifier} -> {self.sensor_value()}",
+                                LoggerType.DEVICES)
                     except Exception as e:
-                        Logger.err(e)
+                        Logger.err(f'MqttSensorMessage->save(): {str(e)}', LoggerType.DEVICES)
 
     def sensor_value(self):
         return None

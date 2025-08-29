@@ -18,6 +18,7 @@ import datetime
 from sqlmodel import Session
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_dio_cnf_model import MqttDioCngModel
@@ -62,6 +63,8 @@ class MqttCnfDioMessage(BaseMessage):
                 session.commit()
 
                 Logger.info(
-                    f'📟⚙️ [{self.topic.original_topic}] DIO config saved successfully')
+                    f'📟⚙️ [{self.topic.original_topic}] DIO config saved successfully',
+                    LoggerType.DEVICES
+                )
             except Exception as e:
-                print(e)
+                Logger.err(f'MqttCnfDioMessage->save() {str(e)}', LoggerType.DEVICES)
