@@ -17,6 +17,8 @@ from enum import StrEnum
 from typing import Optional
 
 from sqlmodel import Field
+
+from classes.l10n.l10n import _
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 

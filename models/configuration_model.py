@@ -12,9 +12,20 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from typing import List
 from entities.configuration import ConfigurationKeys
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ConfigurationModelWithTranslation(BaseModel):
+    key: ConfigurationKeys
+    value: str | None = None
+    translation: str
+
+
+class ConfigurationGroup(BaseModel):
+    label: str
+    items: List[ConfigurationModelWithTranslation] = Field(default=list)
 
 
 class ConfigurationModelBase(BaseModel):

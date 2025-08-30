@@ -22,3 +22,7 @@ def get_ecosystem():
 
 def get_crypto():
     return get_ecosystem().crypto
+
+
+def get_db_config():
+    return get_ecosystem().config

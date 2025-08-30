@@ -34,7 +34,7 @@ class SchedulerService(BaseService):
             func=camera_cleanup_task,
             schedule_cfg=TaskSchedule(
                 frequency=ScheduleFrequency.MINUTE,
-                interval=20
+                interval=60
             )
         )
 
