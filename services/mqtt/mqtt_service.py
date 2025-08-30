@@ -12,11 +12,14 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import time
+from typing import TYPE_CHECKING
 
 import paho.mqtt.client as mqtt
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from config.dependencies import get_crypto
+from config.dependencies import get_crypto, get_ecosystem
 from entities.configuration import ConfigurationKeys
 from responses.mqtt import MqttBody
 from services.base_service import BaseService
@@ -39,6 +42,7 @@ class MqttService(BaseService):
     name = 'mqtt'
     mqttc: mqtt.Client = None
     model: MqttBody
+    connected: bool = False
 
     def run(self):
         host = self.config.get_setting(ConfigurationKeys.MQTT_HOST).value
@@ -53,13 +57,29 @@ class MqttService(BaseService):
             user=username,
             password=password
         )
+        while not self.connected:
+            try:
+                self.create_connection(self.model)
+                self.mqttc.loop_forever()
 
-        self.create_connection(self.model)
-        self.mqttc.loop_forever()
+            except Exception as e:
+                Logger.err(f'Can not connect to MQTT broker: {str(e)}', LoggerType.MQTT)
+                time.sleep(5)
+                self.config.reread()
+                self.model = MqttBody(
+                    host=self.config.get_setting(ConfigurationKeys.MQTT_HOST).value,
+                    port=int(self.config.get_setting(ConfigurationKeys.MQTT_PORT).value),
+                    user=self.config.get_setting(ConfigurationKeys.MQTT_USER).value,
+                    password=self.config.get_setting(ConfigurationKeys.MQTT_PASSWORD).value,
+                )
+
+    def on_disconnect(self, client: mqtt.Client):
+        self.connected = False
+        Logger.warn(f'Client {client.username} disconnected with status code')
 
     # The callback for when the client receives a CONNACK response from the server.
     def on_connect(self, client: mqtt.Client, userdata, flags, reason_code, properties):
-        Logger.debug(f"Connected with result code {reason_code}", LoggerType.DEVICES)
+        Logger.debug(f"Connected with result code {reason_code}", LoggerType.MQTT)
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
         client.subscribe("#")
@@ -91,7 +111,7 @@ class MqttService(BaseService):
             message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
         else:
             # message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
-            Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.DEVICES)
+            Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.MQTT)
 
             message: BaseMessage = BaseMessage(msg.topic, msg.payload)
 
@@ -99,6 +119,7 @@ class MqttService(BaseService):
 
     def create_connection(self, model: MqttBody):
         if model.host is not None and model.port is not None:
+            self.mqttc.on_disconnect = self.on_disconnect
             self.mqttc.on_connect = self.on_connect
             self.mqttc.on_message = self.on_message
             if model.user is not None and model.password is not None:
@@ -108,7 +129,7 @@ class MqttService(BaseService):
                     username=model.user,
                     password=pwd
                 )
-            Logger.info(f'Run MQTT with: {model.host}:{model.port}', LoggerType.DEVICES)
+            Logger.info(f'Run MQTT with: {model.host}:{model.port}', LoggerType.MQTT)
 
             self.mqttc.connect(
                 model.host,
