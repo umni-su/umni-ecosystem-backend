@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-29 21:28+0300\n"
+"POT-Creation-Date: 2025-08-30 18:52+0300\n"
 "PO-Revision-Date: 2025-08-29 13:24+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,45 +18,52 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: classes/configuration/configuration.py:47
+#: classes/configuration/configuration.py:45
 msgid "Base settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:51
+#: classes/configuration/configuration.py:49
 msgid "Application locale"
 msgstr ""
 
-#: classes/configuration/configuration.py:56
+#: classes/configuration/configuration.py:54
 msgid "Application uploads path"
 msgstr ""
 
-#: classes/configuration/configuration.py:61
+#: classes/configuration/configuration.py:59
 msgid "Application uploads max size"
 msgstr ""
 
-#: classes/configuration/configuration.py:68
-#: classes/configuration/configuration.py:79
-msgid "MQTT settings"
+#: classes/configuration/configuration.py:66
+msgid "Devices settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:72
+#: classes/configuration/configuration.py:70
 msgid "Device sync timeout"
 msgstr ""
 
-#: classes/configuration/configuration.py:83
+#: classes/configuration/configuration.py:77
+msgid "MQTT settings"
+msgstr ""
+
+#: classes/configuration/configuration.py:81
 msgid "MQTT host"
 msgstr ""
 
-#: classes/configuration/configuration.py:88
+#: classes/configuration/configuration.py:86
 msgid "MQTT port"
 msgstr ""
 
-#: classes/configuration/configuration.py:93
+#: classes/configuration/configuration.py:91
 msgid "MQTT user"
 msgstr ""
 
-#: classes/configuration/configuration.py:98
+#: classes/configuration/configuration.py:96
 msgid "MQTT password"
+msgstr ""
+
+#: routes/configuration.py:48
+msgid "Failed to save configuration"
 msgstr ""
 
 #: routes/sensors.py:63

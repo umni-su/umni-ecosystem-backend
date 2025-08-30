@@ -15,6 +15,7 @@
 
 from sqlmodel import select
 
+from classes.configuration.config_consts import BLANK_PASSWORD
 from classes.l10n.l10n import _, translator
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
@@ -41,17 +42,6 @@ class EcosystemDatabaseConfiguration:
 
     def prepare_groups(self):
         self.groups = []
-        '''
-
-    APP_LOCALE = _('Application locale'),
-    APP_UPLOADS_PATH = _('Application uploads path'),
-    APP_UPLOADS_MAX_SIZE = _('Application uploads max size'),
-    APP_DEVICE_SYNC_TIMEOUT = _('Device sync timeout'),
-    APP_KEY = _('Application key'),
-    MQTT_HOST = _('MQTT host'),
-    MQTT_PORT = _('MQTT port'),
-    MQTT_USER = _('MQTT user'),
-    MQTT_PASSWORD = _('MQTT password'),'''
         app_group = ConfigurationGroup(
             label=_('Base settings'),
             items=[
@@ -74,7 +64,7 @@ class EcosystemDatabaseConfiguration:
         )
 
         device_group = ConfigurationGroup(
-            label=_('MQTT settings'),
+            label=_('Devices settings'),
             items=[
                 ConfigurationModelWithTranslation(
                     key=ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT,
@@ -105,7 +95,8 @@ class EcosystemDatabaseConfiguration:
                 ConfigurationModelWithTranslation(
                     key=ConfigurationKeys.MQTT_PASSWORD,
                     translation=_("MQTT password"),
-                    value="********" if self.get_setting(ConfigurationKeys.MQTT_PASSWORD).value is not None else None
+                    value=BLANK_PASSWORD if self.get_setting(
+                        ConfigurationKeys.MQTT_PASSWORD).value is not None else None
                 )
             ]
         )

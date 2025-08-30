@@ -12,9 +12,10 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from classes.configuration.config_consts import BLANK_PASSWORD
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from config.dependencies import get_ecosystem
+from config.dependencies import get_ecosystem, get_crypto
 from database.session import write_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel, ConfigurationModelBase
@@ -34,12 +35,21 @@ class ConfigurationRepository(BaseRepository):
                 eco = get_ecosystem()
                 try:
                     for config in config_list:
-                        config_orm = session.exec(
-                            select(ConfigurationEntity).where(col(ConfigurationEntity.key) == config.key)
-                        ).first()
-                        if isinstance(config_orm, ConfigurationEntity):
-                            config_orm.value = config.value
-                            session.add(config_orm)
+                        if config.key not in [
+                            ConfigurationKeys.APP_INSTALLED,
+                            ConfigurationKeys.APP_INSTALL_DATE,
+                            ConfigurationKeys.APP_KEY
+                        ]:
+                            config_orm = session.exec(
+                                select(ConfigurationEntity).where(col(ConfigurationEntity.key) == config.key)
+                            ).first()
+                            if isinstance(config_orm, ConfigurationEntity):
+                                if config.key == ConfigurationKeys.MQTT_PASSWORD:
+                                    if config.value != BLANK_PASSWORD:
+                                        config_orm.value = get_crypto().encrypt(config.value)
+                                else:
+                                    config_orm.value = config.value
+                                session.add(config_orm)
                 except Exception as e:
                     Logger.err(f'ConfigurationRepository->save_ecosystem_configuration: {str(e)}')
                     return None
@@ -66,7 +76,7 @@ class ConfigurationRepository(BaseRepository):
                     ConfigurationModel.model_validate(conf.to_dict()) for conf in _config]
                 for index, c in enumerate(res):
                     if c.key == ConfigurationKeys.MQTT_PASSWORD and c.value is None:
-                        res[index].value = '**********'
+                        res[index].value = BLANK_PASSWORD
 
                 return res
             except Exception as e:
