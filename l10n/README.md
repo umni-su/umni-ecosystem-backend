@@ -98,6 +98,8 @@ msgstr[2] "Онлайн {count} пользователей"
 # Компилируем PO в MO файлы
 
 pybabel compile -d l10n
+pybabel compile -d l10n -D ui
+pybabel compile -d l10n -D messages
 
 # Компиляция конкретного языка
 

@@ -8,3 +8,14 @@ alembic.ini
 .venv
 .idea
 out
+
+# Файлы переводов
+l10n/*/LC_MESSAGES/*.mo
+l10n/*/LC_MESSAGES/*.mo~
+
+# Резервные копии
+l10n/*/LC_MESSAGES/*.po~
+l10n/templates/*.pot~
+
+# Временные файлы
+l10n/*/LC_MESSAGES/.#*

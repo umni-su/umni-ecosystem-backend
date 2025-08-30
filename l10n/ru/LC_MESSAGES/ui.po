@@ -1,0 +1,740 @@
+# l10n/ru/LC_MESSAGES/ui.po
+msgid ""
+msgstr ""
+"Language: ru\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Access control"
+msgstr "Контроль доступа"
+
+msgid "Account settings"
+msgstr "Учетная запись"
+
+msgid "Action"
+msgstr "Действие"
+
+msgid "Actions"
+msgstr "Действия"
+
+msgid "Active"
+msgstr "Активно"
+
+msgid "Add"
+msgstr "Добавить"
+
+msgid "Add area"
+msgstr "Добавить зону"
+
+msgid "Add camera"
+msgstr "Добавить камеру"
+
+msgid "Add rule"
+msgstr "Добавить правило"
+
+msgid "Add storage"
+msgstr "Добавить хранилище"
+
+msgid "Administrator account"
+msgstr "Аккаунт администратора"
+
+msgid "Alerts"
+msgstr "Уведомления"
+
+msgid "All data will be deleted"
+msgstr "Все данные будут удалены"
+
+msgid "Analog sensor"
+msgstr "Аналоговый датчик"
+
+msgid "Analog sensors"
+msgstr "Аналоговые датчики"
+
+msgid "And"
+msgstr "И"
+
+msgid "Apply"
+msgstr "Применить"
+
+msgid "Area"
+msgstr "Зона"
+
+msgid "Area is enabled"
+msgstr "Зона активна"
+
+msgid "Area will be deleted"
+msgstr "Зона будет удалена"
+
+msgid "Assign location"
+msgstr "Назначить расположение"
+
+msgid "Authentication"
+msgstr "Аутентификация"
+
+msgid "Autorun"
+msgstr "Автозапуск"
+
+msgid "Average"
+msgstr "Средний"
+
+msgid "Back"
+msgstr "Назад"
+
+msgid "Backup and restore"
+msgstr "Резервное копирование"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Camera"
+msgstr "Камера"
+
+msgid "Camera motion end"
+msgstr "Конец обнаружения движения"
+
+msgid "Camera motion start"
+msgstr "Начало обнаружения движения"
+
+msgid "Camera: {name}"
+msgstr "Камера: {name}"
+
+msgid "Camera {name} events"
+msgstr "События камеры {name}"
+
+msgid "Cameras"
+msgstr "Камеры"
+
+msgid "Change cover"
+msgstr "Изменить обложку"
+
+msgid "Change credentials"
+msgstr "Изменить учетные данные"
+
+msgid "Check"
+msgstr "Проверить"
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Comment"
+msgstr "Комментарий"
+
+msgid "Component selection"
+msgstr "Выбор компонентов"
+
+msgid "Computer"
+msgstr "Компьютер"
+
+msgid "Condition"
+msgstr "Условие"
+
+msgid "Conditions"
+msgstr "Условия"
+
+msgid "Connection"
+msgstr "Подключение"
+
+msgid "Continuous video"
+msgstr "Продолжительное видео"
+
+msgid "Cpu"
+msgstr "Процессор"
+
+msgid "Dashboard"
+msgstr "Панель"
+
+msgid "Danger"
+msgstr "Опасность"
+
+msgid "Delete"
+msgstr "Удалить"
+
+msgid "Delete area"
+msgstr "Удаление зоны"
+
+msgid "Delete event"
+msgstr "Удаление событие"
+
+msgid "Delete node"
+msgstr "Удаление блока"
+
+msgid "Delete storage"
+msgstr "Удаление хранилища"
+
+msgid "Deleted"
+msgstr "Удалено"
+
+msgid "Description"
+msgstr "Описание"
+
+msgid "Details"
+msgstr "Детали"
+
+msgid "Detection"
+msgstr "Обнаружение"
+
+msgid "Device"
+msgstr "Устройство"
+
+msgid "Device info"
+msgstr "Информация об устройстве"
+
+msgid "Device: {name}"
+msgstr "Устройство: {name}"
+
+msgid "Devices"
+msgstr "Устройства"
+
+msgid "Disable alarm"
+msgstr "Выключить тревогу"
+
+msgid "Disks usage"
+msgstr "Использование дисков"
+
+msgid "Documentation"
+msgstr "Документация"
+
+msgid "Download"
+msgstr "Скачать"
+
+msgid "Dragging"
+msgstr "Перетаскивание"
+
+msgid "Duration"
+msgstr "Длительность"
+
+msgid "Edit"
+msgstr "Править"
+
+msgid "Edit camera"
+msgstr "Редактировать камеру"
+
+msgid "Edit rule element"
+msgstr "Редактирование элемента правила"
+
+msgid "Edit storage"
+msgstr "Править хранилище"
+
+msgid "Editing"
+msgstr "Редактирование"
+
+msgid "Email"
+msgstr "Электронная почта"
+
+msgid "Empty"
+msgstr "Пусто"
+
+msgid "Enable alarm"
+msgstr "Включить тревогу"
+
+msgid "End"
+msgstr "Конец"
+
+msgid "Enter date"
+msgstr "Укажите дату"
+
+msgid "Entities"
+msgstr "Сущности"
+
+msgid "Error save rule"
+msgstr "Ошибка сохранения правила"
+
+msgid "Error to connect. Please check your credentials or MQTT broker settings."
+msgstr "Ошибка подключения. Пожалуйста, проверьте учетные данные или настройки MQTT брокера"
+
+msgid "Event"
+msgstr "Событие"
+
+msgid "Event has been deleted"
+msgstr "Событие было удалено"
+
+msgid "Event with files will be deleted"
+msgstr "Событие и его файлы будут удалены"
+
+msgid "Event {id}"
+msgstr "Событие #{id}"
+
+msgid "Events"
+msgstr "События"
+
+msgid "Events total: {count}"
+msgstr "Всего событий: {count}"
+
+msgid "Extended area settings"
+msgstr "Расширенные растройки зоны"
+
+msgid "Extension"
+msgstr "Расширение"
+
+msgid "Filter"
+msgstr "Фильтр"
+
+msgid "Finish installation"
+msgstr "Завершение установки"
+
+msgid "Firstname"
+msgstr "Имя"
+
+msgid "Firmware"
+msgstr "Прошивка"
+
+msgid "Form mode"
+msgstr "Режим формы"
+
+msgid "Free of"
+msgstr "свободно из"
+
+msgid "Gateway"
+msgstr "Шлюз"
+
+msgid "High"
+msgstr "Высокий"
+
+msgid "Host"
+msgstr "Хост"
+
+msgid "IP address"
+msgstr "IP адрес"
+
+msgid "Incorrect username or password"
+msgstr "Неправильное имя пользователя или пароль"
+
+msgid "Input"
+msgstr "Вход"
+
+msgid "Inputs"
+msgstr "Входы"
+
+msgid "Install"
+msgstr "Установить"
+
+msgid "Install ecosystem"
+msgstr "Установить экосистему"
+
+msgid "Interval screenshots"
+msgstr "Периодические изображения"
+
+msgid "Inventory number"
+msgstr "Инвентарный номер"
+
+msgid "Inventory number not filled"
+msgstr "Инвентарный номер не заполнен"
+
+msgid "Is active"
+msgstr "Активно"
+
+msgid "Last update"
+msgstr "Последнее обновление"
+
+msgid "Lastname"
+msgstr "Фамилия"
+
+msgid "Last sync"
+msgstr "Синхронизано"
+
+msgid "Light"
+msgstr "Легкий"
+
+msgid "Link"
+msgstr "Ссылка"
+
+msgid "Link mode"
+msgstr "Режим ссылки"
+
+msgid "Load more"
+msgstr "Загрузить больше"
+
+msgid "Location provides order and expands the possibilities of interaction between device"
+msgstr "Расположение дает упорядоченность и расширяет возможности взаимодействия между устройствами"
+
+msgid "Login"
+msgstr "Войти"
+
+msgid "Logout"
+msgstr "Выход"
+
+msgid "MAC address"
+msgstr "MAC адрес"
+
+msgid "Max aspect ratio"
+msgstr "Максимальное соотношение сторон"
+
+msgid "Memory"
+msgstr "Память"
+
+msgid "Min area"
+msgstr "Минимальная зона"
+
+msgid "Min aspect ratio"
+msgstr "Минимальное соотношение сторон"
+
+msgid "Motion detection screenshots"
+msgstr "Изображения обнаружения движения"
+
+msgid "Motion detection video"
+msgstr "Видео обнаружения движения"
+
+msgid "MQTT settings"
+msgstr "Настройки MQTT"
+
+msgid "Name"
+msgstr "Наименование"
+
+msgid "Netmask"
+msgstr "Маска"
+
+msgid "Network interfaces"
+msgstr "Сетевые интерфейсы"
+
+msgid "New zone"
+msgstr "Новая зона"
+
+msgid "Next"
+msgstr "Далее"
+
+msgid "No more events"
+msgstr "Событий больше нет"
+
+msgid "No name"
+msgstr "Без названия"
+
+msgid "Node with edges will be deleted"
+msgstr "Блок со связями будет удален"
+
+msgid "Normal"
+msgstr "Нормальный"
+
+msgid "Not"
+msgstr "Не"
+
+msgid "Notifications settings"
+msgstr "Настройки уведомлений"
+
+msgid "Now you are ready to install UMNI Server Ecosystem"
+msgstr "Теперь Вы готовы установить экосистему УМНЫЙ \"СЕРВЕР\""
+
+msgid "NTC thermistor"
+msgstr "NTC термистор"
+
+msgid "NTC thermistors"
+msgstr "NTC термисторы"
+
+msgid "Offline"
+msgstr "Вне сети"
+
+msgid "Online"
+msgstr "В сети"
+
+msgid "Only one start node can exists!"
+msgstr "Стартовый элемент должен быть один"
+
+msgid "OpenTherm"
+msgstr "OpenTherm"
+
+msgid "Or"
+msgstr "Или"
+
+msgid "Order"
+msgstr "Порядок"
+
+msgid "Other"
+msgstr "Другое"
+
+msgid "Onewire sensors"
+msgstr "Сенсоры 1-wire"
+
+msgid "Page not found"
+msgstr "Страница не найдена"
+
+msgid "Password"
+msgstr "Пароль"
+
+msgid "Password confirmation"
+msgstr "Подтверждение пароля"
+
+msgid "Path"
+msgstr "Путь"
+
+msgid "Pick a date"
+msgstr "Выберите дату"
+
+msgid "Please confirm you action"
+msgstr "Пожалуйста, подтвердите действие"
+
+msgid "Port"
+msgstr "Порт"
+
+msgid "Primary stream"
+msgstr "Основной поток"
+
+msgid "Prostoy. Dostupniy. Umni."
+msgstr "Простой. Доступный. Умный."
+
+msgid "Protocol"
+msgstr "Протокол"
+
+msgid "Ram"
+msgstr "Оперативная память"
+
+msgid "Record"
+msgstr "Запись"
+
+msgid "Record delete after"
+msgstr "Удалить запись после"
+
+msgid "Record mode"
+msgstr "Режим записи"
+
+msgid "Record segment duration"
+msgstr "Длина сегмента записи"
+
+msgid "Relay"
+msgstr "Реле"
+
+msgid "Relays"
+msgstr "Реле"
+
+msgid "Relays and switches"
+msgstr "Реле и переключатели"
+
+msgid "Rule: {name}"
+msgstr "Правило: {name}"
+
+msgid "Rules"
+msgstr "Правила"
+
+msgid "Rules editor"
+msgstr "Редактор правил"
+
+msgid "Rules elements"
+msgstr "Элементы правил"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Saved"
+msgstr "Сохранено"
+
+msgid "Search"
+msgstr "Поиск"
+
+msgid "Secondary stream"
+msgstr "Дополнительный поток"
+
+msgid "Select date"
+msgstr "Выберите дату"
+
+msgid "Select entity"
+msgstr "Выберите объект"
+
+msgid "Select users"
+msgstr "Выберите пользователей"
+
+msgid "Sensor data"
+msgstr "Данные сенсора"
+
+msgid "Sensor editing"
+msgstr "Редактирование датчика"
+
+msgid "Sensitivity"
+msgstr "Чувствительность"
+
+msgid "Sensors"
+msgstr "Датчики"
+
+msgid "SERVER"
+msgstr "СЕРВЕР"
+
+msgid "Services"
+msgstr "Службы"
+
+msgid "Settings"
+msgstr "Настройки"
+
+msgid "Show"
+msgstr "Показать"
+
+msgid "Show less"
+msgstr "Показать меньше"
+
+msgid "Show more"
+msgstr "Показать больше"
+
+msgid "Site"
+msgstr "Сайт"
+
+msgid "Start"
+msgstr "Начало"
+
+msgid "Start date"
+msgstr "Дата начала"
+
+msgid "Start record"
+msgstr "Начать запись"
+
+msgid "State"
+msgstr "Состояние"
+
+msgid "State changes"
+msgstr "Состояние меняется"
+
+msgid "Storage"
+msgstr "Хранилище"
+
+msgid "Storage settings"
+msgstr "Настройки хранилища"
+
+msgid "Storages"
+msgstr "Хранилища"
+
+msgid "Store permanent"
+msgstr "Хранить постоянно"
+
+msgid "Stream"
+msgstr "Поток"
+
+msgid "Subject"
+msgstr "Тема"
+
+msgid "Swap"
+msgstr "Файл подкачки"
+
+msgid "Switch to drawing mode"
+msgstr "Переключиться в режим рисования"
+
+msgid "Switch to selection mode"
+msgstr "Переключиться в режим выбора"
+
+msgid "System information"
+msgstr "Системная информация"
+
+msgid "System services"
+msgstr "Системные службы"
+
+msgid "System settings"
+msgstr "Системные настройки"
+
+msgid "Take screenshot"
+msgstr "Сделать скриншот"
+
+msgid "Telegram"
+msgstr "Телеграм"
+
+msgid "Temperature"
+msgstr "Температура"
+
+msgid "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
+msgstr "Первая бесплатная экосистема контроля устройств автоматизации, систем контроля доступа и видеонаблюдения с открытым исходным кодом"
+
+msgid "There are no storages"
+msgstr "Нет хранилищ"
+
+msgid "This device is probably disabled. Please check his condition."
+msgstr "Вероятно, это устройство отключено. Пожалуйста, проверьте его состояние."
+
+msgid "Title"
+msgstr "Название"
+
+msgid "Trigger"
+msgstr "Триггер"
+
+msgid "Triggers"
+msgstr "Триггеры"
+
+msgid "UMNI C1"
+msgstr "УМНЫЙ К1"
+
+msgid "Unsupported"
+msgstr "Неподдерживаемое"
+
+msgid "Updated"
+msgstr "Обновлено"
+
+msgid "Updated at"
+msgstr "Обновлено"
+
+msgid "Upload cover"
+msgstr "Загрузить обложку"
+
+msgid "Upload file"
+msgstr "Загрузить файл"
+
+msgid "Uptime"
+msgstr "Время в сети"
+
+msgid "User"
+msgstr "Пользователь"
+
+msgid "Username"
+msgstr "Имя пользователя"
+
+msgid "Used: {used}% of {total}"
+msgstr "Использовано {used}% из {total}"
+
+msgid "Video surveillance"
+msgstr "Видеонаблюдение"
+
+msgid "Webhook"
+msgstr "Веб-хук"
+
+msgid "Wireless sensor"
+msgstr "Беспроводной датчик"
+
+msgid "You should add at least one storage"
+msgstr "Вы должны добавить как минимум одно хранилище"
+
+msgid "adc"
+msgstr "Аналоговые датчики"
+
+msgid "d"
+msgstr "дн"
+
+msgid "device.register"
+msgstr "Регистрация устройства"
+
+msgid "firstname"
+msgstr "Имя"
+
+msgid "h"
+msgstr "ч"
+
+msgid "inputs"
+msgstr "Датчики состояния"
+
+msgid "lastname"
+msgstr "Фамилия"
+
+msgid "m"
+msgstr "мин"
+
+msgid "ntc"
+msgstr "NTC термисторы"
+
+msgid "onewire"
+msgstr "Датчики 1-wire"
+
+msgid "opentherm"
+msgstr "OpenTherm"
+
+msgid "relays"
+msgstr "Реле и переключатели"
+
+msgid "s"
+msgstr "сек"
+
+msgid "{n} days"
+msgstr "0 дней | {n} день | {n} дня | {n} дней"
+
+msgid "{n} entities"
+msgstr "0 сущностей | {n} сущность | {n} сущности | {n} сущностей"
+
+msgid "{n} hours"
+msgstr "0 часов | {n} час | {n} часа | {n} часов"
+
+msgid "{n} minutes"
+msgstr "{n} минут"
+
+msgid "{n} months"
+msgstr "0 месяцев | {n} месяц | {n} месяца | {n} месяцев"
+
+msgid "{n} year"
+msgstr "0 лет | {n} год | {n} года | {n} лет"

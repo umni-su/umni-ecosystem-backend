@@ -1,17 +1,19 @@
-# Translations template for PROJECT.
+# Russian translations for PROJECT.
 # Copyright (C) 2025 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2025-08-29 21:28+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: ru\n"
+"Language-Team: ru <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -19,46 +21,55 @@ msgstr ""
 
 #: classes/configuration/configuration.py:47
 msgid "Base settings"
-msgstr ""
+msgstr "Основные настройки"
 
 #: classes/configuration/configuration.py:51
 msgid "Application locale"
-msgstr ""
+msgstr "Язык системы"
 
 #: classes/configuration/configuration.py:56
 msgid "Application uploads path"
-msgstr ""
+msgstr "Путь для загрузок"
 
 #: classes/configuration/configuration.py:61
 msgid "Application uploads max size"
-msgstr ""
+msgstr "Максимальный размер загружаемых файлов"
 
 #: classes/configuration/configuration.py:68
 #: classes/configuration/configuration.py:79
 msgid "MQTT settings"
-msgstr ""
+msgstr "Настройки MQTT"
 
 #: classes/configuration/configuration.py:72
 msgid "Device sync timeout"
-msgstr ""
+msgstr "Интервал синхронизации устройств"
 
 #: classes/configuration/configuration.py:83
 msgid "MQTT host"
-msgstr ""
+msgstr "MQTT хост"
 
 #: classes/configuration/configuration.py:88
 msgid "MQTT port"
-msgstr ""
+msgstr "MQTT порт"
 
 #: classes/configuration/configuration.py:93
 msgid "MQTT user"
-msgstr ""
+msgstr "MQTT пользователь"
 
 #: classes/configuration/configuration.py:98
 msgid "MQTT password"
-msgstr ""
+msgstr "MQTT пароль"
 
 #: routes/sensors.py:63
 msgid "Error getting sensors history"
-msgstr ""
+msgstr "Ошибка получения истории сенсоров"
+
+#~ msgid "Application install status"
+#~ msgstr "Статус установки системы"
+
+#~ msgid "Application install date"
+#~ msgstr "Дата установки системы"
+
+#~ msgid "Application key"
+#~ msgstr "Ключ приложения"
 

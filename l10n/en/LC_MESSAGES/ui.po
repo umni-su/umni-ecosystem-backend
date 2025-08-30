@@ -1,0 +1,740 @@
+# l10n/en/LC_MESSAGES/ui.po
+msgid ""
+msgstr ""
+"Language: en\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+msgid "Access control"
+msgstr "Access control"
+
+msgid "Account settings"
+msgstr "Account settings"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "Active"
+msgstr "Active"
+
+msgid "Add"
+msgstr "Add"
+
+msgid "Add area"
+msgstr "Add area"
+
+msgid "Add camera"
+msgstr "Add camera"
+
+msgid "Add rule"
+msgstr "Add rule"
+
+msgid "Add storage"
+msgstr "Add storage"
+
+msgid "Administrator account"
+msgstr "Administrator account"
+
+msgid "Alerts"
+msgstr "Alerts"
+
+msgid "All data will be deleted"
+msgstr "All data will be deleted"
+
+msgid "Analog sensor"
+msgstr "Analog sensor"
+
+msgid "Analog sensors"
+msgstr "Analog sensors"
+
+msgid "And"
+msgstr "And"
+
+msgid "Apply"
+msgstr "Apply"
+
+msgid "Area"
+msgstr "Area"
+
+msgid "Area is enabled"
+msgstr "Area is enabled"
+
+msgid "Area will be deleted"
+msgstr "Area will be deleted"
+
+msgid "Assign location"
+msgstr "Assign location"
+
+msgid "Authentication"
+msgstr "Authentication"
+
+msgid "Autorun"
+msgstr "Autorun"
+
+msgid "Average"
+msgstr "Average"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "Backup and restore"
+msgstr "Backup and restore"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Camera"
+msgstr "Camera"
+
+msgid "Camera motion end"
+msgstr "Camera motion end"
+
+msgid "Camera motion start"
+msgstr "Camera motion start"
+
+msgid "Camera: {name}"
+msgstr "Camera: {name}"
+
+msgid "Camera {name} events"
+msgstr "Camera {name} events"
+
+msgid "Cameras"
+msgstr "Cameras"
+
+msgid "Change cover"
+msgstr "Change cover"
+
+msgid "Change credentials"
+msgstr "Change credentials"
+
+msgid "Check"
+msgstr "Check"
+
+msgid "Close"
+msgstr "Close"
+
+msgid "Comment"
+msgstr "Comment"
+
+msgid "Component selection"
+msgstr "Component selection"
+
+msgid "Computer"
+msgstr "Computer"
+
+msgid "Condition"
+msgstr "Condition"
+
+msgid "Conditions"
+msgstr "Conditions"
+
+msgid "Connection"
+msgstr "Connection"
+
+msgid "Continuous video"
+msgstr "Continuous video"
+
+msgid "Cpu"
+msgstr "Cpu"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Danger"
+msgstr "Danger"
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Delete area"
+msgstr "Delete area"
+
+msgid "Delete event"
+msgstr "Delete event"
+
+msgid "Delete node"
+msgstr "Delete node"
+
+msgid "Delete storage"
+msgstr "Delete storage"
+
+msgid "Deleted"
+msgstr "Deleted"
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Details"
+msgstr "Details"
+
+msgid "Detection"
+msgstr "Detection"
+
+msgid "Device"
+msgstr "Device"
+
+msgid "Device info"
+msgstr "Device info"
+
+msgid "Device: {name}"
+msgstr "Device: {name}"
+
+msgid "Devices"
+msgstr "Devices"
+
+msgid "Disable alarm"
+msgstr "Disable alarm"
+
+msgid "Disks usage"
+msgstr "Disks usage"
+
+msgid "Documentation"
+msgstr "Documentation"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Dragging"
+msgstr "Dragging"
+
+msgid "Duration"
+msgstr "Duration"
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "Edit camera"
+msgstr "Edit camera"
+
+msgid "Edit rule element"
+msgstr "Edit rule element"
+
+msgid "Edit storage"
+msgstr "Edit storage"
+
+msgid "Editing"
+msgstr "Editing"
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Empty"
+msgstr "Empty"
+
+msgid "Enable alarm"
+msgstr "Enable alarm"
+
+msgid "End"
+msgstr "End"
+
+msgid "Enter date"
+msgstr "Enter date"
+
+msgid "Entities"
+msgstr "Entities"
+
+msgid "Error save rule"
+msgstr "Error save rule"
+
+msgid "Error to connect. Please check your credentials or MQTT broker settings."
+msgstr "Error to connect. Please check your credentials or MQTT broker settings."
+
+msgid "Event"
+msgstr "Event"
+
+msgid "Event has been deleted"
+msgstr "Event has been deleted"
+
+msgid "Event with files will be deleted"
+msgstr "Event with files will be deleted"
+
+msgid "Event {id}"
+msgstr "Event {id}"
+
+msgid "Events"
+msgstr "Events"
+
+msgid "Events total: {count}"
+msgstr "Events total: {count}"
+
+msgid "Extended area settings"
+msgstr "Extended area settings"
+
+msgid "Extension"
+msgstr "Extension"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Finish installation"
+msgstr "Finish installation"
+
+msgid "Firstname"
+msgstr "Firstname"
+
+msgid "Firmware"
+msgstr "Firmware"
+
+msgid "Form mode"
+msgstr "Form mode"
+
+msgid "Free of"
+msgstr "Free of"
+
+msgid "Gateway"
+msgstr "Gateway"
+
+msgid "High"
+msgstr "High"
+
+msgid "Host"
+msgstr "Host"
+
+msgid "IP address"
+msgstr "IP address"
+
+msgid "Incorrect username or password"
+msgstr "Incorrect username or password"
+
+msgid "Input"
+msgstr "Input"
+
+msgid "Inputs"
+msgstr "Inputs"
+
+msgid "Install"
+msgstr "Install"
+
+msgid "Install ecosystem"
+msgstr "Install ecosystem"
+
+msgid "Interval screenshots"
+msgstr "Interval screenshots"
+
+msgid "Inventory number"
+msgstr "Inventory number"
+
+msgid "Inventory number not filled"
+msgstr "Inventory number not filled"
+
+msgid "Is active"
+msgstr "Is active"
+
+msgid "Last update"
+msgstr "Last update"
+
+msgid "Lastname"
+msgstr "Lastname"
+
+msgid "Last sync"
+msgstr "Last sync"
+
+msgid "Light"
+msgstr "Light"
+
+msgid "Link"
+msgstr "Link"
+
+msgid "Link mode"
+msgstr "Link mode"
+
+msgid "Load more"
+msgstr "Load more"
+
+msgid "Location provides order and expands the possibilities of interaction between device"
+msgstr "Location provides order and expands the possibilities of interaction between device"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "MAC address"
+msgstr "MAC address"
+
+msgid "Max aspect ratio"
+msgstr "Max aspect ratio"
+
+msgid "Memory"
+msgstr "Memory"
+
+msgid "Min area"
+msgstr "Min area"
+
+msgid "Min aspect ratio"
+msgstr "Min aspect ratio"
+
+msgid "Motion detection screenshots"
+msgstr "Motion detection screenshots"
+
+msgid "Motion detection video"
+msgstr "Motion detection video"
+
+msgid "MQTT settings"
+msgstr "MQTT settings"
+
+msgid "Name"
+msgstr "Name"
+
+msgid "Netmask"
+msgstr "Netmask"
+
+msgid "Network interfaces"
+msgstr "Network interfaces"
+
+msgid "New zone"
+msgstr "New zone"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "No more events"
+msgstr "No more events"
+
+msgid "No name"
+msgstr "No name"
+
+msgid "Node with edges will be deleted"
+msgstr "Node with edges will be deleted"
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Not"
+msgstr "Not"
+
+msgid "Notifications settings"
+msgstr "Notifications settings"
+
+msgid "Now you are ready to install UMNI Server Ecosystem"
+msgstr "Now you are ready to install UMNI Server Ecosystem"
+
+msgid "NTC thermistor"
+msgstr "NTC thermistor"
+
+msgid "NTC thermistors"
+msgstr "NTC thermistors"
+
+msgid "Offline"
+msgstr "Offline"
+
+msgid "Online"
+msgstr "Online"
+
+msgid "Only one start node can exists!"
+msgstr "Only one start node can exists!"
+
+msgid "OpenTherm"
+msgstr "OpenTherm"
+
+msgid "Or"
+msgstr "Or"
+
+msgid "Order"
+msgstr "Order"
+
+msgid "Other"
+msgstr "Other"
+
+msgid "Onewire sensors"
+msgstr "Onewire sensors"
+
+msgid "Page not found"
+msgstr "Page not found"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Password confirmation"
+msgstr "Password confirmation"
+
+msgid "Path"
+msgstr "Path"
+
+msgid "Pick a date"
+msgstr "Pick a date"
+
+msgid "Please confirm you action"
+msgstr "Please confirm you action"
+
+msgid "Port"
+msgstr "Port"
+
+msgid "Primary stream"
+msgstr "Primary stream"
+
+msgid "Prostoy. Dostupniy. Umni."
+msgstr "Simple. Accessible. Smart."
+
+msgid "Protocol"
+msgstr "Protocol"
+
+msgid "Ram"
+msgstr "Ram"
+
+msgid "Record"
+msgstr "Record"
+
+msgid "Record delete after"
+msgstr "Record delete after"
+
+msgid "Record mode"
+msgstr "Record mode"
+
+msgid "Record segment duration"
+msgstr "Record segment duration"
+
+msgid "Relay"
+msgstr "Relay"
+
+msgid "Relays"
+msgstr "Relays"
+
+msgid "Relays and switches"
+msgstr "Relays and switches"
+
+msgid "Rule: {name}"
+msgstr "Rule: {name}"
+
+msgid "Rules"
+msgstr "Rules"
+
+msgid "Rules editor"
+msgstr "Rules editor"
+
+msgid "Rules elements"
+msgstr "Rules elements"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Saved"
+msgstr "Saved"
+
+msgid "Search"
+msgstr "Search"
+
+msgid "Secondary stream"
+msgstr "Secondary stream"
+
+msgid "Select date"
+msgstr "Select date"
+
+msgid "Select entity"
+msgstr "Select entity"
+
+msgid "Select users"
+msgstr "Select users"
+
+msgid "Sensor data"
+msgstr "Sensor data"
+
+msgid "Sensor editing"
+msgstr "Sensor editing"
+
+msgid "Sensitivity"
+msgstr "Sensitivity"
+
+msgid "Sensors"
+msgstr "Sensors"
+
+msgid "SERVER"
+msgstr "SERVER"
+
+msgid "Services"
+msgstr "Services"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Show"
+msgstr "Show"
+
+msgid "Show less"
+msgstr "Show less"
+
+msgid "Show more"
+msgstr "Show more"
+
+msgid "Site"
+msgstr "Site"
+
+msgid "Start"
+msgstr "Start"
+
+msgid "Start date"
+msgstr "Start date"
+
+msgid "Start record"
+msgstr "Start record"
+
+msgid "State"
+msgstr "State"
+
+msgid "State changes"
+msgstr "State changes"
+
+msgid "Storage"
+msgstr "Storage"
+
+msgid "Storage settings"
+msgstr "Storage settings"
+
+msgid "Storages"
+msgstr "Storages"
+
+msgid "Store permanent"
+msgstr "Store permanent"
+
+msgid "Stream"
+msgstr "Stream"
+
+msgid "Subject"
+msgstr "Subject"
+
+msgid "Swap"
+msgstr "Swap"
+
+msgid "Switch to drawing mode"
+msgstr "Switch to drawing mode"
+
+msgid "Switch to selection mode"
+msgstr "Switch to selection mode"
+
+msgid "System information"
+msgstr "System information"
+
+msgid "System services"
+msgstr "System services"
+
+msgid "System settings"
+msgstr "System settings"
+
+msgid "Take screenshot"
+msgstr "Take screenshot"
+
+msgid "Telegram"
+msgstr "Telegram"
+
+msgid "Temperature"
+msgstr "Temperature"
+
+msgid "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
+msgstr "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
+
+msgid "There are no storages"
+msgstr "There are no storages"
+
+msgid "This device is probably disabled. Please check his condition."
+msgstr "This device is probably disabled. Please check his condition."
+
+msgid "Title"
+msgstr "Title"
+
+msgid "Trigger"
+msgstr "Trigger"
+
+msgid "Triggers"
+msgstr "Triggers"
+
+msgid "UMNI C1"
+msgstr "UMNI C1"
+
+msgid "Unsupported"
+msgstr "Unsupported"
+
+msgid "Updated"
+msgstr "Updated"
+
+msgid "Updated at"
+msgstr "Updated at"
+
+msgid "Upload cover"
+msgstr "Upload cover"
+
+msgid "Upload file"
+msgstr "Upload file"
+
+msgid "Uptime"
+msgstr "Uptime"
+
+msgid "User"
+msgstr "User"
+
+msgid "Username"
+msgstr "Username"
+
+msgid "Used: {used}% of {total}"
+msgstr "Used: {used}% of {total}"
+
+msgid "Video surveillance"
+msgstr "Video surveillance"
+
+msgid "Webhook"
+msgstr "Webhook"
+
+msgid "Wireless sensor"
+msgstr "Wireless sensor"
+
+msgid "You should add at least one storage"
+msgstr "You should add at least one storage"
+
+msgid "adc"
+msgstr "adc"
+
+msgid "d"
+msgstr "d"
+
+msgid "device.register"
+msgstr "device.register"
+
+msgid "firstname"
+msgstr "firstname"
+
+msgid "h"
+msgstr "h"
+
+msgid "inputs"
+msgstr "inputs"
+
+msgid "lastname"
+msgstr "lastname"
+
+msgid "m"
+msgstr "m"
+
+msgid "ntc"
+msgstr "ntc"
+
+msgid "onewire"
+msgstr "onewire"
+
+msgid "opentherm"
+msgstr "opentherm"
+
+msgid "relays"
+msgstr "relays"
+
+msgid "s"
+msgstr "s"
+
+msgid "{n} days"
+msgstr "{n} days"
+
+msgid "{n} entities"
+msgstr "{n} entities"
+
+msgid "{n} hours"
+msgstr "{n} hours"
+
+msgid "{n} minutes"
+msgstr "{n} minutes"
+
+msgid "{n} months"
+msgstr "{n} months"
+
+msgid "{n} year"
+msgstr "{n} year"

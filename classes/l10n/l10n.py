@@ -1,48 +1,45 @@
-# Copyright (C) 2025 Mikhail Sazanov
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published
-# by the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import gettext
 from pathlib import Path
-
-'''
-Usage
-translator.get_available_languages()
-return {
-        "message": _("Welcome to our application!", lang),
-        "users_online": ngettext(
-            "There is {count} user online", 
-            "There are {count} users online", 
-            5, lang, count=5
-        ),
-        "files": ngettext(
-            "You have {count} file",
-            "You have {count} files",
-            1, lang, count=1
-        )
-    }
-'''
+from typing import Dict
+from fastapi import Request
 
 
 class GettextTranslator:
-    """Простой переводчик с gettext как в больших проектах"""
+    """Улучшенный переводчик с поддержкой UI переводов"""
 
     def __init__(self, domain: str = "messages", locale_dir: str = "l10n", default_lang: str = "en"):
         self.domain = domain
         self.locale_dir = Path(locale_dir)
         self.default_lang = default_lang
         self.translations = {}
+        self.ui_translations = {}  # Кэш для UI переводов
+
+    def set_language(self, lang: str) -> str:
+        """Установка языка по умолчанию"""
+        self.default_lang = lang
+        return self.default_lang
+
+    def get_current_language(self, request: Request = None, accept_language: str = None) -> str:
+        """
+        Определение языка из запроса с fallback на default
+
+        Args:
+            request: FastAPI Request объект
+            accept_language: Заголовок Accept-Language
+
+        Returns:
+            Код языка (например, 'en', 'ru')
+        """
+        if accept_language:
+            lang = accept_language.split(',')[0].split('-')[0].lower()
+        elif request and request.headers.get('accept-language'):
+            lang = request.headers.get('accept-language').split(',')[0].split('-')[0].lower()
+        else:
+            lang = self.default_lang
+
+        # Проверяем доступность языка
+        available_langs = self.get_available_languages()
+        return lang if lang in available_langs else self.default_lang
 
     def get_translation(self, lang: str) -> gettext.NullTranslations:
         """Получение объекта перевода для языка"""
@@ -60,11 +57,73 @@ class GettextTranslator:
 
         return self.translations[lang]
 
+    def _load_ui_translations(self, lang: str) -> Dict[str, str]:
+        """Загрузка UI переводов из PO файла"""
+        if lang in self.ui_translations:
+            return self.ui_translations[lang]
+
+        ui_translations = {}
+        try:
+            import polib
+            po_file_path = self.locale_dir / lang / "LC_MESSAGES" / "ui.po"
+            if po_file_path.exists():
+                po = polib.pofile(str(po_file_path))
+                for entry in po:
+                    if entry.msgstr:  # Только переведенные строки
+                        ui_translations[entry.msgid] = entry.msgstr
+        except ImportError:
+            # Fallback: используем gettext если polib не установлен
+            ui_translation = gettext.translation(
+                "ui",
+                localedir=str(self.locale_dir),
+                languages=[lang],
+                fallback=True
+            )
+            # К сожалению, gettext не предоставляет простого способа получить все переводы
+            pass
+
+        self.ui_translations[lang] = ui_translations
+        return ui_translations
+
+    def get_ui_translations_json(self, lang: str = None) -> Dict[str, str]:
+        """
+        Получение всех UI переводов в формате JSON
+
+        Returns:
+            Словарь с переводами для фронтенда
+        """
+        lang = lang or self.default_lang
+        return self._load_ui_translations(lang)
+
     def _(self, message: str, lang: str = None, **kwargs) -> str:
-        """Основная функция перевода"""
+        """Основная функция перевода (для Python кода)"""
         lang = lang or self.default_lang
         translation = self.get_translation(lang)
         translated = translation.gettext(message)
+
+        if kwargs:
+            try:
+                return translated.format(**kwargs)
+            except (KeyError, ValueError):
+                return translated
+        return translated
+
+    def ui(self, key: str, lang: str = None, **kwargs) -> str:
+        """
+        Перевод для UI элементов
+
+        Args:
+            key: Ключ перевода из UI PO файла
+            lang: Язык перевода
+            **kwargs: Параметры для подстановки
+
+        Returns:
+            Переведенная строка или ключ если перевод не найден
+        """
+        lang = lang or self.default_lang
+        ui_translations = self._load_ui_translations(lang)
+
+        translated = ui_translations.get(key, key)  # Fallback to key if not found
 
         if kwargs:
             try:
@@ -92,7 +151,10 @@ class GettextTranslator:
         languages = []
         for item in self.locale_dir.iterdir():
             if item.is_dir() and item.name != "templates":
-                languages.append(item.name)
+                languages.append({
+                    "key": item.name,
+                    "selected": self.default_lang == item.name
+                })
         return languages
 
 
@@ -103,6 +165,10 @@ translator = GettextTranslator()
 # Удобные alias функций
 def _(message: str, lang: str = None, **kwargs) -> str:
     return translator._(message, lang, **kwargs)
+
+
+def ui(key: str, lang: str = None, **kwargs) -> str:
+    return translator.ui(key, lang, **kwargs)
 
 
 def ngettext(singular: str, plural: str, count: int, lang: str = None, **kwargs) -> str:
