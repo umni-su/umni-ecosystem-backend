@@ -172,7 +172,7 @@ class CameraEventsRepository(BaseRepository):
                 return [
                     CameraEventModel.model_validate(
                         ev.to_dict(
-                            include_relationsips=True
+                            include_relationships=True
                         )
                     ) for ev in res
                 ]

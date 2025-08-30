@@ -37,10 +37,10 @@ class CameraRecordingRepository(BaseRepository):
                 old_recordings = sess.exec(
                     select(CameraRecordingEntity)
                     .where(
-                        (CameraRecordingEntity.camera == camera) &
+                        (CameraRecordingEntity.camera_id == camera.id) &
                         (CameraRecordingEntity.end < cutoff_time)
                     )
                 ).all()
-                return [CameraRecordingModel.model_validate(r) for r in old_recordings]
+                return [CameraRecordingModel.model_validate(r.to_dict()) for r in old_recordings]
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)

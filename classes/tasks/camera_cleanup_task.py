@@ -18,11 +18,14 @@ import threading
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from pydantic import BaseModel, field_validator
+from sqlmodel import delete, col
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.camera_event import CameraEventEntity
+from entities.camera_recording import CameraRecordingEntity
+from models.camera_model import CameraModelWithRelations
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_recording_repository import CameraRecordingRepository
 from repositories.camera_repository import CameraRepository
@@ -96,7 +99,7 @@ class CameraCleanupManager:
                     LoggerType.TASKS
                 )
 
-    def _clean_camera_data(self, camera):
+    def _clean_camera_data(self, camera: CameraModelWithRelations):
         """Метод для очистки данных конкретной камеры"""
         try:
             Logger.debug(
@@ -113,7 +116,7 @@ class CameraCleanupManager:
 
             Logger.debug(
                 f"⚙️ [{camera.name}]Cleanup completed for camera {camera.id}",
-                LoggerType.TASKS
+                LoggerType.SCHEDULER
             )
         except Exception as e:
             Logger.err(
@@ -129,7 +132,7 @@ class CameraCleanupManager:
         with write_session() as session:
 
             events = CameraEventsRepository.get_old_events(camera)
-
+            ids = []
             deleted_count = 0
             for event in events:
                 try:
@@ -139,14 +142,15 @@ class CameraCleanupManager:
                             os.remove(file_path)
 
                     # Удаляем запись о событии
-                    event_orm = session.get(CameraEventEntity, event.id)
-                    session.delete(event_orm)
+                    ids.append(event.id)
                     deleted_count += 1
                 except Exception as e:
                     Logger.err(
                         f"🗑️ Error deleting event {event.id}: {str(e)}",
                         LoggerType.TASKS
                     )
+            if ids:
+                delete(CameraEventEntity).where(col(CameraEventEntity.id).in_(ids))
 
             if deleted_count:
                 session.commit()
@@ -159,7 +163,7 @@ class CameraCleanupManager:
         """Очистка записей камеры"""
         with write_session() as session:
             recordings = CameraRecordingRepository.get_old_recordings(camera)
-
+            ids = []
             deleted_count = 0
             for recording in recordings:
                 try:
@@ -168,13 +172,15 @@ class CameraCleanupManager:
                         os.remove(recording.path)
 
                     # Удаляем запись о записи
-                    session.delete(recording)
+                    ids.append(recording.id)
                     deleted_count += 1
                 except Exception as e:
                     Logger.err(
                         f"🗑️ Error deleting recording {recording.id}: {str(e)}",
                         LoggerType.TASKS
                     )
+            if ids:
+                delete(CameraRecordingEntity).where(col(CameraRecordingEntity.id).in_(ids))
 
             if deleted_count:
                 session.commit()
