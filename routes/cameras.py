@@ -31,6 +31,7 @@ from models.pagination_model import PaginatedResponse, EventsPageParams, Timelin
 from repositories.area_repository import CameraAreaRepository
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_repository import CameraRepository
+from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 from starlette.exceptions import HTTPException
 
@@ -195,6 +196,35 @@ async def get_camera_stream(
         content=static_stream_manager.generate_static_placeholder(camera_id, camera.name),
         media_type='multipart/x-mixed-replace; boundary=frame'
     )
+
+
+@cameras.get('/stream/list')
+def get_streams_as_list(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    return StreamRegistry.get_streams_as_models()
+
+
+@cameras.get('/{camera_id}/stream/start')
+def start_camera_stream(
+        camera_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    camera = CameraRepository.get_camera(camera_id)
+    stream = StreamRegistry.find_by_camera(camera)
+    stream.start()
+    return SuccessResponse(success=True)
+
+
+@cameras.get('/{camera_id}/stream/stop')
+def stop_camera_stream(
+        camera_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    camera = CameraRepository.get_camera(camera_id)
+    stream = StreamRegistry.find_by_camera(camera)
+    stream.stop()
+    return SuccessResponse(success=True)
 
 
 @cameras.post('/{camera_id}/areas', response_model=list[CameraAreaBaseModel])

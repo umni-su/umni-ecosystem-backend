@@ -60,6 +60,7 @@ class ScreenshotResultModel(BaseModel):
 
 class CameraStream:
     def __init__(self, camera: CameraModelWithRelations):
+        self._stop_requested = False  # Добавляем флаг остановки
         self.ecosystem = get_ecosystem()
         self.id: int = 0
         self.video_pts = 0
@@ -69,10 +70,7 @@ class CameraStream:
         self.camera: Optional[CameraModelWithRelations] = None
         self.link: Optional[str] = None
 
-        # Video processing settings
-        self.frames_skip: int = 20
-        self.detection_size: int = 5000
-        self.detection_persistent: int = 100
+        # Timer processing settings
         self.silence_timer: float = 0
         self.silence_pause: int = 10
 
@@ -82,7 +80,6 @@ class CameraStream:
         self.movement_persistent_counter = 0
         self.first_frame: Optional[np.ndarray] = None
         self.next_frame: Optional[np.ndarray] = None
-        self.fps: int = 10
 
         # Timing
         self.time_part_start: float = 0
@@ -526,22 +523,26 @@ class CameraStream:
                 self.create_input_container()
                 Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}', LoggerType.CAMERAS)
 
-            self.tracker = ROITracker(camera=self.camera)
-            self.tracker.set_callbacks(
-                motion_start=self.handle_motion_start,
-                motion_end=self.handle_motion_end,
-                recording_start=self.handle_recording_start,
-                recording_end=self.handle_recording_end
-            )
+            if self.tracker is None:
+                self.tracker = ROITracker(camera=self.camera)
+                self.tracker.set_callbacks(
+                    motion_start=self.handle_motion_start,
+                    motion_end=self.handle_motion_end,
+                    recording_start=self.handle_recording_start,
+                    recording_end=self.handle_recording_end
+                )
 
             # Initialize PTS counters
             self.video_pts = 0
             self.audio_pts = 0
 
-            while self.camera.active or self.opened:
+            while self.camera.active and self.opened and not self._stop_requested:
                 try:
                     # Проверка heartbeat
                     self.check_heartbeat()
+
+                    if self._stop_requested:  # Проверка флага остановки
+                        break
 
                     if self.need_skip:
                         continue
@@ -661,27 +662,34 @@ class CameraStream:
 
                                 first_run = False
 
+
                 except EOFError as e:
-                    Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
-                                LoggerType.CAMERAS)
-                    self.need_restart = True
-                    time.sleep(1)  # Добавляем небольшую паузу перед следующей попыткой
+                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                        Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
+                                    LoggerType.CAMERAS)
+                        self.need_restart = True
+                        time.sleep(1)
                     pass
+
                 except av.error.FFmpegError as e:
-                    Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
-                    self.need_restart = True
-                    self.capture_error = True
-                    time.sleep(3)  # Увеличиваем паузу для серьезных ошибок
+                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                        Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
+                        self.need_restart = True
+                        self.capture_error = True
+                        time.sleep(3)
                 except Exception as e:
-                    Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
-                    self.need_restart = True
-                    self.capture_error = True
-                    time.sleep(5)
+                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                        Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
+                        self.need_restart = True
+                        self.capture_error = True
+                        time.sleep(5)
             self.destroy_output_container()
             self.stop_input_container()
             self.output_container = None
             self.input_container = None
-            Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
+
+            if not self._stop_requested:
+                Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
         finally:
             self.stop_frame_generation()
 
@@ -826,3 +834,70 @@ class CameraStream:
             if not StreamRegistry.is_restarting():
                 # Не останавливаем генерацию если идет перезапуск
                 self.stop_frame_generation()
+
+    def is_stopped(self):
+        return self._stop_requested
+
+    def start(self):
+        """Запуск потоков камеры"""
+        if self.opened and not self._stop_requested:
+            Logger.debug(f"▶️ [{self.camera.name}] Camera stream already running", LoggerType.CAMERAS)
+            return
+
+        Logger.debug(f"▶️ [{self.camera.name}] Starting camera stream...", LoggerType.CAMERAS)
+
+        # Сбрасываем флаги
+        self._stop_requested = False
+        self.opened = True
+
+        # Запускаем демон если он не запущен
+        if self.daemon is None or not self.daemon.thread.is_alive():
+            self.daemon = Daemon(self.loop_frames)
+            Logger.debug(f"👻 [{self.camera.name}] Daemon started", LoggerType.CAMERAS)
+
+        # Запускаем генерацию кадров
+        self.start_frame_generation()
+
+        Logger.debug(f"✅ [{self.camera.name}] Camera stream started", LoggerType.CAMERAS)
+
+    def stop(self):
+        """Корректная остановка всех потоков камеры"""
+        if self._stop_requested:
+            return
+
+        Logger.debug(f"🛑 [{self.camera.name}] Stopping camera stream...", LoggerType.CAMERAS)
+
+        # Устанавливаем флаг остановки
+        self._stop_requested = True
+        self.opened = False
+        self.frame_generation_running = False
+
+        # Останавливаем генерацию кадров
+        self.stop_frame_generation()
+
+        # Останавливаем демон если он запущен
+        if self.daemon is not None:
+            try:
+                self.daemon = None
+            except Exception as e:
+                Logger.debug(f"[{self.camera.name}] Error stopping daemon: {e}", LoggerType.CAMERAS)
+
+        # Останавливаем трекер
+        if self.tracker is not None:
+            try:
+                self.tracker = None
+            except Exception as e:
+                Logger.debug(f"[{self.camera.name}] Error stopping tracker: {e}", LoggerType.CAMERAS)
+
+        # Закрываем контейнеры
+        self.destroy_output_container()
+        self.stop_input_container()
+
+        # Очищаем очередь кадров
+        while not self.frame_queue.empty():
+            try:
+                self.frame_queue.get_nowait()
+            except queue.Empty:
+                break
+
+        Logger.debug(f"✅ [{self.camera.name}] Camera stream stopped completely", LoggerType.CAMERAS)

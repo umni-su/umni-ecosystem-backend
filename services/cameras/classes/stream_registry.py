@@ -17,6 +17,8 @@ from typing import List, Optional, TYPE_CHECKING
 import threading
 from enum import Enum
 
+from models.camera_stream_model import CameraStreamModel
+
 if TYPE_CHECKING:
     from models.camera_model import CameraModelWithRelations
     from services.cameras.classes.camera_stream import CameraStream
@@ -105,3 +107,19 @@ class StreamRegistry:
                         stream.opened = False
                 except Exception as e:
                     print(f"Error stopping stream {stream.id}: {e}")
+
+    @classmethod
+    def get_streams_as_models(cls):
+        res = []
+        streams = StreamRegistry.get_all_streams()
+        for stream in streams:
+            res.append(
+                CameraStreamModel(
+                    name=stream.camera.name,
+                    camera_id=stream.id,
+                    stopped=stream.is_stopped(),
+                    need_restart=stream.need_restart,
+                    capture_error=stream.capture_error
+                )
+            )
+        return res
