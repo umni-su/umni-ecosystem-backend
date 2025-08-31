@@ -210,7 +210,7 @@ def save_camera_areas(
 
 
 @cameras.delete('/{camera_id}/areas/{area_id}', response_model=list[CameraAreaBaseModel])
-def save_camera_areas(
+def delete_camera_area(
         area_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
@@ -219,7 +219,7 @@ def save_camera_areas(
 
 
 @cameras.post('/{camera_id}/events', response_model=PaginatedResponse[CameraEventModel])
-def save_camera_areas(
+def get_camera_events(
         camera_id: int,
         params: EventsPageParams,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
