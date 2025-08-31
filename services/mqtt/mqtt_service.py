@@ -30,6 +30,7 @@ from services.mqtt.messages.mqtt_cnf_dio_message import MqttCnfDioMessage
 from services.mqtt.messages.mqtt_cnf_ow_message import MqttCnfOwMessage
 from services.mqtt.messages.mqtt_cnf_rf_message import MqttCnfRfMessage
 from services.mqtt.messages.mqtt_dio_message import MqttDioMessage
+from services.mqtt.messages.mqtt_lwt_message import MqttLwtMessage
 from services.mqtt.messages.mqtt_ntc_message import MqttNtcMessage
 from services.mqtt.messages.mqtt_ow_message import MqttOwMessage
 from services.mqtt.messages.mqtt_rf_message import MqttRfMessage
@@ -85,7 +86,8 @@ class MqttService(BaseService):
         client.subscribe("#")
 
     # The callback for when a PUBLISH message is received from the server.
-    def on_message(self, client: mqtt.Client, userdata, msg):
+    def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
+
         t = MqttTopic(msg.topic)
         if t.topic == MqttTopicEnum.REGISTER:
             message: MqttRegisterMessage = MqttRegisterMessage(msg.topic, msg.payload)
@@ -109,10 +111,12 @@ class MqttService(BaseService):
             message: MqttDioMessage = MqttDioMessage(msg.topic, msg.payload)
         elif t.topic == MqttTopicEnum.RF433:
             message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
+        elif t.topic == MqttTopicEnum.LWT:
+            message: MqttLwtMessage = MqttLwtMessage(msg.topic, msg.payload)
         else:
             # message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
             Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.MQTT)
-
+            print(msg.topic, msg.payload.decode())
             message: BaseMessage = BaseMessage(msg.topic, msg.payload)
 
         message.save()
@@ -160,3 +164,8 @@ class MqttService(BaseService):
         mqttc.loop_start()
         mqttc.loop_stop()
         return mqttc
+
+    def stop(self):
+        self.mqttc.loop_stop()
+        self.mqttc.disconnect()
+        Logger.debug('⛔ MQTT service is stopped', LoggerType.SERVICES)
