@@ -280,8 +280,8 @@ msgstr "Firmware"
 msgid "Form mode"
 msgstr "Form mode"
 
-msgid "Free of"
-msgstr "Free of"
+msgid "free of"
+msgstr "free of"
 
 msgid "Gateway"
 msgstr "Gateway"
@@ -577,6 +577,9 @@ msgstr "State"
 msgid "State changes"
 msgstr "State changes"
 
+msgid "Status"
+msgstr "Status"
+
 msgid "Storage"
 msgstr "Storage"
 
@@ -667,8 +670,8 @@ msgstr "User"
 msgid "Username"
 msgstr "Username"
 
-msgid "Used: {used}% of {total}"
-msgstr "Used: {used}% of {total}"
+msgid "Used: {used} of {total}"
+msgstr "Used: {used} of {total}"
 
 msgid "Video surveillance"
 msgstr "Video surveillance"

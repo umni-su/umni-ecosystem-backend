@@ -280,7 +280,7 @@ msgstr "Прошивка"
 msgid "Form mode"
 msgstr "Режим формы"
 
-msgid "Free of"
+msgid "free of"
 msgstr "свободно из"
 
 msgid "Gateway"
@@ -571,6 +571,9 @@ msgstr "Дата начала"
 msgid "Start record"
 msgstr "Начать запись"
 
+msgid "Status"
+msgstr "Статус"
+
 msgid "State"
 msgstr "Состояние"
 
@@ -667,8 +670,8 @@ msgstr "Пользователь"
 msgid "Username"
 msgstr "Имя пользователя"
 
-msgid "Used: {used}% of {total}"
-msgstr "Использовано {used}% из {total}"
+msgid "Used: {used} of {total}"
+msgstr "Занято: {used} из {total}"
 
 msgid "Video surveillance"
 msgstr "Видеонаблюдение"
