@@ -237,8 +237,8 @@ class CameraEventsRepository(BaseRepository):
                 if params.type == EventsPageType.STREAM:
                     _col = col(CameraEventEntity.type).in_(
                         [
-                            CameraRecordTypeEnum.VIDEO,
-                            CameraRecordTypeEnum.SCREENSHOTS
+                            CameraRecordTypeEnum.VIDEO.value,
+                            CameraRecordTypeEnum.SCREENSHOTS.value
                         ]
                     )
                     query = query.where(_col)
@@ -246,8 +246,8 @@ class CameraEventsRepository(BaseRepository):
                 elif params.type == EventsPageType.EVENTS:
                     _col = col(CameraEventEntity.type).in_(
                         [
-                            CameraRecordTypeEnum.DETECTION_VIDEO,
-                            CameraRecordTypeEnum.DETECTION_SCREENSHOTS
+                            CameraRecordTypeEnum.DETECTION_VIDEO.value,
+                            CameraRecordTypeEnum.DETECTION_SCREENSHOTS.value
                         ]
                     )
                     query = query.where(_col)
