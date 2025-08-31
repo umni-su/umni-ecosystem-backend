@@ -28,3 +28,4 @@ class MqttTopicEnum(StrEnum):
     NTC = 'ntc'
     INP = 'inp'
     REL = 'rel'
+    LWT = 'lwt'
