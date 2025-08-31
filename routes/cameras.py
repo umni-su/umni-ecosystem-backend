@@ -198,14 +198,14 @@ async def get_camera_stream(
     )
 
 
-@cameras.get('/stream/list')
+@cameras.get('/streams')
 def get_streams_as_list(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     return StreamRegistry.get_streams_as_models()
 
 
-@cameras.get('/{camera_id}/stream/start')
+@cameras.put('/{camera_id}/stream')
 def start_camera_stream(
         camera_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
@@ -216,7 +216,7 @@ def start_camera_stream(
     return SuccessResponse(success=True)
 
 
-@cameras.get('/{camera_id}/stream/stop')
+@cameras.delete('/{camera_id}/stream')
 def stop_camera_stream(
         camera_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
