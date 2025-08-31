@@ -35,6 +35,7 @@ from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 from starlette.exceptions import HTTPException
 
+from services.cameras.classes.static_stream_manager import static_stream_manager
 from services.cameras.classes.stream_registry import StreamRegistry
 from services.cameras.utils.cameras_helpers import get_no_signal_frame
 
@@ -42,62 +43,6 @@ cameras = APIRouter(
     prefix='/cameras',
     tags=['cameras']
 )
-
-# Менеджер для статичных заставок
-import asyncio
-import threading
-
-
-class StaticStreamManager:
-    _instance = None
-    _lock = threading.Lock()
-    _active_streams: dict[int, bool] = {}
-
-    @classmethod
-    def get_instance(cls):
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = cls()
-            return cls._instance
-
-    async def generate_static_placeholder(self, camera_id: int, camera_name: str):
-        """Генерирует статичную заставку с периодической проверкой доступности потока"""
-        check_interval = 3
-        max_retries = 100
-
-        retry_count = 0
-        self._active_streams[camera_id] = True
-
-        try:
-            while (self._active_streams.get(camera_id, False) and
-                   retry_count < max_retries and
-                   not lifespan_manager.is_shutting_down):
-
-                # Проверяем, доступен ли поток
-                camera = CameraRepository.get_camera(camera_id)
-                stream = StreamRegistry.find_by_camera(camera)
-
-                if stream and stream.opened and StreamRegistry.is_running():
-                    break
-
-                # Генерируем заставку
-                placeholder = get_no_signal_frame(width=640)
-                ret, buffer = cv2.imencode('.jpg', placeholder)
-
-                if ret:
-                    frame_data = (b'--frame\r\n'
-                                  b'Content-Type: image/jpeg\r\n\r\n' +
-                                  buffer.tobytes() + b'\r\n')
-                    yield frame_data
-
-                retry_count += 1
-                await asyncio.sleep(check_interval)
-
-        finally:
-            self._active_streams.pop(camera_id, None)
-
-
-static_stream_manager = StaticStreamManager.get_instance()
 
 
 @cameras.get('', response_model=list[CameraModelWithRelations])
@@ -144,7 +89,7 @@ def get_camera_cover(
     camera = CameraRepository.get_camera(camera_id)
     stream = StreamRegistry.find_by_camera(camera)
 
-    if stream is None:
+    if stream is None or stream.is_stopped():
         frame = get_no_signal_frame(width=640)
     else:
         try:
@@ -191,7 +136,6 @@ async def get_camera_stream(
             media_type='multipart/x-mixed-replace; boundary=frame'
         )
 
-    # Возвращаем статичную заставку вместо исключения
     return StreamingResponse(
         content=static_stream_manager.generate_static_placeholder(camera_id, camera.name),
         media_type='multipart/x-mixed-replace; boundary=frame'
