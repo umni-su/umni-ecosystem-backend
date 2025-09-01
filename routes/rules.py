@@ -94,11 +94,12 @@ def update_rule_graph(
 
 def start_rule(rule: RuleModel):
     rule_executor = RuleExecutor(rule)
-    rule_executor.parse_rule()
+    return rule_executor.execute_rule().res
 
 
-def rule_cb(task_id, result):
-    print(task_id, result)
+def rule_cb(task_id, result, err):
+    pass
+    # print(task_id, result, err)
 
 
 @rules.get("/{rule_id}/execute", response_model=RuleModel)
