@@ -15,7 +15,6 @@
 
 import asyncio
 from threading import Thread
-
 from fastapi import WebSocket
 
 from classes.websockets.messages.ws_message_base import WebsocketMessageBase

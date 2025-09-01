@@ -28,7 +28,6 @@ from responses.user import UserResponseOut
 from services.cameras.cameras_service import CamerasService
 
 connected_clients: list[WebSocket] = []
-
 websockets = APIRouter(
     prefix='/ws',
     tags=['ws']
