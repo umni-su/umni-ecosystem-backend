@@ -16,7 +16,6 @@
 import psutil
 from pydantic import computed_field
 
-from classes.storages.filesystem import Filesystem
 from classes.websockets.messages.ws_message_base import WebsocketMessageBase
 from classes.websockets.ws_message_topic import WebsocketMessageTopicEnum
 
