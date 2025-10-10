@@ -18,6 +18,8 @@ import traceback
 from threading import Thread
 from typing import Callable, Any, TYPE_CHECKING
 
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.camera_storage import CameraStorage
@@ -193,6 +195,9 @@ class CameraNotifier:
                 CameraNotifier.active_recordings.append(recording_model)
             CameraNotifier.active_events.append(event_model)
 
+            # Publish motion start event
+            event_bus.publish(EventType.MOTION_START, event=event_model)
+
     @staticmethod
     def _on_motion_end(event: "ROIDetectionEvent", stream: "CameraStream"):
         """Отправляет уведомление об окончании движения через WebSocket и логирует событие.
@@ -233,6 +238,10 @@ class CameraNotifier:
             WebSockets.send_broadcast(message)
 
             CameraNotifier.active_events.remove(founded_event)
+
+            # Publish motion end event
+            event_bus.publish(EventType.MOTION_END, event=event_model)
+
             Logger.debug(
                 f"🤚 [{event_model.camera.name} EvID#{event_model.id}] Конец движения в {event_model.area.name}. Время: {event_model.end}",
                 LoggerType.CAMERAS)

@@ -14,12 +14,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime, timedelta
-from math import ceil
 from typing import TYPE_CHECKING
 
 import numpy as np
 import imutils
-from sqlalchemy import func
 from sqlmodel import select, col
 from fastapi import HTTPException
 
@@ -31,7 +29,7 @@ from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_event_model import CameraEventModel
-from models.pagination_model import EventsPageParams, PaginatedResponse, EventsPageType, TimelineParams
+from models.pagination_model import EventsPageParams, EventsPageType, TimelineParams
 from repositories.base_repository import BaseRepository
 from services.cameras.classes.roi_tracker import ROIEventType
 
@@ -43,6 +41,9 @@ class CameraEventsRepository(BaseRepository):
     """
     Добавляет новое событие для камеры с режимом периодических скриншотов или периодического видео
     """
+
+    entity_class = CameraEventEntity
+    model_class = CameraEventModel
 
     @classmethod
     def add_permanent_event(
@@ -210,73 +211,46 @@ class CameraEventsRepository(BaseRepository):
         with write_session() as sess:
             try:
                 # Подготавливаем базовый запрос
-                query = (
-                    select(CameraEventEntity)
-                    .where(CameraEventEntity.camera_id == camera.id)
-                )
-
-                count = select(func.count(col(CameraEventEntity.id))).where(CameraEventEntity.camera_id == camera.id)
-
+                where_conditions = [
+                    CameraEventEntity.camera_id == camera.id
+                ]
                 if params.event_id is not None:
                     event = cls.get_event(params.event_id)
                     if event is not None:
                         if params.direction == 'start':
-                            query = query.where(CameraEventEntity.start >= event.start).where(
-                                CameraEventEntity.id != event.id)
-                            count = count.where(CameraEventEntity.start >= event.start).where(
-                                CameraEventEntity.id != event.id)
+                            where_conditions.extend([
+                                CameraEventEntity.start >= event.start,
+                                CameraEventEntity.id != event.id
+                            ])
                         elif params.direction == 'end':
-                            query = query.where(CameraEventEntity.start <= event.start).where(
-                                CameraEventEntity.id != event.id)
-                            count = count.where(CameraEventEntity.start <= event.start).where(
-                                CameraEventEntity.id != event.id)
+                            where_conditions.extend([
+                                CameraEventEntity.start <= event.start,
+                                CameraEventEntity.id != event.id
+                            ])
                         else:
-                            query = query.where(CameraEventEntity.start <= event.start)
-                            count = count.where(CameraEventEntity.start <= event.start)
+                            where_conditions.append(CameraEventEntity.start <= event.start)
 
                 if params.type == EventsPageType.STREAM:
-                    _col = col(CameraEventEntity.type).in_(
-                        [
+                    where_conditions.append(
+                        col(CameraEventEntity.type).in_([
                             CameraRecordTypeEnum.VIDEO.value,
                             CameraRecordTypeEnum.SCREENSHOTS.value
-                        ]
+                        ])
                     )
-                    query = query.where(_col)
-                    count = count.where(_col)
                 elif params.type == EventsPageType.EVENTS:
-                    _col = col(CameraEventEntity.type).in_(
-                        [
+                    where_conditions.append(
+                        col(CameraEventEntity.type).in_([
                             CameraRecordTypeEnum.DETECTION_VIDEO.value,
                             CameraRecordTypeEnum.DETECTION_SCREENSHOTS.value
-                        ]
+                        ])
                     )
-                    query = query.where(_col)
-                    count = count.where(_col)
-                # Получаем общее количество дочерних элементов
-                total = sess.exec(count).first()
 
-                # Вычисляем количество страниц
-                pages = ceil(total / params.size) if params.size else 0
-
-                items = sess.exec(
-                    query.order_by(
-                        col(CameraEventEntity.start).desc()
-                    )
-                    .offset((params.page - 1) * params.size)
-                    .limit(params.size)
-                ).all()
-
-                model_items = [
-                    CameraEventModel.model_validate(ev.to_dict())
-                    for ev in items
-                ]
-
-                return PaginatedResponse[CameraEventModel](
-                    items=model_items,
-                    total=total,
-                    page=params.page,
-                    size=params.size,
-                    pages=pages
+                    # Используем пагинацию
+                return cls.paginate(
+                    session=sess,
+                    page_params=params,
+                    where_conditions=where_conditions,
+                    order_by=col(CameraEventEntity.start).desc()
                 )
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)

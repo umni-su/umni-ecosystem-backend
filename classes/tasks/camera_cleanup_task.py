@@ -150,7 +150,9 @@ class CameraCleanupManager:
                         LoggerType.TASKS
                     )
             if ids:
-                delete(CameraEventEntity).where(col(CameraEventEntity.id).in_(ids))
+                session.exec(
+                    delete(CameraEventEntity).where(col(CameraEventEntity.id).in_(ids))
+                )
 
             if deleted_count:
                 session.commit()
@@ -180,7 +182,9 @@ class CameraCleanupManager:
                         LoggerType.TASKS
                     )
             if ids:
-                delete(CameraRecordingEntity).where(col(CameraRecordingEntity.id).in_(ids))
+                session.exec(
+                    delete(CameraRecordingEntity).where(col(CameraRecordingEntity.id).in_(ids))
+                )
 
             if deleted_count:
                 session.commit()

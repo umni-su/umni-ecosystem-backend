@@ -13,8 +13,6 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import time
-from typing import TYPE_CHECKING
-
 import paho.mqtt.client as mqtt
 
 from classes.logger.logger import Logger
@@ -35,6 +33,7 @@ from services.mqtt.messages.mqtt_ntc_message import MqttNtcMessage
 from services.mqtt.messages.mqtt_ow_message import MqttOwMessage
 from services.mqtt.messages.mqtt_rf_message import MqttRfMessage
 from services.mqtt.messages.mqtt_register_message import MqttRegisterMessage
+from services.mqtt.mqtt_event_subscriber import MqttEventSubscriber
 from services.mqtt.topics.mqtt_topic import MqttTopic
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
 
@@ -44,6 +43,7 @@ class MqttService(BaseService):
     mqttc: mqtt.Client = None
     model: MqttBody
     connected: bool = False
+    subscriber: MqttEventSubscriber | None = None
 
     def run(self):
         host = self.config.get_setting(ConfigurationKeys.MQTT_HOST).value
@@ -61,6 +61,7 @@ class MqttService(BaseService):
         while not self.connected:
             try:
                 self.create_connection(self.model)
+                self.subscriber = MqttEventSubscriber(self.mqttc)
                 self.mqttc.loop_forever()
 
             except Exception as e:

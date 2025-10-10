@@ -15,11 +15,13 @@
 
 from typing import Optional, List, Dict, Any
 from sqlmodel import SQLModel, Field, Relationship, JSON
+
+from entities.mixins.base_model_mixin import BaseModelMixin
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
 
-class RuleNodeBase(SQLModel):
+class RuleNodeBase(SQLModel, BaseModelMixin):
     id: str = Field(
         index=True,
         primary_key=True

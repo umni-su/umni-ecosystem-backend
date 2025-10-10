@@ -19,12 +19,16 @@ from fastapi import APIRouter, Depends, Body, Form, HTTPException
 
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.l10n.l10n import _
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
+from repositories.device_repository import DeviceRepository
 from repositories.sensor_history_repository import SensorHistoryRepository
 from repositories.sensor_repository import SensorRepository
 from responses.user import UserResponseOut
+from services.mqtt.payload.mqtt_payload_models import MqttSensorPayloadModel
 
 sensors = APIRouter(
     prefix='/sensors',
@@ -40,6 +44,17 @@ def get_sensors_history(
 ):
     sensor = SensorRepository.update_sensor(model)
     return sensor
+
+
+@sensors.post('/{sensor_id}/state')
+def get_sensors_history(
+        sensor_id: int,
+        payload: MqttSensorPayloadModel,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    sensor = SensorRepository.get_sensor(sensor_id)
+    event_bus.publish(EventType.CHANGE_STATE, payload=payload, sensor=sensor)
+    return payload
 
 
 @sensors.post('/{sensor_id}/history')

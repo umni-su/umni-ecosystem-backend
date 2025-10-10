@@ -22,6 +22,7 @@ from database.session import write_session
 from entities.camera_area import CameraAreaEntity
 from entities.device import DeviceEntity
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
+from models.rule_condition_models import RuleConditionEntitiesParams
 from models.rule_model import (
     RuleCreate,
     RuleNodeTypes,
@@ -35,6 +36,7 @@ from sqlmodel import select, delete, col
 
 from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
+from repositories.sensor_repository import SensorRepository
 
 
 class RulesRepository(BaseRepository):
@@ -224,6 +226,17 @@ class RulesRepository(BaseRepository):
                             icon='mdi-chip',
                         )
                     )
+            if trigger == RuleNodeTypeKeys.SENSORS_CHANGES:
+                sensors = SensorRepository.find_sensors()
+                for sensor in sensors:
+                    res.append(
+                        RuleNodeListItem(
+                            id=sensor.id,
+                            name=sensor.identifier,
+                            description=sensor.name,
+                            icon='mdi-dip-switch',
+                        )
+                    )
             return res
         except Exception as e:
             Logger.err(str(e), LoggerType.APP)
@@ -280,3 +293,7 @@ class RulesRepository(BaseRepository):
             raise HTTPException(status_code=404, detail="Node not found")
         except Exception as e:
             Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def get_rule_condition_entities(cls, params: RuleConditionEntitiesParams):
+        return params

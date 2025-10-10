@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-08-30 18:52+0300\n"
+"POT-Creation-Date: 2025-10-08 10:26+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -19,55 +19,91 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: classes/configuration/configuration.py:45
+#: classes/configuration/configuration.py:46
 msgid "Base settings"
 msgstr "Основные настройки"
 
-#: classes/configuration/configuration.py:49
+#: classes/configuration/configuration.py:50
 msgid "Application locale"
 msgstr "Язык системы"
 
-#: classes/configuration/configuration.py:54
+#: classes/configuration/configuration.py:55
 msgid "Application uploads path"
 msgstr "Путь для загрузок"
 
-#: classes/configuration/configuration.py:59
+#: classes/configuration/configuration.py:60
 msgid "Application uploads max size"
 msgstr "Максимальный размер загружаемых файлов"
 
-#: classes/configuration/configuration.py:66
+#: classes/configuration/configuration.py:67
 msgid "Devices settings"
 msgstr "Настройки устройств"
 
-#: classes/configuration/configuration.py:70
+#: classes/configuration/configuration.py:71
 msgid "Device sync timeout"
 msgstr "Интервал синхронизации устройств"
 
-#: classes/configuration/configuration.py:77
+#: classes/configuration/configuration.py:78
 msgid "MQTT settings"
 msgstr "Настройки MQTT"
 
-#: classes/configuration/configuration.py:81
+#: classes/configuration/configuration.py:82
 msgid "MQTT host"
 msgstr "MQTT хост"
 
-#: classes/configuration/configuration.py:86
+#: classes/configuration/configuration.py:87
 msgid "MQTT port"
 msgstr "MQTT порт"
 
-#: classes/configuration/configuration.py:91
+#: classes/configuration/configuration.py:92
 msgid "MQTT user"
 msgstr "MQTT пользователь"
 
-#: classes/configuration/configuration.py:96
+#: classes/configuration/configuration.py:97
 msgid "MQTT password"
 msgstr "MQTT пароль"
 
+#: classes/rules/rule_conditions.py:66
+msgid "Availability"
+msgstr "Доступность"
+
+#: classes/rules/rule_conditions.py:70
+msgid "Device availability"
+msgstr "Доступность устройства"
+
+#: classes/rules/rule_conditions.py:74
+msgid "Camera availability"
+msgstr "Доступность камеры"
+
+#: classes/rules/rule_conditions.py:78
+msgid "Sensor availability"
+msgstr "Доступность сенсора"
+
+#: classes/rules/rule_conditions.py:84
+msgid "Comparison"
+msgstr "Сравнение"
+
+#: classes/rules/rule_conditions.py:88
+msgid "Storage size"
+msgstr "Размер хранилища"
+
+#: classes/rules/rule_conditions.py:92
+msgid "Sensor value"
+msgstr "Значение сенсора"
+
+#: classes/rules/rule_conditions.py:98
+msgid "State"
+msgstr "Состояние"
+
+#: classes/rules/rule_conditions.py:102
+msgid "Recording state"
+msgstr "Статус записи"
+
 #: routes/configuration.py:48
 msgid "Failed to save configuration"
-msgstr ""
+msgstr "Ошибка сохранения конфигурации"
 
-#: routes/sensors.py:63
+#: routes/sensors.py:78
 msgid "Error getting sensors history"
 msgstr "Ошибка получения истории сенсоров"
 

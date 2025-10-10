@@ -18,6 +18,8 @@ from typing import Dict, Optional, List
 
 from pydantic import BaseModel, Field, field_validator
 
+from entities.mixins.base_model_mixin import BaseModelMixin
+
 """
 Rule Node types
 """
@@ -52,6 +54,7 @@ class RuleNodeTypeKeys(StrEnum):
     # ACTIONS
     ACTION_CAMERA = 'action.camera'
     ACTION_DEVICE = 'action.device'
+    ACTION_RECORD = 'action.record'
     ENTITIES_SENSOR = 'action.sensor'
     ACTION_ALARM_ON = 'action.alarm.on'
     ACTION_ALARM_OFF = 'action.alarm.off'
@@ -175,15 +178,18 @@ class NodeDataWithList(NodeData):
 
 class NodeVisualize(NodeCreate):
     id: str
+    rule_id: int
     type: str
+    key: str | None = None
     position: NodePosition | None
     data: NodeDataWithList
     children: list["NodeVisualize"] = Field(default_factory=list)
     source: str | None = None
 
 
-class EggeStyle(BaseModel):
-    stroke: Optional[str] = 'grey'
+class EdgeStyle(BaseModel):
+    stroke: Optional[str] = None
+    strokeWidth: Optional[int] = 1
 
 
 class EdgeCreate(BaseModel):
@@ -193,7 +199,7 @@ class EdgeCreate(BaseModel):
     source_handle: Optional[str] = Field(None, alias="sourceHandle")
     target_handle: Optional[str] = Field(None, alias="targetHandle")
     animated: bool = Field(False)
-    style: EggeStyle = Field(default_factory=EggeStyle)
+    style: EdgeStyle = Field(default_factory=EdgeStyle)
 
     class Config:
         populate_by_name = True
@@ -219,3 +225,9 @@ class RuleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     enabled: Optional[bool] = None
+
+
+class RuleConditionEntity(BaseModel):
+    id: int
+    name: str
+    title: str | None = None

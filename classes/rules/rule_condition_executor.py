@@ -12,12 +12,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from classes.rules.rule_base_executor import RuleBaseExecutor
 
-from enum import StrEnum
 
-
-class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+class RuleConditionExecutor(RuleBaseExecutor):
+    def execute(self):
+        print(self.node)
+        return True

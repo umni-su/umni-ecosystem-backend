@@ -13,11 +13,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum
+from pydantic import BaseModel, Field
 
 
-class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+# // TOPIC=manage/umni0a99f0/rel
+# // DATA={"index":2,"level":1}
+
+class MqttSensorPayloadModel(BaseModel):
+    id: int
+    value: float | int
+
+
+class MqttManageRelayPayloadModel(BaseModel):
+    index: int = Field(ge=0, le=24)
+    level: int = Field(ge=0, lt=2)  # 0(LOW) or 1(HIGH)

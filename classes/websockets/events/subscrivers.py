@@ -13,11 +13,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum
+from classes.events.event_bus import event_handler, event_bus
+from classes.events.event_types import EventType
+from classes.websockets.messages.ws_message_rule_executed import WebsocketMessageRuleExecuted
+from classes.websockets.websockets import WebSockets
+from models.rule_model import NodeVisualize, EdgeCreate
 
 
-class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+def on_rule_executed(rule_id: int, nodes: list[NodeVisualize], edges: list[EdgeCreate]):
+    WebSockets.send_broadcast(
+        WebsocketMessageRuleExecuted(
+            rule_id=rule_id,
+            nodes=nodes,
+            edges=edges
+        )
+    )
+
+
+def register_non_auto_subscribers():
+    event_bus.subscribe(EventType.RULE_EXECUTED, on_rule_executed)

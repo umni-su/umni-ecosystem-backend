@@ -13,11 +13,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum
+from pydantic import BaseModel
+
+from classes.rules.rule_conditions import RuleConditionGroupKey, RuleConditionKey
 
 
-class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+class RuleConditionEntitiesParams(BaseModel):
+    term: str | None = None
+    category: RuleConditionGroupKey
+    condition: RuleConditionKey

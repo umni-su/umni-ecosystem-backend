@@ -13,20 +13,13 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum
+from classes.websockets.messages.ws_message_base import WebsocketMessageBase
+from classes.websockets.ws_message_topic import WebsocketMessageTopicEnum
+from models.rule_model import NodeVisualize, EdgeCreate
 
 
-class MqttTopicEnum(StrEnum):
-    MANAGE = 'manage'
-    REGISTER = 'register'
-    CNF_DIO = 'cnf/dio'
-    CNF_OW = 'cnf/ow'
-    CNF_RF433 = 'cnf/rf'
-    CNF_AI = 'cnf/ai'
-    OW = 'ow'
-    RF433 = 'rf'
-    AI = 'ai'
-    NTC = 'ntc'
-    INP = 'inp'
-    REL = 'rel'
-    LWT = 'lwt'
+class WebsocketMessageRuleExecuted(WebsocketMessageBase):
+    topic: WebsocketMessageTopicEnum | None = WebsocketMessageTopicEnum.RULE_EXECUTED
+    rule_id: int | None = None
+    nodes: list[NodeVisualize] | None = None
+    edges: list[EdgeCreate] | None = None

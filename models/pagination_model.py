@@ -15,7 +15,9 @@
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Generic, TypeVar, List, Any
+
+from math import ceil
+from typing import Generic, TypeVar, List
 from pydantic import BaseModel
 
 T = TypeVar('T')
@@ -59,10 +61,19 @@ class PaginatedResponse(BaseModel, Generic[T]):
         arbitrary_types_allowed = True
 
     @classmethod
-    async def paginate(
+    def create(
             cls,
-            query: Any,
-            page: int = 1,
-            size: int = 10,
-    ):
-        pass
+            items: List[T],
+            total: int,
+            page: int,
+            size: int,
+    ) -> "PaginatedResponse[T]":
+        """Создает пагинированный ответ с автоматическим расчетом pages"""
+        pages = ceil(total / size) if size > 0 else 0
+        return cls(
+            items=items,
+            total=total,
+            page=page,
+            size=size,
+            pages=pages
+        )

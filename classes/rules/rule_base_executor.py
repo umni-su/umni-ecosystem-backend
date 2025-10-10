@@ -12,12 +12,21 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
+from models.rule_model import NodeVisualize
 
-from enum import StrEnum
 
+class RuleBaseExecutor:
+    node: NodeVisualize
+    ids: [int] = []
+    key: str | None
 
-class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+    def __init__(self, node: NodeVisualize):
+        self.node = node
+        try:
+            self.key = self.node.data.flow.el.key
+            self.ids = self.node.data.options.get('ids')
+        except Exception as e:
+            self.key = None
+            Logger.err('Key not assign to trigger', LoggerType.RULES)

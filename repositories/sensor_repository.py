@@ -36,8 +36,10 @@ class SensorRepository(BaseRepository):
             try:
                 sensor_orm = sess.exec(select(SensorEntity).where(SensorEntity.id == sensor_id)).first()
                 if sensor_orm is not None:
-                    return SensorModel.model_validate(
-                        sensor_orm.to_dict()
+                    return SensorModelWithDevice.model_validate(
+                        sensor_orm.to_dict(
+                            include_relationships=True
+                        )
                     )
                 raise HTTPException(
                     status_code=404,
@@ -76,20 +78,26 @@ class SensorRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
-    def find_sensors(cls, term: str):
+    def find_sensors(cls, term: str | None = None):
         with write_session() as sess:
             try:
                 query = select(SensorEntity).options(
                     selectinload(SensorEntity.device)
-                ).join(SensorEntity.device).where(
-                    or_(
-                        col(DeviceEntity.name).ilike(f"%{term}%"),
-                        col(DeviceEntity.title).ilike(f"%{term}%"),
-                        col(SensorEntity.name).ilike(f"%{term}%"),
-                        col(SensorEntity.identifier).ilike(f"%{term}%"),
-                        col(SensorEntity.visible_name).ilike(f"%{term}%"),
-                    )
+                ).join(
+                    SensorEntity.device
                 )
+                if term is not None:
+                    query = query.where(
+                        or_(
+                            col(DeviceEntity.name).ilike(f"%{term}%"),
+                            col(DeviceEntity.title).ilike(f"%{term}%"),
+                            col(SensorEntity.name).ilike(f"%{term}%"),
+                            col(SensorEntity.identifier).ilike(f"%{term}%"),
+                            col(SensorEntity.visible_name).ilike(f"%{term}%"),
+                        )
+                    )
+                else:
+                    query = query.limit(50)
                 sensors = sess.exec(query).all()
                 return [
                     SensorModelWithDevice.model_validate(

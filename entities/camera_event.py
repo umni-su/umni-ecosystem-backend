@@ -23,6 +23,8 @@ from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 from sqlmodel import Field, Relationship
 
+from entities.mixins.pagination_mixin import PaginationMixin
+
 
 class CameraEventBase:
     camera_id: int = Field(

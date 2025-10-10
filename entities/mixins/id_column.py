@@ -17,8 +17,12 @@ from sqlmodel import Field
 from sqlmodel import SQLModel
 
 from entities.mixins.base_model_mixin import BaseModelMixin
+from entities.mixins.pagination_mixin import PaginationMixin
 
 
-class IdColumnMixin(SQLModel, BaseModelMixin,
-                    ):
+class IdColumnMixin(
+    SQLModel,
+    BaseModelMixin,
+    PaginationMixin
+):
     id: int | None = Field(default=None, primary_key=True)

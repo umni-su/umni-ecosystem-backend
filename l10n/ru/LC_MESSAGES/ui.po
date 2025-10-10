@@ -112,6 +112,15 @@ msgstr "Изменить учетные данные"
 msgid "Check"
 msgstr "Проверить"
 
+msgid "Choose category"
+msgstr "Выберите категорию"
+
+msgid "Choose condition"
+msgstr "Выберите условие"
+
+msgid "Choose entity"
+msgstr "Выберите сущность"
+
 msgid "Close"
 msgstr "Закрыть"
 
@@ -394,6 +403,9 @@ msgstr "Далее"
 msgid "No more events"
 msgstr "Событий больше нет"
 
+msgid "No results"
+msgstr "Нет результатов"
+
 msgid "No name"
 msgstr "Без названия"
 
@@ -642,6 +654,9 @@ msgstr "Триггер"
 
 msgid "Triggers"
 msgstr "Триггеры"
+
+msgid "Type a text"
+msgstr "Введите текст"
 
 msgid "UMNI C1"
 msgstr "УМНЫЙ К1"

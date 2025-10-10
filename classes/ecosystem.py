@@ -20,7 +20,9 @@ from typing import Optional
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
 from classes.crypto.crypto import Crypto
 
-from classes.logger.logger import logger
+from classes.logger.logger import logger, Logger
+from classes.logger.logger_types import LoggerType
+from classes.websockets.events.subscrivers import register_non_auto_subscribers as ws_register_non_auto_subscribers
 from services.service_runner import ServiceRunner
 
 
@@ -50,6 +52,14 @@ class Ecosystem:
         )
         thread_init.start()
 
+    '''
+    Register non auto subscribers
+    '''
+
+    def register_non_auto_subscribers(self):
+        ws_register_non_auto_subscribers()
+        Logger.debug('Registered non-auto subscribers for ecosystem', LoggerType.APP)
+
     @property
     def crypto(self):
         if self._crypto is None:
@@ -60,12 +70,12 @@ class Ecosystem:
         while not self.installed:
             self.config.reread()
             self.installed = self.config.is_installed()
-            logger.warn(f'Ecosystem is not installed. [{time.time()}] Try again after 3 sec...')
+            Logger.warn(f'Ecosystem is not installed. [{time.time()}] Try again after 3 sec...', LoggerType.APP)
             time.sleep(3)
         self.installed = True
         self.service_runner = ServiceRunner(self.config)
 
-        logger.info('Ecosystem starting, case installed...')
+        Logger.info('Ecosystem starting, case installed...', LoggerType.APP)
 
     def is_installed(self):
         return self.installed

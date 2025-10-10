@@ -115,21 +115,24 @@ class SysteminfoService(BaseService):
     def update_disk_stat(cls):
         disks = psutil.disk_partitions(all=False)
         for part in disks:
-            current_index = cls.get_existing_drive_index(part.mountpoint)
-            if current_index is not None:
-                drive = cls.drives[current_index]
-            else:
-                drive = DriveModel()
+            try:
+                current_index = cls.get_existing_drive_index(part.mountpoint)
+                if current_index is not None:
+                    drive = cls.drives[current_index]
+                else:
+                    drive = DriveModel()
 
-            stat = psutil.disk_usage(part.mountpoint)
-            drive.device = part.device
-            drive.mountpoint = part.mountpoint
-            drive.fstype = part.fstype
-            drive.opts = part.opts.split(',')
-            drive.stat = DiskUsage(
-                free=stat.free,
-                total=stat.total,
-                used=stat.used
-            )
-            if current_index is None:
-                cls.drives.append(drive)
+                stat = psutil.disk_usage(part.mountpoint)
+                drive.device = part.device
+                drive.mountpoint = part.mountpoint
+                drive.fstype = part.fstype
+                drive.opts = part.opts.split(',')
+                drive.stat = DiskUsage(
+                    free=stat.free,
+                    total=stat.total,
+                    used=stat.used
+                )
+                if current_index is None:
+                    cls.drives.append(drive)
+            except:
+                pass
