@@ -12,9 +12,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from models.rule_model import NodeVisualize
+from models.rule_model import NodeVisualize, NodeTriggerOptions
 
 
 class RuleBaseExecutor:
@@ -24,9 +25,10 @@ class RuleBaseExecutor:
 
     def __init__(self, node: NodeVisualize):
         self.node = node
-        try:
-            self.key = self.node.data.flow.el.key
-            self.ids = self.node.data.options.get('ids')
-        except Exception as e:
-            self.key = None
-            Logger.err('Key not assign to trigger', LoggerType.RULES)
+        if isinstance(self.node.data.options, NodeTriggerOptions):
+            try:
+                self.key = self.node.data.flow.el.key
+                self.ids = self.node.data.options.ids
+            except Exception as e:
+                self.key = None
+                Logger.err('Key not assign to trigger', LoggerType.RULES)

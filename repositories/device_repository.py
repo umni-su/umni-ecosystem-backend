@@ -28,6 +28,9 @@ from repositories.base_repository import BaseRepository
 
 
 class DeviceRepository(BaseRepository):
+    entity_class = DeviceEntity
+    model_class = DeviceModelWithRelations
+
     @classmethod
     def get_devices(cls):
         with write_session() as sess:

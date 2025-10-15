@@ -27,6 +27,8 @@ from responses.success import SuccessResponse
 
 
 class StorageRepository(BaseRepository):
+    entity_class = StorageEntity
+    model_class = StorageModel
 
     @classmethod
     def path_exists(cls, path: str):

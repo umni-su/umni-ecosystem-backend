@@ -136,6 +136,9 @@ msgstr "Компьютер"
 msgid "Condition"
 msgstr "Условие"
 
+msgid "Condition {index}"
+msgstr "Условие {index}"
+
 msgid "Conditions"
 msgstr "Условия"
 

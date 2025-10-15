@@ -29,7 +29,7 @@ from models.rule_model import (
     RuleNodeTypeKeys,
     RuleNodeData, NodePosition,
     RuleGraphUpdate,
-    RuleEntityType, RuleNodeListItem, RuleNodeFlow, RuleNodeEl, RuleNodeModel, RuleModel
+    RuleEntityType, RuleNodeListItem, RuleNodeFlow, RuleNodeEl, RuleNodeModel, RuleModel, NodeDataWithList
 )
 from repositories.base_repository import BaseRepository
 from sqlmodel import select, delete, col
@@ -126,7 +126,9 @@ class RulesRepository(BaseRepository):
 
                 # Добавляем новые узлы
                 for node in graph_data.nodes:
-                    node_data = RuleNodeData(**node.data.model_dump())
+                    node_data = NodeDataWithList(**node.data.model_dump())
+                    if node.key == RuleNodeTypeKeys.RULE_CONDITION:
+                        print(node_data.model_dump_json(), "\r\n")
 
                     # Определяем entity_type и entity_id
                     entity_type, entity_id = None, None
@@ -145,7 +147,6 @@ class RulesRepository(BaseRepository):
                         ):
                             entity_type = RuleEntityType.SENSOR
                         entity_id = node_data.options.get("entity_id")
-
                     db_node = RuleNode(
                         id=node.id,
                         type=node.type,

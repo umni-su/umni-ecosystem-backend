@@ -24,6 +24,9 @@ from sqlmodel import select
 
 
 class CameraRepository(BaseRepository):
+    entity_class = CameraEntity
+    model_class = CameraModelWithRelations
+
     @classmethod
     def get_cameras(cls):
         with write_session() as sess:

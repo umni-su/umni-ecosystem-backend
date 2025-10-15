@@ -13,26 +13,34 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Annotated, Optional
-from sqlalchemy import select
+from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from classes.auth.auth import Auth
-from classes.rules.rule_conditions import RuleConditionsList, RuleConditionGroupKey, RuleConditionKey
+from classes.rules.rule_conditions import RuleConditionsList, RuleConditionKey
 from classes.rules.rule_executor import RuleExecutor
 from database.session import write_session
+from entities.camera import CameraEntity
+from entities.device import DeviceEntity
 from entities.rule_entity import RuleEntity
+from entities.sensor_entity import SensorEntity
+from entities.storage import StorageEntity
+from models.camera_model import CameraModelWithRelations
+from models.device_model_relations import DeviceModelWithRelations
 from models.pagination_model import PaginatedResponse
 from models.rule_condition_models import RuleConditionEntitiesParams
 from models.rule_model import (
     RuleCreate,
     RuleGraphUpdate,
-    RuleModel, RuleNodeModel, RuleNodeListItem, RuleNodeTypeKeys, RuleConditionEntity
+    RuleModel, RuleNodeModel, RuleNodeListItem, RuleConditionEntity
 )
+from models.sensor_model import SensorModelWithDevice
+from models.storage_model import StorageModel
 from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
 from repositories.rules_repository import RulesRepository
 from repositories.sensor_repository import SensorRepository
+from repositories.storage_repository import StorageRepository
 from responses.user import UserResponseOut
 from services.rule.rule_service import RuleService
 
@@ -71,10 +79,10 @@ def get_rule(
         "edges": [edge.model_dump() for edge in rule.edges]
     }
     _rule = RuleModel.model_validate(rule_data)
-    for index, node in enumerate(_rule.nodes):
-        _rule.nodes[index].data.items = RulesRepository.get_node_entities_by_node(
-            node.id
-        )
+    # for index, node in enumerate(_rule.nodes):
+    #     _rule.nodes[index].data.options.items = RulesRepository.get_node_entities_by_node(
+    #         node.id
+    #     )
     return _rule
 
 
@@ -151,14 +159,78 @@ def get_rules_condition_entities(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     data = []
-    print(params)
-    if params.condition == RuleConditionKey.AVAILABILITY_DEVICE:
-        items = DeviceRepository.get_devices()
-        data = [RuleConditionEntity(id=item.id, name=item.name, title=item.title) for item in items]
-    elif params.condition == RuleConditionKey.AVAILABILITY_CAMERA:
-        items = CameraRepository.get_cameras()
-        data = [RuleConditionEntity(id=item.id, name=item.name, title=item.ip) for item in items]
-    elif params.condition == RuleConditionKey.AVAILABILITY_SENSOR:
-        items = SensorRepository.find_sensors(params.term)
-        data = [RuleConditionEntity(id=item.id, name=item.name, title=item.visible_name) for item in items]
-    return PaginatedResponse[RuleConditionEntity]()
+    with write_session() as sess:
+        if params.condition == RuleConditionKey.AVAILABILITY_DEVICE:
+            items = DeviceRepository.find_paginated(
+                session=sess,
+                page_params=params,
+                search_term=params.term,
+                search_fields=[
+                    DeviceEntity.name,
+                    DeviceEntity.title
+                ]
+            )
+            res: list[DeviceModelWithRelations] = items.items
+            final_items = [RuleConditionEntity(id=item.id, name=item.name, title=item.title) for item in res]
+        elif params.condition == RuleConditionKey.AVAILABILITY_CAMERA:
+            items = CameraRepository.find_paginated(
+                session=sess,
+                page_params=params,
+                search_term=params.term,
+                search_fields=[
+                    CameraEntity.name,
+                    CameraEntity.ip
+                ]
+            )
+            res: list[CameraModelWithRelations] = items.items
+            final_items = [RuleConditionEntity(id=item.id, name=item.name, title=item.ip) for item in res]
+        elif params.condition in [
+            RuleConditionKey.AVAILABILITY_SENSOR,
+            RuleConditionKey.IS_SENSOR_VALUE
+        ]:
+            items = SensorRepository.find_paginated(
+                session=sess,
+                page_params=params,
+                search_term=params.term,
+                search_fields=[
+                    SensorEntity.name,
+                    SensorEntity.identifier,
+                    SensorEntity.visible_name
+                ]
+            )
+            res: list[SensorModelWithDevice] = items.items
+            final_items = [
+                RuleConditionEntity(
+                    id=item.id,
+                    name=item.identifier,
+                    title=item.name
+                ) for item in
+                res]
+        elif params.condition in [
+            RuleConditionKey.IS_STORAGE_SIZE
+        ]:
+            items = StorageRepository.find_paginated(
+                session=sess,
+                page_params=params,
+                search_term=params.term,
+                search_fields=[
+                    StorageEntity.name,
+                    StorageEntity.path
+                ]
+            )
+            res: list[StorageModel] = items.items
+            final_items = [
+                RuleConditionEntity(
+                    id=item.id,
+                    name=item.name,
+                    title=item.path
+                ) for item in
+                res]
+
+        return PaginatedResponse(
+            items=final_items,
+            total=items.total,
+            page=items.page,
+            size=items.size,
+            pages=items.pages,
+        )

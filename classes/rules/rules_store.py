@@ -114,7 +114,7 @@ class RuleTriggersStore:
     def _parse_ids_from_options(self, data: "NodeDataWithList") -> List[int]:
         """Парсит IDs из NodeDataWithList"""
         try:
-            ids = data.options.get('ids', [])
+            ids = data.options.ids
             if isinstance(ids, list):
                 return [int(id) for id in ids if str(id).isdigit()]
         except:

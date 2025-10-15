@@ -14,15 +14,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import StrEnum
-from typing import Dict, Optional, List
+from typing import Optional, List
 
 from pydantic import BaseModel, Field, field_validator
-
-from entities.mixins.base_model_mixin import BaseModelMixin
-
-"""
-Rule Node types
-"""
 
 
 class RuleEntityType(StrEnum):
@@ -67,11 +61,38 @@ class RuleNodeTypeKeys(StrEnum):
 
 
 class RuleNodeListItem(BaseModel):
-    id: int
+    id: int | None = None
     name: Optional[str] | None = None
     description: Optional[str] | None = None
     icon: Optional[str] | None = None
     color: Optional[str] | None = None
+
+
+class RuleNodeConditionDetailsItem(BaseModel):
+    id: int
+    name: str | None = None
+    title: str | None = None
+
+
+class RuleNodeConditionItem(BaseModel):
+    operand: str
+    group: str
+    key: str
+    items: Optional[List[RuleNodeConditionDetailsItem]]
+
+
+class NodeTriggerOptions(BaseModel):
+    ids: Optional[List[int]] = None
+    items: list[RuleNodeListItem] | None = None
+
+
+class NodeConditionOptions(BaseModel):
+    conditions: Optional[List[RuleNodeConditionItem]] | None = None
+
+
+# class NodeOptions(BaseModel):
+#     ids: Optional[List[int]] = None
+#     conditions: Optional[List[RuleNodeConditionItem]] | None = None
 
 
 class RuleNodeEl(BaseModel):
@@ -88,7 +109,7 @@ class RuleNodeFlow(BaseModel):
 
 
 class RuleNodeData(BaseModel):
-    options: dict
+    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
     flow: RuleNodeFlow
 
 
@@ -138,11 +159,9 @@ class NodePosition(BaseModel):
     y: float
 
 
-class NodeDataOptions(BaseModel):
-    state: Optional[str] = None
-    action: Optional[str] = None
-    operand: Optional[str] = None  # Для условий
-    items: Optional[List[Dict]] = None  # Для условий
+# class NodeDataOptions(BaseModel):
+#     state: Optional[str] = None
+#     action: Optional[str] = None
 
 
 class NodeDataFlowEl(BaseModel):
@@ -159,7 +178,7 @@ class NodeDataFlow(BaseModel):
 
 
 class NodeData(BaseModel):
-    options: Optional[Dict] = Field(default_factory=dict)
+    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
     flow: NodeDataFlow
 
 
@@ -171,9 +190,8 @@ class NodeCreate(BaseModel):
 
 
 class NodeDataWithList(NodeData):
-    options: Optional[Dict] = Field(default_factory=dict)
+    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
     flow: NodeDataFlow
-    items: List[RuleNodeListItem] = Field(default_factory=list)
 
 
 class NodeVisualize(NodeCreate):
@@ -229,5 +247,5 @@ class RuleUpdate(BaseModel):
 
 class RuleConditionEntity(BaseModel):
     id: int
-    name: str
+    name: str | None = None
     title: str | None = None

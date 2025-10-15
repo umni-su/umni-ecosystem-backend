@@ -16,9 +16,10 @@
 from pydantic import BaseModel
 
 from classes.rules.rule_conditions import RuleConditionGroupKey, RuleConditionKey
+from models.pagination_model import PageParams
 
 
-class RuleConditionEntitiesParams(BaseModel):
+class RuleConditionEntitiesParams(PageParams, BaseModel):
     term: str | None = None
     category: RuleConditionGroupKey
     condition: RuleConditionKey

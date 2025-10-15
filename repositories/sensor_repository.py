@@ -29,6 +29,8 @@ from starlette.status import HTTP_404_NOT_FOUND
 
 
 class SensorRepository(BaseRepository):
+    entity_class = SensorEntity
+    model_class = SensorModelWithDevice
 
     @classmethod
     def get_sensor(cls, sensor_id):
