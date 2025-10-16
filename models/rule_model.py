@@ -18,6 +18,8 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field, field_validator
 
+from classes.rules.rule_conditions import RuleComparison, RuleAvailability
+
 
 class RuleEntityType(StrEnum):
     DEVICE = 'device'
@@ -60,6 +62,27 @@ class RuleNodeTypeKeys(StrEnum):
     ACTION_RECORD_END = 'action.record.start'
 
 
+class NodeConditionActionAvailable(BaseModel):
+    state: RuleAvailability = Field(default=RuleAvailability.ONLINE)
+
+    class Config:
+        json_encoders = {
+            RuleAvailability: lambda v: v.value
+        }
+        use_enum_values = True  # Эта опция автоматически использует значения enum
+
+
+class NodeConditionComparison(BaseModel):
+    operator: RuleComparison = Field(default=RuleComparison.LESS_THAN)
+    value: int | str | None = None
+
+    class Config:
+        json_encoders = {
+            RuleComparison: lambda v: v.value
+        }
+        use_enum_values = True  # Эта опция автоматически использует значения enum
+
+
 class RuleNodeListItem(BaseModel):
     id: int | None = None
     name: Optional[str] | None = None
@@ -79,6 +102,7 @@ class RuleNodeConditionItem(BaseModel):
     group: str
     key: str
     items: Optional[List[RuleNodeConditionDetailsItem]]
+    action: NodeConditionActionAvailable | NodeConditionComparison | None = None
 
 
 class NodeTriggerOptions(BaseModel):

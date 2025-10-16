@@ -76,6 +76,9 @@ msgstr "Автозапуск"
 msgid "Average"
 msgstr "Средний"
 
+msgid "Availability"
+msgstr "Доступность"
+
 msgid "Back"
 msgstr "Назад"
 
@@ -126,6 +129,9 @@ msgstr "Закрыть"
 
 msgid "Comment"
 msgstr "Комментарий"
+
+msgid "Comparison"
+msgstr "Сравнение"
 
 msgid "Component selection"
 msgstr "Выбор компонентов"
@@ -253,6 +259,9 @@ msgstr "Ошибка сохранения правила"
 msgid "Error to connect. Please check your credentials or MQTT broker settings."
 msgstr "Ошибка подключения. Пожалуйста, проверьте учетные данные или настройки MQTT брокера"
 
+msgid "Equal"
+msgstr "Равно"
+
 msgid "Event"
 msgstr "Событие"
 
@@ -272,7 +281,7 @@ msgid "Events total: {count}"
 msgstr "Всего событий: {count}"
 
 msgid "Extended area settings"
-msgstr "Расширенные растройки зоны"
+msgstr "Расширенные настройки зоны"
 
 msgid "Extension"
 msgstr "Расширение"
@@ -297,6 +306,13 @@ msgstr "свободно из"
 
 msgid "Gateway"
 msgstr "Шлюз"
+
+
+msgid "Greater than"
+msgstr "Больше"
+
+msgid "Greater than or equal"
+msgstr "Больше или равно"
 
 msgid "High"
 msgstr "Высокий"
@@ -341,10 +357,16 @@ msgid "Lastname"
 msgstr "Фамилия"
 
 msgid "Last sync"
-msgstr "Синхронизано"
+msgstr "Синхронизировано"
 
 msgid "Light"
 msgstr "Легкий"
+
+msgid "Less than"
+msgstr "Меньше"
+
+msgid "Less than or equal"
+msgstr "Меньше или равно"
 
 msgid "Link"
 msgstr "Ссылка"
@@ -405,6 +427,9 @@ msgstr "Далее"
 
 msgid "No more events"
 msgstr "Событий больше нет"
+
+msgid "Not equal"
+msgstr "Не равно"
 
 msgid "No results"
 msgstr "Нет результатов"
@@ -691,6 +716,9 @@ msgstr "Имя пользователя"
 msgid "Used: {used} of {total}"
 msgstr "Занято: {used} из {total}"
 
+msgid "Value"
+msgstr "Значение"
+
 msgid "Video surveillance"
 msgstr "Видеонаблюдение"
 
@@ -759,3 +787,9 @@ msgstr "0 месяцев | {n} месяц | {n} месяца | {n} месяце�
 
 msgid "{n} year"
 msgstr "0 лет | {n} год | {n} года | {n} лет"
+
+msgid "{n} conditions"
+msgstr "0 условий | {n} условие | {n} условия | {n} условий"
+
+msgid "{n} triggers"
+msgstr "0 триггеров | {n} триггер | {n} триггера | {n} триггеров"

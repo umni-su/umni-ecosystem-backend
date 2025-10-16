@@ -13,9 +13,15 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import StrEnum
+from enum import StrEnum, Enum
 from classes.l10n.l10n import _
 from pydantic import BaseModel
+
+
+class RuleAvailability(Enum):
+    OFFLINE = 0
+    ONLINE = 1
+    UNKNOWN = 2
 
 
 class RuleComparison(StrEnum):
