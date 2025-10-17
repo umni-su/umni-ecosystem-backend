@@ -29,6 +29,7 @@ class CameraGetModel(BaseModel):
 
 class CameraBaseModel(CameraGetModel):
     active: bool = True
+    online: bool = True
     alerts: bool = True
     record: bool = False
     record_duration: int | None = None

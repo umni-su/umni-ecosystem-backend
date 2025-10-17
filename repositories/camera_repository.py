@@ -97,6 +97,22 @@ class CameraRepository(BaseRepository):
                 Logger.err(str(e))
 
     @classmethod
+    def set_online(cls, camera_id: int, online: bool = True):
+        with write_session() as sess:
+            try:
+                cam = sess.get(CameraEntity, camera_id)
+                cam.online = online
+                sess.add(cam)
+
+                return CameraModelWithRelations.model_validate(
+                    cam.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e))
+
+    @classmethod
     def prepare_camera(cls, model: CameraBaseModel, target: CameraEntity):
         camera = target
         try:

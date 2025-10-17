@@ -38,6 +38,7 @@ from classes.thread.daemon import Daemon
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_model import CameraModelWithRelations
 from repositories.camera_events_repository import CameraEventsRepository
+from repositories.camera_repository import CameraRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
 from services.cameras.utils.cameras_helpers import get_no_signal_frame
@@ -251,18 +252,24 @@ class CameraStream:
     def _create_input_container(self):
         options = {
             'rtsp_transport': 'tcp',
-            'stimeout': '5000000',  # 5 seconds timeout
+            'timeout': '5000000',  # 5 seconds timeout
             'max_delay': '500000',  # Max packet delay
         }
 
         try:
             self.input_container = av.open(self.link, options=options, timeout=10)
             self.capture_error = False
+            if not self.camera.online:
+                CameraRepository.set_online(camera_id=self.camera.id)
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
+            # Set online
         except Exception as e:
             self.capture_error = True
+            if self.camera.online:
+                CameraRepository.set_online(camera_id=self.camera.id, online=False)
             Logger.err(f"⚠️ [{self.camera.name}] Failed to open stream: {e}", LoggerType.CAMERAS)
             time.sleep(3)
+            # Set offline
             self._create_input_container()
 
     def create_input_container(self):
@@ -403,7 +410,7 @@ class CameraStream:
             # Используем movflags для фрагментированного MP4
             options = {
                 'movflags': 'frag_keyframe+empty_moov+default_base_moof',
-                'fragment_duration': '1000',  # 1 секунда между фрагментами
+                # 'fragment_duration': '1000',  # 1 секунда между фрагментами
             }
 
             # Create output container

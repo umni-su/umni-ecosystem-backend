@@ -23,13 +23,13 @@ class DeviceModelMain(BaseModel):
     name: str | None = None
     title: str | None = None
     description: str | None = None
+    online: bool | None = None
 
 
 class DeviceModel(DeviceModelMain):
     location_id: int | None = None
     photo: str | None = None
     type: int | None = None
-    online: bool | None = None
     uptime: int | None = None
     free_heap: int | None = None
     total_heap: int | None = None

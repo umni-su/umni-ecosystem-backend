@@ -12,11 +12,26 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import operator
+
 from classes.rules.rule_base_executor import RuleBaseExecutor
 from classes.rules.rule_conditions import RuleAvailability, RuleComparison, RuleConditionGroupKey, RuleOperand, \
     RuleConditionKey
-from models.rule_model import NodeConditionOptions, RuleNodeConditionDetailsItem, NodeConditionActionAvailable
+from models.rule_model import NodeConditionOptions, RuleNodeConditionDetailsItem, NodeConditionActionAvailable, \
+    NodeConditionComparison
+from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
+from repositories.sensor_repository import SensorRepository
+
+operators = {
+    '>': operator.gt,
+    '<': operator.lt,
+    '>=': operator.ge,
+    '<=': operator.le,
+    '==': operator.eq,
+    '!=': operator.ne
+}
 
 
 class RuleConditionExecutor(RuleBaseExecutor):
@@ -25,18 +40,41 @@ class RuleConditionExecutor(RuleBaseExecutor):
             condition_result = False
             # Выполняем все блоки условий, они все должны вернуть True
             for condition in self.node.data.options.conditions:
-                if (
-                        condition.group == RuleConditionGroupKey.AVAILABILITY.value and
-                        condition.key == RuleConditionKey.AVAILABILITY_DEVICE.value
-                ):
-                    condition_result = self.availability_device(
-                        condition.operand,
-                        condition.action.state,
-                        condition.items
-                    )
+                if condition.group == RuleConditionGroupKey.AVAILABILITY.value:
+                    # УСТРОЙСТВО
+                    if condition.key == RuleConditionKey.AVAILABILITY_DEVICE.value:
+                        condition_result = self.availability_device(
+                            operand=condition.operand,
+                            state=condition.action.state,
+                            items=condition.items
+                        )
+                    # КАМЕРА
+                    if condition.key == RuleConditionKey.AVAILABILITY_CAMERA.value:
+                        condition_result = self.availability_camera(
+                            operand=condition.operand,
+                            state=condition.action.state,
+                            items=condition.items
+                        )
+                    # СЕНСОР
+                    # @TODO это временная заглушка, гарантирующая, что при отключенном устройстве будет отключен и сенсор
+                    if condition.key == RuleConditionKey.AVAILABILITY_CAMERA.value:
+                        condition_result = self.availability_sensor(
+                            operand=condition.operand,
+                            state=condition.action.state,
+                            items=condition.items
+                        )
                     # Если хотя бы один блок вернет False, выполнение условия тоже возвращает False
                     if not condition_result:
                         return False
+
+                elif condition.group == RuleConditionGroupKey.IS.value:
+                    if condition.key == RuleConditionKey.IS_SENSOR_VALUE:
+                        self.comparison_sensor(
+                            operand=condition.operand,
+                            action=condition.action,
+                            items=condition.items
+                        )
+
                 else:
                     return False
             return condition_result
@@ -53,11 +91,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
             state: RuleAvailability,
             items: list[RuleNodeConditionDetailsItem]
     ):
-        # RuleAvailability.ONLINE
-        # RuleComparison.GREATER_THAN.value
-        # print("\r\n", RuleOperand(operand), RuleAvailability(state), items, "\r\n")
-
-        # Все устройства должны иметь такой же статус, что и ы state
+        # Все устройства должны иметь такой же статус, что и state
         if operand == RuleOperand.AND.value:
             success = False
             for item in items:
@@ -82,3 +116,120 @@ class RuleConditionExecutor(RuleBaseExecutor):
                 if not success:
                     return False
             return success
+
+    """
+    Camera availability condition
+    """
+
+    @classmethod
+    def availability_camera(
+            cls,
+            operand: str,
+            state: RuleAvailability,
+            items: list[RuleNodeConditionDetailsItem]
+    ):
+        # Все камеры должны иметь такой же статус, что и state
+        if operand == RuleOperand.AND.value:
+            success = False
+            for item in items:
+                camera = CameraRepository.get_camera(item.id)
+                success = camera.online == (state == RuleAvailability.ONLINE.value)
+                if not success:
+                    return False
+            return success
+        # Одна из камер должна иметь статус, равный state
+        elif operand == RuleOperand.OR.value:
+            for item in items:
+                camera = CameraRepository.get_camera(item.id)
+                if camera.online == (state == RuleAvailability.ONLINE.value):
+                    return True
+            return False
+        # Ни одна из камер не должно иметь статус state
+        elif operand == RuleOperand.NOT.value:
+            success = False
+            for item in items:
+                camera = CameraRepository.get_camera(item.id)
+                success = camera.online != (state == RuleAvailability.ONLINE.value)
+                if not success:
+                    return False
+            return success
+
+    """
+    Sensor availability condition
+    """
+
+    @classmethod
+    def availability_sensor(
+            cls,
+            operand: str,
+            state: RuleAvailability,
+            items: list[RuleNodeConditionDetailsItem]
+    ):
+        # Все сенсоры должны иметь такой же статус, что и state
+        if operand == RuleOperand.AND.value:
+            success = False
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                success = sensor.device.online == (state == RuleAvailability.ONLINE.value)
+                if not success:
+                    return False
+            return success
+        # Один из сенсоров должно иметь статус, равный state
+        elif operand == RuleOperand.OR.value:
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                if sensor.device.online == (state == RuleAvailability.ONLINE.value):
+                    return True
+            return False
+        # Ни одно из сенсоров не должно иметь статус state
+        elif operand == RuleOperand.NOT.value:
+            success = False
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                success = sensor.device.online != (state == RuleAvailability.ONLINE.value)
+                if not success:
+                    return False
+            return success
+
+    """
+    Comparison sensor condition
+    """
+
+    @classmethod
+    def comparison_sensor(
+            cls,
+            operand: str,
+            action: NodeConditionComparison,
+            items: list[RuleNodeConditionDetailsItem]
+    ):
+
+        if operand == RuleOperand.AND.value:
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                if not operators[action.operator](float(sensor.value), float(action.value)):
+                    return False
+            return True
+
+        elif operand == RuleOperand.OR.value:
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                if operators[action.operator](float(sensor.value), float(action.value)):
+                    return True
+            return False
+
+        elif operand == RuleOperand.NOT.value:
+            for item in items:
+                sensor = SensorRepository.get_sensor(item.id)
+                if operators[action.operator](float(sensor.value), float(action.value)):
+                    return False
+            return True
+        else:
+            return False
+
+    """
+    Comparison storage condition
+    """
+
+    @classmethod
+    def comparison_storage(cls):
+        pass
