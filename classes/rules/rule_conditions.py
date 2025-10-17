@@ -24,6 +24,12 @@ class RuleAvailability(Enum):
     UNKNOWN = 2
 
 
+class RuleOperand(StrEnum):
+    AND = 'and'
+    OR = 'or'
+    NOT = 'not'
+
+
 class RuleComparison(StrEnum):
     LESS_THAN = "<"
     GREATER_THAN = ">"
