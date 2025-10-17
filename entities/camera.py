@@ -72,6 +72,10 @@ class CameraEntityBase:
         default=False,
         index=True
     )
+    online: bool = Field(
+        default=False,
+        index=True
+    )
 
 
 class CameraEntityConnection:
