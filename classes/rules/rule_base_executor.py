@@ -16,11 +16,13 @@
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from models.rule_model import NodeVisualize, NodeTriggerOptions
+from models.ui_models import UiListItem
 
 
 class RuleBaseExecutor:
     node: NodeVisualize
     ids: [int] = []
+    items: list[UiListItem] = []
     key: str | None
 
     def __init__(self, node: NodeVisualize):
@@ -29,6 +31,7 @@ class RuleBaseExecutor:
             try:
                 self.key = self.node.data.flow.el.key
                 self.ids = self.node.data.options.ids
+                self.items = self.node.data.options.items
             except Exception as e:
                 self.key = None
                 Logger.err('Key not assign to trigger', LoggerType.RULES)

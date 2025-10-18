@@ -19,6 +19,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 from classes.rules.rule_conditions import RuleComparison, RuleAvailability
+from models.ui_models import UiListItem
 
 
 class RuleEntityType(StrEnum):
@@ -83,31 +84,17 @@ class NodeConditionComparison(BaseModel):
         use_enum_values = True  # Эта опция автоматически использует значения enum
 
 
-class RuleNodeListItem(BaseModel):
-    id: int | None = None
-    name: Optional[str] | None = None
-    description: Optional[str] | None = None
-    icon: Optional[str] | None = None
-    color: Optional[str] | None = None
-
-
-class RuleNodeConditionDetailsItem(BaseModel):
-    id: int
-    name: str | None = None
-    title: str | None = None
-
-
 class RuleNodeConditionItem(BaseModel):
     operand: str
     group: str
     key: str
-    items: Optional[List[RuleNodeConditionDetailsItem]]
+    items: Optional[List[UiListItem]]
     action: NodeConditionActionAvailable | NodeConditionComparison | None = None
 
 
 class NodeTriggerOptions(BaseModel):
     ids: Optional[List[int]] = None
-    items: list[RuleNodeListItem] | None = None
+    items: list[UiListItem] | None = None
 
 
 class NodeConditionOptions(BaseModel):
@@ -220,7 +207,7 @@ class NodeDataWithList(NodeData):
 
 class NodeVisualize(NodeCreate):
     id: str
-    rule_id: int
+    rule_id: int | None = None
     type: str
     key: str | None = None
     position: NodePosition | None
@@ -267,9 +254,3 @@ class RuleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     enabled: Optional[bool] = None
-
-
-class RuleConditionEntity(BaseModel):
-    id: int
-    name: str | None = None
-    title: str | None = None

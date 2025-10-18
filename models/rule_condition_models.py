@@ -20,6 +20,5 @@ from models.pagination_model import PageParams
 
 
 class RuleConditionEntitiesParams(PageParams, BaseModel):
-    term: str | None = None
     category: RuleConditionGroupKey
     condition: RuleConditionKey

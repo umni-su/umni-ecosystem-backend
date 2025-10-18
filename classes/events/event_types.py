@@ -17,7 +17,8 @@ from enum import StrEnum
 
 
 class EventType(StrEnum):
-    CHANGE_STATE = "change.state"
+    DEVICE_CHANGE_STATE = "device.change.state"
+    SENSOR_CHANGE_STATE = "sensor.change.state"
     RULE_EXECUTED = "rule.executed"
     MOTION_START = "motion.start"
     MOTION_END = "motion.end"

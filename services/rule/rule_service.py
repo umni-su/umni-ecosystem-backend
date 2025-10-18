@@ -24,10 +24,17 @@ from classes.thread.task_manager import TaskManager
 from database.session import write_session
 from entities.rule_entity import RuleNode
 from models.camera_event_model import CameraEventModel
+from models.device_model_relations import DeviceModelWithRelations
 from models.rule_model import RuleNodeTypes, NodeVisualize, RuleNodeTypeKeys
+from models.sensor_model import SensorModelWithDevice
 from repositories.rules_repository import RulesRepository
 from services.base_service import BaseService
 from sqlmodel import select
+
+"""
+Сервис-класс обработки правил автоматизаций
+с регистрацией подписки на события триггеров автоматизации
+"""
 
 
 class RuleService(BaseService):
@@ -35,24 +42,42 @@ class RuleService(BaseService):
     task_manager: TaskManager | None = None
     execution_tracker = RuleExecutionTracker()
 
-    def run_execution_motion(self, event: CameraEventModel):
-        trigger_entity_id: int = event.area_id
+    def run_execution_trigger(self, entity_id: int, trigger: RuleNodeTypeKeys):
+        trigger_entity_id: int = entity_id
 
-        exists = rules_triggers_store.find(RuleNodeTypeKeys.MOTION_START).exists(trigger_entity_id)
+        exists = rules_triggers_store.find(key=trigger).exists(entity_id=trigger_entity_id)
         if exists:
-            trigger_models = rules_triggers_store.find(RuleNodeTypeKeys.MOTION_START).find(trigger_entity_id)
+            trigger_models = rules_triggers_store.find(key=trigger).find(entity_id=trigger_entity_id)
             for model in trigger_models:
-                Logger.info(f"Rule {model.rule_id} has entity {trigger_entity_id} with all ids: {model.ids}",
-                            LoggerType.RULES)
+                Logger.debug(
+                    f"✅ Rule {model.rule_id} has entity {trigger_entity_id} with all ids: {model.ids}",
+                    LoggerType.RULES
+                )
 
                 # Проверяем, не выполняется ли правило уже
                 if self.execution_tracker.is_executing(model.rule_id):
-                    Logger.warn(f"Rule {model.rule_id} is already executing, skipping", LoggerType.RULES)
+                    Logger.warn(
+                        f"⚠️ Rule {model.rule_id} is already executing, skipping",
+                        LoggerType.RULES
+                    )
                     continue
 
                 rule = RulesRepository.get_rule(model.rule_id)
                 self._execute_rule_with_tracking(rule, trigger_entity_id)
                 break
+
+    def run_execution_motion_start(self, event: CameraEventModel):
+        self.run_execution_trigger(event.area_id, RuleNodeTypeKeys.MOTION_START)
+
+    def run_execution_motion_end(self, event: CameraEventModel):
+        self.run_execution_trigger(event.area_id, RuleNodeTypeKeys.MOTION_END)
+
+    def run_device_change_state(self, device: DeviceModelWithRelations):
+        self.run_execution_trigger(device.id, RuleNodeTypeKeys.DEVICES_CHANGES)
+
+    def run_sensor_change_state(self, sensor: SensorModelWithDevice):
+        self.run_execution_trigger(sensor.id, RuleNodeTypeKeys.SENSORS_CHANGES)
+        print(f'Fire run_sensor_change_state on sensor ID {sensor.identifier}, VAL {sensor.value}')
 
     def _execute_rule_with_tracking(self, rule, entity_id: int | None = None):
         """Запускает выполнение правила с отслеживанием статуса"""
@@ -97,7 +122,9 @@ class RuleService(BaseService):
             ]
             rules_triggers_store.reread(triggers)
 
-        event_bus.subscribe(EventType.MOTION_START, self.run_execution_motion)
-        event_bus.subscribe(EventType.MOTION_END, self.run_execution_motion)
+        event_bus.subscribe(EventType.MOTION_START, self.run_execution_motion_start)
+        event_bus.subscribe(EventType.MOTION_END, self.run_execution_motion_end)
+        event_bus.subscribe(EventType.DEVICE_CHANGE_STATE, self.run_device_change_state)
+        event_bus.subscribe(EventType.SENSOR_CHANGE_STATE, self.run_sensor_change_state)
 
         RuleService.task_manager = TaskManager(max_workers=2)

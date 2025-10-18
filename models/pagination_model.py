@@ -26,6 +26,7 @@ T = TypeVar('T')
 class PageParams(BaseModel):
     page: int = 1
     size: int = 10
+    term: str | None = None
 
 
 class EventsPageType(StrEnum):

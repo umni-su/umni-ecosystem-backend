@@ -33,6 +33,9 @@ if typing.TYPE_CHECKING:
 
 
 class CameraAreaRepository(BaseRepository):
+    entity_class = CameraAreaEntity
+    model_class = CameraAreaBaseModel
+
     @classmethod
     def save_areas_data(cls, areas: list["CameraAreaBaseModel"], camera: "CameraModelWithRelations"):
         from services.cameras.classes.stream_registry import StreamRegistry

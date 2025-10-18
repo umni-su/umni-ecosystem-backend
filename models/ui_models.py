@@ -13,14 +13,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import paho.mqtt.client as mqtt
-from models.sensor_model import SensorModelWithDevice
-from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
+from typing import Optional
+
+from pydantic import BaseModel
 
 
-class MqttEventSubscriber:
-    def __init__(self, client: mqtt.Client):
-        self.client = client
-
-    def manage_topic(self, sensor: SensorModelWithDevice, topic: MqttTopicEnum):
-        return f'{MqttTopicEnum.MANAGE}/{sensor.device.name}/{topic.value}'
+class UiListItem(BaseModel):
+    id: int | None = None
+    name: Optional[str] | None = None
+    description: Optional[str] | None = None
+    icon: Optional[str] | None = None
+    color: Optional[str] | None = None

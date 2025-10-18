@@ -18,10 +18,14 @@ from starlette.exceptions import HTTPException
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.rules.rules_store import rules_triggers_store
 from database.session import write_session
 from entities.camera_area import CameraAreaEntity
 from entities.device import DeviceEntity
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
+from entities.sensor_entity import SensorEntity
+from models.camera_area_model import CameraAreaBaseModel
+from models.pagination_model import PageParams, PaginatedResponse
 from models.rule_condition_models import RuleConditionEntitiesParams
 from models.rule_model import (
     RuleCreate,
@@ -29,8 +33,16 @@ from models.rule_model import (
     RuleNodeTypeKeys,
     RuleNodeData, NodePosition,
     RuleGraphUpdate,
-    RuleEntityType, RuleNodeListItem, RuleNodeFlow, RuleNodeEl, RuleNodeModel, RuleModel, NodeDataWithList
+    RuleEntityType,
+    RuleNodeFlow,
+    RuleNodeEl,
+    RuleNodeModel,
+    RuleModel,
+    NodeDataWithList, NodeVisualize
 )
+from models.sensor_model import SensorModelWithDevice
+from models.ui_models import UiListItem
+from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
 from sqlmodel import select, delete, col
 
@@ -173,6 +185,17 @@ class RulesRepository(BaseRepository):
                     session.add(db_edge)
                 session.commit()
                 rule = session.get(RuleEntity, rule_id)
+
+                orm_triggers: list[RuleNode] = session.exec(
+                    select(RuleNode).where(RuleNode.type == RuleNodeTypes.TRIGGER.value)
+                ).all()
+                triggers = [
+                    NodeVisualize.model_validate(
+                        t.to_dict()
+                    ) for t in orm_triggers
+                ]
+                rules_triggers_store.reread(triggers)
+
                 return RuleModel.model_validate(
                     rule.to_dict(
                         include_relationships=True
@@ -195,52 +218,90 @@ class RulesRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
-    def get_node_entities_by_trigger(cls, trigger: str | None):
-        try:
-            if trigger is None:
-                return []
-            res = []
-            trigger = RuleNodeTypeKeys(trigger)
-            if trigger in (
-                    RuleNodeTypeKeys.MOTION_START,
-                    RuleNodeTypeKeys.MOTION_END
-            ):
-                cameras = CameraRepository.get_cameras()
-                for camera in cameras:
-                    for area in camera.areas:
-                        res.append(
-                            RuleNodeListItem(
+    def get_node_entities_by_trigger(cls, trigger: str | None, params: PageParams):
+        with write_session() as sess:
+            try:
+                if trigger is None:
+                    return []
+                res = []
+                _items = []
+                trigger = RuleNodeTypeKeys(trigger)
+                if trigger in (
+                        RuleNodeTypeKeys.MOTION_START,
+                        RuleNodeTypeKeys.MOTION_END
+                ):
+                    # cameras = CameraRepository.get_cameras()
+                    res = CameraAreaRepository.find_paginated(
+                        session=sess,
+                        page_params=params,
+                        search_term=params.term,
+                        search_fields=[
+                            CameraAreaEntity.name
+                        ]
+                    )
+                    all_areas: list[CameraAreaBaseModel] = res.items
+                    for area in all_areas:
+                        _items.append(
+                            UiListItem(
                                 id=area.id,
                                 name=area.name,
                                 icon='mdi-texture-box',
                                 color=area.color
                             )
                         )
-            if trigger == RuleNodeTypeKeys.DEVICES_CHANGES:
-                devices = DeviceRepository.get_devices()
-                for device in devices:
-                    res.append(
-                        RuleNodeListItem(
-                            id=device.id,
-                            name=device.name,
-                            description=device.title,
-                            icon='mdi-chip',
-                        )
+
+                elif trigger == RuleNodeTypeKeys.DEVICES_CHANGES:
+                    res = DeviceRepository.find_paginated(
+                        session=sess,
+                        page_params=params,
+                        search_term=params.term,
+                        search_fields=[
+                            DeviceEntity.name,
+                            DeviceEntity.description,
+                            DeviceEntity.title
+                        ]
                     )
-            if trigger == RuleNodeTypeKeys.SENSORS_CHANGES:
-                sensors = SensorRepository.find_sensors()
-                for sensor in sensors:
-                    res.append(
-                        RuleNodeListItem(
-                            id=sensor.id,
-                            name=sensor.identifier,
-                            description=sensor.name,
-                            icon='mdi-dip-switch',
+                    for device in res.items:
+                        _items.append(
+                            UiListItem(
+                                id=device.id,
+                                name=device.name,
+                                description=device.title,
+                                icon='mdi-chip',
+                            )
                         )
+                elif trigger == RuleNodeTypeKeys.SENSORS_CHANGES:
+
+                    res = SensorRepository.find_paginated(
+                        session=sess,
+                        page_params=params,
+                        search_term=params.term,
+                        search_fields=[
+                            SensorEntity.name,
+                            SensorEntity.visible_name,
+                            SensorEntity.identifier
+                        ]
                     )
-            return res
-        except Exception as e:
-            Logger.err(str(e), LoggerType.APP)
+                    ar: list[SensorModelWithDevice] = res.items
+                    for sensor in ar:
+                        _items.append(
+                            UiListItem(
+                                id=sensor.id,
+                                name=sensor.identifier,
+                                description=sensor.name,
+                                icon='mdi-chip',
+                            )
+                        )
+
+                return PaginatedResponse(
+                    items=_items,
+                    total=res.total,
+                    page=res.page,
+                    size=res.size,
+                    pages=res.pages,
+                )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
 
     @classmethod
     def get_node_entities_by_node(cls, node_id: str):
@@ -264,7 +325,7 @@ class RulesRepository(BaseRepository):
                                 ).all()
                                 for area in areas:
                                     res.append(
-                                        RuleNodeListItem(
+                                        UiListItem(
                                             id=area.id,
                                             name=area.name,
                                             icon='mdi-texture-box',
@@ -279,7 +340,7 @@ class RulesRepository(BaseRepository):
                                 ).all()
                                 for device in devices:
                                     res.append(
-                                        RuleNodeListItem(
+                                        UiListItem(
                                             id=device.id,
                                             name=device.name,
                                             description=device.title,
@@ -289,7 +350,7 @@ class RulesRepository(BaseRepository):
                         except Exception as e:
                             Logger.err(str(e), LoggerType.APP)
 
-                return [RuleNodeListItem.model_validate(item) for item in res]
+                return [UiListItem.model_validate(item) for item in res]
 
             raise HTTPException(status_code=404, detail="Node not found")
         except Exception as e:

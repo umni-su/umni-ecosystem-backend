@@ -27,15 +27,17 @@ from entities.sensor_entity import SensorEntity
 from entities.storage import StorageEntity
 from models.camera_model import CameraModelWithRelations
 from models.device_model_relations import DeviceModelWithRelations
-from models.pagination_model import PaginatedResponse
+from models.pagination_model import PaginatedResponse, PageParams
 from models.rule_condition_models import RuleConditionEntitiesParams
 from models.rule_model import (
     RuleCreate,
     RuleGraphUpdate,
-    RuleModel, RuleNodeModel, RuleNodeListItem, RuleConditionEntity
+    RuleModel,
+    RuleNodeModel
 )
 from models.sensor_model import SensorModelWithDevice
 from models.storage_model import StorageModel
+from models.ui_models import UiListItem
 from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
 from repositories.rules_repository import RulesRepository
@@ -107,7 +109,7 @@ def update_rule_graph(
 
 
 def start_rule(rule: RuleModel):
-    rule_executor = RuleExecutor(rule)
+    rule_executor = RuleExecutor(rule, True)
     rule_executor.execute()
 
 
@@ -136,13 +138,14 @@ def get_node(
     return node
 
 
-@rules.get("/nodes/{node_id}/list", response_model=list[RuleNodeListItem])
+@rules.post("/nodes/{node_id}/list")
 def get_node(
+        params: PageParams,
         node_id: str,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     node: RuleNodeModel = RulesRepository.get_node(node_id)
-    _list: list[RuleNodeListItem] = RulesRepository.get_node_entities_by_trigger(node.data.flow.el.key)
+    _list = RulesRepository.get_node_entities_by_trigger(node.data.flow.el.key, params)
     return _list
 
 
@@ -171,7 +174,13 @@ def get_rules_condition_entities(
                 ]
             )
             res: list[DeviceModelWithRelations] = items.items
-            final_items = [RuleConditionEntity(id=item.id, name=item.name, title=item.title) for item in res]
+            final_items = [
+                UiListItem(
+                    id=item.id,
+                    name=item.name,
+                    description=item.title,
+                    icon='mdi-chip'
+                ) for item in res]
         elif params.condition == RuleConditionKey.AVAILABILITY_CAMERA:
             items = CameraRepository.find_paginated(
                 session=sess,
@@ -183,7 +192,13 @@ def get_rules_condition_entities(
                 ]
             )
             res: list[CameraModelWithRelations] = items.items
-            final_items = [RuleConditionEntity(id=item.id, name=item.name, title=item.ip) for item in res]
+            final_items = [
+                UiListItem(
+                    id=item.id,
+                    name=item.name,
+                    description=item.ip,
+                    icon='mdi-texture-box'
+                ) for item in res]
         elif params.condition in [
             RuleConditionKey.AVAILABILITY_SENSOR,
             RuleConditionKey.IS_SENSOR_VALUE
@@ -200,10 +215,11 @@ def get_rules_condition_entities(
             )
             res: list[SensorModelWithDevice] = items.items
             final_items = [
-                RuleConditionEntity(
+                UiListItem(
                     id=item.id,
                     name=item.identifier,
-                    title=item.name
+                    description=item.name,
+                    icon='mdi-thermometer'
                 ) for item in
                 res]
         elif params.condition in [
@@ -220,10 +236,11 @@ def get_rules_condition_entities(
             )
             res: list[StorageModel] = items.items
             final_items = [
-                RuleConditionEntity(
+                UiListItem(
                     id=item.id,
                     name=item.name,
-                    title=item.path
+                    description=item.path,
+                    icon='mdi-harddisk'
                 ) for item in
                 res]
 

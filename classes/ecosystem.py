@@ -20,9 +20,9 @@ from typing import Optional
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
 from classes.crypto.crypto import Crypto
 
-from classes.logger.logger import logger, Logger
+from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from classes.websockets.events.subscrivers import register_non_auto_subscribers as ws_register_non_auto_subscribers
+from classes.websockets.events.subscribers import register_non_auto_subscribers as ws_register_non_auto_subscribers
 from services.service_runner import ServiceRunner
 
 

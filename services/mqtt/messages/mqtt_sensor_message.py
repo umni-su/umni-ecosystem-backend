@@ -17,6 +17,8 @@ import datetime
 
 from sqlmodel import select
 
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
@@ -25,12 +27,14 @@ from entities.configuration import ConfigurationKeys
 
 from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
+from models.sensor_model import SensorModelWithDevice
 from repositories.sensor_history_repository import SensorHistoryRepository
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 
 
 class MqttSensorMessage(BaseMessage):
+    sensor: SensorModelWithDevice | None = None
 
     def save(self):
         ecosystem = get_ecosystem()
@@ -48,6 +52,14 @@ class MqttSensorMessage(BaseMessage):
                         session.add(sensor)
                         session.commit()
                         session.refresh(sensor)
+                        self.sensor = SensorModelWithDevice.model_validate(sensor.to_dict(
+                            include_relationships=True
+                        ))
+
+                        event_bus.publish(
+                            EventType.SENSOR_CHANGE_STATE,
+                            sensor=self.sensor
+                        )
 
                         delta: datetime.timedelta | None = None
 

@@ -15,10 +15,13 @@
 import time
 import paho.mqtt.client as mqtt
 
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_crypto, get_ecosystem
 from entities.configuration import ConfigurationKeys
+from models.device_model_relations import DeviceModelWithRelations
 from responses.mqtt import MqttBody
 from services.base_service import BaseService
 from services.mqtt.messages.base_message import BaseMessage
@@ -89,9 +92,14 @@ class MqttService(BaseService):
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
 
+        # Публикуем событие об изменении в устройстве
         t = MqttTopic(msg.topic)
+        if isinstance(t.device_model, DeviceModelWithRelations):
+            event_bus.publish(EventType.DEVICE_CHANGE_STATE, device=t.device_model)
+
         if t.topic == MqttTopicEnum.REGISTER:
             message: MqttRegisterMessage = MqttRegisterMessage(msg.topic, msg.payload)
+            # @TODO триггер изменения доступности устройства (ONLINE)
         elif t.topic == MqttTopicEnum.CNF_DIO:
             message: MqttCnfDioMessage = MqttCnfDioMessage(msg.topic, msg.payload)
         elif t.topic == MqttTopicEnum.CNF_OW:
@@ -114,6 +122,7 @@ class MqttService(BaseService):
             message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
         elif t.topic == MqttTopicEnum.LWT:
             message: MqttLwtMessage = MqttLwtMessage(msg.topic, msg.payload)
+            # @TODO триггер изменения доступности устройства (OFFLINE)
         else:
             # message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
             Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.MQTT)

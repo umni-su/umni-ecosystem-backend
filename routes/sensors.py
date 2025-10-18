@@ -53,7 +53,7 @@ def get_sensors_history(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     sensor = SensorRepository.get_sensor(sensor_id)
-    event_bus.publish(EventType.CHANGE_STATE, payload=payload, sensor=sensor)
+    event_bus.publish(EventType.SENSOR_CHANGE_STATE, payload=payload, sensor=sensor)
     return payload
 
 

@@ -18,8 +18,8 @@ import operator
 from classes.rules.rule_base_executor import RuleBaseExecutor
 from classes.rules.rule_conditions import RuleAvailability, RuleComparison, RuleConditionGroupKey, RuleOperand, \
     RuleConditionKey
-from models.rule_model import NodeConditionOptions, RuleNodeConditionDetailsItem, NodeConditionActionAvailable, \
-    NodeConditionComparison
+from models.rule_model import NodeConditionOptions, NodeConditionComparison
+from models.ui_models import UiListItem
 from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
 from repositories.sensor_repository import SensorRepository
@@ -63,13 +63,10 @@ class RuleConditionExecutor(RuleBaseExecutor):
                             state=condition.action.state,
                             items=condition.items
                         )
-                    # Если хотя бы один блок вернет False, выполнение условия тоже возвращает False
-                    if not condition_result:
-                        return False
 
                 elif condition.group == RuleConditionGroupKey.IS.value:
                     if condition.key == RuleConditionKey.IS_SENSOR_VALUE:
-                        self.comparison_sensor(
+                        condition_result = self.comparison_sensor(
                             operand=condition.operand,
                             action=condition.action,
                             items=condition.items
@@ -89,7 +86,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
             cls,
             operand: str,
             state: RuleAvailability,
-            items: list[RuleNodeConditionDetailsItem]
+            items: list[UiListItem]
     ):
         # Все устройства должны иметь такой же статус, что и state
         if operand == RuleOperand.AND.value:
@@ -126,7 +123,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
             cls,
             operand: str,
             state: RuleAvailability,
-            items: list[RuleNodeConditionDetailsItem]
+            items: list[UiListItem]
     ):
         # Все камеры должны иметь такой же статус, что и state
         if operand == RuleOperand.AND.value:
@@ -163,7 +160,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
             cls,
             operand: str,
             state: RuleAvailability,
-            items: list[RuleNodeConditionDetailsItem]
+            items: list[UiListItem]
     ):
         # Все сенсоры должны иметь такой же статус, что и state
         if operand == RuleOperand.AND.value:
@@ -200,7 +197,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
             cls,
             operand: str,
             action: NodeConditionComparison,
-            items: list[RuleNodeConditionDetailsItem]
+            items: list[UiListItem]
     ):
 
         if operand == RuleOperand.AND.value:
