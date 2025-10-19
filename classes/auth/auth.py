@@ -30,7 +30,6 @@ from classes.crypto.hasher import Hasher
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
 from database.session import write_session
-from entities.configuration import ConfigurationKeys
 from entities.user import UserEntity
 
 from responses.unauthenticated_response import UnauthenticatedResponse
@@ -45,10 +44,6 @@ class Auth:
     # openssl rand -hex 32
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
-
-    @staticmethod
-    def get_ecosystem():
-        return get_ecosystem()
 
     @staticmethod
     def verify_password(plain_password, hashed_password):
@@ -82,8 +77,7 @@ class Auth:
             data: dict,
             expires_delta: timedelta | None = None
     ):
-        ecosystem = Auth.get_ecosystem()
-        key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+        key = get_ecosystem().crypto.get_key_string()
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
@@ -95,9 +89,8 @@ class Auth:
 
     @staticmethod
     def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], response: Response):
-        ecosystem = Auth.get_ecosystem()
-        key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
-        installed = ecosystem.is_installed()
+        key = get_ecosystem().crypto.get_key_string()
+        installed = get_ecosystem().is_installed()
 
         install_exception = HTTPException(
             status_code=status.HTTP_423_LOCKED,
@@ -157,8 +150,7 @@ class Auth:
             detail='You are not authorize'
         )
         try:
-            ecosystem = Auth.get_ecosystem()
-            key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            key = get_ecosystem().crypto.get_key_string()
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
             if username is None:
@@ -180,8 +172,7 @@ class Auth:
         if session is None and token is None:
             raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
         try:
-            ecosystem = Auth.get_ecosystem()
-            key = ecosystem.config.get_setting(ConfigurationKeys.APP_KEY).value
+            key = get_ecosystem().crypto.get_key_string()
             payload = jwt.decode(token, key, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
             if username is None:

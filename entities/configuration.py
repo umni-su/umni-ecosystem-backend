@@ -30,7 +30,6 @@ class ConfigurationKeys(StrEnum):
     APP_UPLOADS_PATH = 'app.uploads_path',
     APP_UPLOADS_MAX_SIZE = 'app.uploads_max_size',
     APP_DEVICE_SYNC_TIMEOUT = 'app.device_sync_timeout',
-    APP_KEY = 'app.key',
     MQTT_HOST = 'mqtt.host',
     MQTT_PORT = 'mqtt.port',
     MQTT_USER = 'mqtt.user',

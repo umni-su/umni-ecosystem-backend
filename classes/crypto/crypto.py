@@ -122,6 +122,10 @@ class Crypto:
             raise
 
     @classmethod
+    def get_key_string(cls):
+        return cls._load_key_from_file()
+
+    @classmethod
     def rotate_key(cls, new_key_file: Path = None) -> bool:
         """
         Генерирует новый ключ шифрования

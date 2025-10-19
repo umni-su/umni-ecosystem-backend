@@ -37,8 +37,7 @@ class ConfigurationRepository(BaseRepository):
                     for config in config_list:
                         if config.key not in [
                             ConfigurationKeys.APP_INSTALLED,
-                            ConfigurationKeys.APP_INSTALL_DATE,
-                            ConfigurationKeys.APP_KEY
+                            ConfigurationKeys.APP_INSTALL_DATE
                         ]:
                             config_orm = session.exec(
                                 select(ConfigurationEntity).where(col(ConfigurationEntity.key) == config.key)
@@ -63,7 +62,6 @@ class ConfigurationRepository(BaseRepository):
         with write_session() as session:
             try:
                 excluded_keys = [
-                    ConfigurationKeys.APP_KEY,
                     ConfigurationKeys.APP_INSTALLED,
                     ConfigurationKeys.APP_INSTALL_DATE
                 ]
