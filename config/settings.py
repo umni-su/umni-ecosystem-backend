@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     API_ROOT: str = "/api"
     LOG_LEVEL: str = 'DEBUG'
     DEBUG_MODE: str = ''
+    ENCRYPTION_KEY_FILE: str = '.ecosystem.key'
 
     # Автоматически создаем DSN строку
     @property

@@ -63,7 +63,7 @@ class Ecosystem:
     @property
     def crypto(self):
         if self._crypto is None:
-            self._crypto = Crypto(self.config).init()
+            self._crypto = Crypto()
         return self._crypto
 
     def init_base_config(self):
