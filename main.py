@@ -31,6 +31,7 @@ from config.settings import settings
 from routes.sensors import sensors
 from routes.systeminfo import systeminfo
 from routes.websockets import websockets
+from routes.notifications import notifications
 from services.cameras.classes.stream_registry import StreamRegistry
 
 app = FastAPI(
@@ -55,17 +56,18 @@ async def health_check():
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
-app.include_router(conf)
 app.include_router(auth)
+app.include_router(cameras)
+app.include_router(conf)
+app.include_router(devices)
+app.include_router(events)
 app.include_router(initialize)
 app.include_router(install)
-app.include_router(devices)
+app.include_router(notifications)
+app.include_router(rules)
 app.include_router(sensors)
 app.include_router(storages)
 app.include_router(systeminfo)
-app.include_router(cameras)
-app.include_router(events)
-app.include_router(rules)
 app.include_router(websockets)
 
 if __name__ == "__main__":
