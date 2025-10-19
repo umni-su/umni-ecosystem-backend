@@ -77,7 +77,6 @@ class RuleService(BaseService):
 
     def run_sensor_change_state(self, sensor: SensorModelWithDevice):
         self.run_execution_trigger(sensor.id, RuleNodeTypeKeys.SENSORS_CHANGES)
-        print(f'Fire run_sensor_change_state on sensor ID {sensor.identifier}, VAL {sensor.value}')
 
     def _execute_rule_with_tracking(self, rule, entity_id: int | None = None):
         """Запускает выполнение правила с отслеживанием статуса"""
