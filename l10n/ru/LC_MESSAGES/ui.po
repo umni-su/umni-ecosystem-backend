@@ -166,11 +166,14 @@ msgstr "Опасность"
 msgid "Delete"
 msgstr "Удалить"
 
+msgid "Deleting a rule"
+msgstr "Удаление правила"
+
 msgid "Delete area"
 msgstr "Удаление зоны"
 
 msgid "Delete event"
-msgstr "Удаление событие"
+msgstr "Удаление события"
 
 msgid "Delete node"
 msgstr "Удаление блока"
@@ -538,6 +541,9 @@ msgstr "Реле"
 
 msgid "Relays and switches"
 msgstr "Реле и переключатели"
+
+msgid "Rule will be deleted"
+msgstr "Правило будет удалено"
 
 msgid "Rule: {name}"
 msgstr "Правило: {name}"

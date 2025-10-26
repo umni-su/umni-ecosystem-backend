@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-26 14:29+0300\n"
+"POT-Creation-Date: 2025-10-26 21:54+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -63,8 +63,8 @@ msgstr "MQTT пользователь"
 msgid "MQTT password"
 msgstr "MQTT пароль"
 
-#: classes/notifications/via/telegram_notification_handler.py:144
-#: routes/notifications.py:118
+#: classes/notifications/via/telegram_notification_handler.py:152
+#: routes/notifications.py:120
 msgid "Notification not found"
 msgstr "Уведомление не найдено"
 
@@ -168,21 +168,29 @@ msgstr "Настройки уведомления"
 msgid "Notification ID"
 msgstr "Идентификатор уведомления"
 
+#: repositories/rules_repository.py:95
+msgid "Rule not found"
+msgstr "Правило не найдено"
+
 #: routes/configuration.py:48
 msgid "Failed to save configuration"
 msgstr "Ошибка сохранения конфигурации"
 
-#: routes/notifications.py:111
+#: routes/notifications.py:113
 msgid "Invalid notification configuration"
 msgstr "Неверная конфигурация уведомления"
 
-#: routes/notifications.py:149
+#: routes/notifications.py:159 routes/notifications.py:175
 msgid "Failed to send notification"
 msgstr "Ошибка отправки уведомления"
 
-#: routes/notifications.py:151
+#: routes/notifications.py:161 routes/notifications.py:177
 msgid "Notification sent successfully"
 msgstr "Уведомление отправлено"
+
+#: routes/rules.py:109
+msgid "Rule deleted"
+msgstr "Правило удалено"
 
 #: routes/sensors.py:77
 msgid "Error getting sensors history"

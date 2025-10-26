@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-26 14:29+0300\n"
+"POT-Creation-Date: 2025-10-26 21:54+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,8 +61,8 @@ msgstr ""
 msgid "MQTT password"
 msgstr ""
 
-#: classes/notifications/via/telegram_notification_handler.py:144
-#: routes/notifications.py:118
+#: classes/notifications/via/telegram_notification_handler.py:152
+#: routes/notifications.py:120
 msgid "Notification not found"
 msgstr ""
 
@@ -166,20 +166,28 @@ msgstr ""
 msgid "Notification ID"
 msgstr ""
 
+#: repositories/rules_repository.py:95
+msgid "Rule not found"
+msgstr ""
+
 #: routes/configuration.py:48
 msgid "Failed to save configuration"
 msgstr ""
 
-#: routes/notifications.py:111
+#: routes/notifications.py:113
 msgid "Invalid notification configuration"
 msgstr ""
 
-#: routes/notifications.py:149
+#: routes/notifications.py:159 routes/notifications.py:175
 msgid "Failed to send notification"
 msgstr ""
 
-#: routes/notifications.py:151
+#: routes/notifications.py:161 routes/notifications.py:177
 msgid "Notification sent successfully"
+msgstr ""
+
+#: routes/rules.py:109
+msgid "Rule deleted"
 msgstr ""
 
 #: routes/sensors.py:77
