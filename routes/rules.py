@@ -17,6 +17,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 
 from classes.auth.auth import Auth
+from classes.l10n.l10n import _
 from classes.rules.rule_conditions import RuleConditionsList, RuleConditionKey
 from classes.rules.rule_executor import RuleExecutor
 from database.session import write_session
@@ -43,6 +44,7 @@ from repositories.device_repository import DeviceRepository
 from repositories.rules_repository import RulesRepository
 from repositories.sensor_repository import SensorRepository
 from repositories.storage_repository import StorageRepository
+from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 from services.rule.rule_service import RuleService
 
@@ -95,6 +97,16 @@ def create_rule(
 ):
     rule: RuleModel = RulesRepository.add_rule(rule_data)
     return rule
+
+
+@rules.delete("/{rule_id}")
+def delete_rule(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        rule_id: int,
+
+):
+    RulesRepository.delete_rule(rule_id)
+    return SuccessResponse(success=True, message=_("Rule deleted"))
 
 
 @rules.put("/{rule_id}/graph", response_model=RuleModel)

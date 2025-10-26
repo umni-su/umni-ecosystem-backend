@@ -16,6 +16,7 @@
 import time
 from starlette.exceptions import HTTPException
 
+from classes.l10n.l10n import _
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.rules.rules_store import rules_triggers_store
@@ -46,7 +47,6 @@ from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
 from sqlmodel import select, delete, col
 
-from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
 from repositories.sensor_repository import SensorRepository
 
@@ -84,6 +84,21 @@ class RulesRepository(BaseRepository):
                 )
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def delete_rule(cls, rule_id: int) -> bool:
+        with write_session() as sess:
+            try:
+                sess.exec(delete(RuleEdge).where(col(RuleEdge.rule_id) == rule_id))
+                sess.exec(delete(RuleNode).where(col(RuleNode.rule_id) == rule_id))
+                rule = sess.get(RuleEntity, rule_id)
+                if not rule:
+                    raise HTTPException(status_code=404, detail=_("Rule not found"))
+                sess.delete(rule)
+                return True
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+                return False
 
     @classmethod
     def add_rule(cls, rule_data: RuleCreate):

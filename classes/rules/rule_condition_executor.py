@@ -16,8 +16,12 @@
 import operator
 
 from classes.rules.rule_base_executor import RuleBaseExecutor
-from classes.rules.rule_conditions import RuleAvailability, RuleComparison, RuleConditionGroupKey, RuleOperand, \
+from classes.rules.rule_conditions import (
+    RuleAvailability,
+    RuleConditionGroupKey,
+    RuleOperand,
     RuleConditionKey
+)
 from models.rule_model import NodeConditionOptions, NodeConditionComparison
 from models.ui_models import UiListItem
 from repositories.camera_repository import CameraRepository
@@ -73,7 +77,11 @@ class RuleConditionExecutor(RuleBaseExecutor):
                         )
 
                 else:
+                    condition_result = False
+                # Все группы условий должны вернуть True
+                if not condition_result:
                     return False
+
             return condition_result
         return False
 
