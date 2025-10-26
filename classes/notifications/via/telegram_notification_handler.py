@@ -38,6 +38,12 @@ class TelegramNotificationHandler(NotificationHandler):
             self._bot_cache[bot_token] = telebot.TeleBot(bot_token)
         return self._bot_cache[bot_token]
 
+    def _format_message(
+            self, notification_queue: NotificationQueueModel
+    ):
+        text = (notification_queue.subject or '')
+        return f"<b>{text}</b>\r\n{notification_queue.message}"
+
     async def send(
             self,
             notification: NotificationModel,
@@ -63,10 +69,12 @@ class TelegramNotificationHandler(NotificationHandler):
             parse_mode = kwargs.get('parse_mode', 'HTML')
             disable_web_page_preview = kwargs.get('disable_web_page_preview', True)
 
+            text = self._format_message(notification_queue)
+
             # Отправляем сообщение
             sent_message = bot.send_message(
                 chat_id=chat_id,
-                text=notification_queue.message,
+                text=text,
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_web_page_preview
             )
