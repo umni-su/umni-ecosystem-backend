@@ -395,6 +395,9 @@ msgstr "Максимальное соотношение сторон"
 msgid "Memory"
 msgstr "Память"
 
+msgid "Message"
+msgstr "Сообщение"
+
 msgid "Min area"
 msgstr "Минимальная зона"
 
@@ -411,7 +414,7 @@ msgid "MQTT settings"
 msgstr "Настройки MQTT"
 
 msgid "Name"
-msgstr "Наименование"
+msgstr "Название"
 
 msgid "Netmask"
 msgstr "Маска"
@@ -551,6 +554,9 @@ msgstr "Элементы правил"
 msgid "Save"
 msgstr "Сохранить"
 
+msgid "Send"
+msgstr "Отправить"
+
 msgid "Saved"
 msgstr "Сохранено"
 
@@ -662,6 +668,9 @@ msgstr "Сделать скриншот"
 msgid "Telegram"
 msgstr "Телеграм"
 
+msgid "To"
+msgstr "Кому"
+
 msgid "Temperature"
 msgstr "Температура"
 
@@ -691,6 +700,9 @@ msgstr "УМНЫЙ К1"
 
 msgid "Unsupported"
 msgstr "Неподдерживаемое"
+
+msgid "Unknown field type"
+msgstr "Неизвестный тип поля"
 
 msgid "Updated"
 msgstr "Обновлено"

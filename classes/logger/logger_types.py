@@ -21,6 +21,7 @@ class LoggerType(StrEnum):
     CAMERAS = 'cameras'
     DEVICES = 'devices'
     RULES = 'rules'
+    NOTIFICATIONS = 'notifications'
     MQTT = 'mqtt'
     TASKS = 'tasks'
     SERVICES = 'services'

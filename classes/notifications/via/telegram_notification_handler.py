@@ -16,9 +16,14 @@
 
 import telebot
 from typing import Any, Dict
-
+from classes.l10n.l10n import _
+from fastapi import HTTPException
+from classes.crypto.crypto import Crypto
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.notifications.notification_handler import NotificationHandler
 from models.notification_model import NotificationModel, NotificationTelegramModel
+from models.notification_queue_model import NotificationQueueModel
 
 
 class TelegramNotificationHandler(NotificationHandler):
@@ -33,26 +38,26 @@ class TelegramNotificationHandler(NotificationHandler):
             self._bot_cache[bot_token] = telebot.TeleBot(bot_token)
         return self._bot_cache[bot_token]
 
-    async def send(self, notification: NotificationModel, message: str, **kwargs) -> bool:
+    async def send(
+            self,
+            notification: NotificationModel,
+            notification_queue: NotificationQueueModel,
+            **kwargs
+    ) -> bool:
         """
         Отправляет уведомление через Telegram
-
-        Args:
-            notification: Модель уведомления с настройками
-            message: Текст сообщения для отправки
-            **kwargs: Дополнительные параметры
 
         Returns:
             bool: True если отправка успешна, False в случае ошибки
         """
         try:
-            options = NotificationTelegramModel(**notification.options)
+            options = NotificationTelegramModel(**notification.options.model_dump())
 
-            # Получаем chat_id из поля 'to' у уведомления
-            chat_id = notification.to
+            # Получаем chat_id из параметра 'to'
+            chat_id = int(notification_queue.to)
 
             # Получаем экземпляр бота
-            bot = self._get_bot_instance(options.bot_token)
+            bot = self._get_bot_instance(options.decrypted_bot_token)
 
             # Параметры форматирования
             parse_mode = kwargs.get('parse_mode', 'HTML')
@@ -61,7 +66,7 @@ class TelegramNotificationHandler(NotificationHandler):
             # Отправляем сообщение
             sent_message = bot.send_message(
                 chat_id=chat_id,
-                text=message,
+                text=notification_queue.message,
                 parse_mode=parse_mode,
                 disable_web_page_preview=disable_web_page_preview
             )
@@ -71,7 +76,7 @@ class TelegramNotificationHandler(NotificationHandler):
             if reply_markup:
                 sent_message = bot.send_message(
                     chat_id=chat_id,
-                    text=message,
+                    text=notification_queue.message,
                     parse_mode=parse_mode,
                     disable_web_page_preview=disable_web_page_preview,
                     reply_markup=reply_markup
@@ -113,6 +118,11 @@ class TelegramNotificationHandler(NotificationHandler):
             print(f"Telegram config validation error: {e}")
             return False
 
+    def _decrypt_token(self, token):
+        if token.startswith('gAAAAA'):
+            return Crypto.decrypt(token)
+        return token
+
     def _test_bot_token(self, bot_token: str) -> bool:
         """
         Проверяет валидность токена бота
@@ -124,11 +134,15 @@ class TelegramNotificationHandler(NotificationHandler):
             bool: True если токен валиден
         """
         try:
-            bot = telebot.TeleBot(bot_token)
+            bot = telebot.TeleBot(self._decrypt_token(bot_token))
             bot_info = bot.get_me()
             return bot_info is not None
-        except Exception:
-            return False
+        except Exception as e:
+            Logger.err(e, LoggerType.NOTIFICATIONS)
+            raise HTTPException(
+                status_code=419,
+                detail=_("Notification not found")
+            )
 
     def send_with_buttons(self, notification: NotificationModel, message: str,
                           buttons: Dict[str, str], **kwargs) -> bool:
@@ -145,8 +159,8 @@ class TelegramNotificationHandler(NotificationHandler):
             bool: Результат отправки
         """
         try:
-            options = NotificationTelegramModel(**notification.options)
-            bot = self._get_bot_instance(options.bot_token)
+            options = NotificationTelegramModel(**notification.options.model_dump())
+            bot = self._get_bot_instance(options.decrypted_bot_token)
             chat_id = notification.to
 
             # Создаем inline клавиатуру
@@ -185,8 +199,8 @@ class TelegramNotificationHandler(NotificationHandler):
             bool: Результат отправки
         """
         try:
-            options = NotificationTelegramModel(**notification.options)
-            bot = self._get_bot_instance(options.bot_token)
+            options = NotificationTelegramModel(**notification.options.model_dump())
+            bot = self._get_bot_instance(options.decrypted_bot_token)
             chat_id = notification.to
 
             with open(photo_path, 'rb') as photo:
@@ -218,8 +232,8 @@ class TelegramNotificationHandler(NotificationHandler):
             bool: Результат отправки
         """
         try:
-            options = NotificationTelegramModel(**notification.options)
-            bot = self._get_bot_instance(options.bot_token)
+            options = NotificationTelegramModel(**notification.options.model_dump())
+            bot = self._get_bot_instance(options.decrypted_bot_token)
             chat_id = notification.to
 
             with open(document_path, 'rb') as doc:

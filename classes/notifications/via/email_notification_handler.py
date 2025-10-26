@@ -17,43 +17,46 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from typing import Any, Dict
 
 from classes.notifications.notification_handler import NotificationHandler
 from models.notification_model import NotificationModel, NotificationEmailSmtpModel
+from models.notification_queue_model import NotificationQueueModel
 
 
 class EmailNotificationHandler(NotificationHandler):
     """Обработчик уведомлений через Email/SMTP"""
 
-    async def send(self, notification: NotificationModel, message: str, **kwargs) -> bool:
+    async def send(
+            self,
+            notification: NotificationModel,
+            notification_queue: NotificationQueueModel,
+            **kwargs
+    ) -> bool:
         try:
-            options = NotificationEmailSmtpModel(**notification.options)
-            subject = kwargs.get('subject', 'Уведомление')
+            options = NotificationEmailSmtpModel(**notification.options.model_dump())
 
             # Создаем сообщение
             msg = MIMEMultipart()
-            msg['From'] = options.from_name or options.username
-            msg['To'] = notification.to
-            msg['Subject'] = subject
+            msg['From'] = formataddr((options.from_name, options.username)) or options.username
+            msg['To'] = notification_queue.to
+            msg['Subject'] = notification_queue.subject
 
             # Добавляем текст сообщения
-            msg.attach(MIMEText(message, 'plain'))
-
+            msg.attach(MIMEText(notification_queue.message, 'plain'))
             # Настраиваем соединение
-            if options.encryption == 'SSL':
+            if options.encryption.upper() == 'SSL':
                 server = smtplib.SMTP_SSL(options.host, options.port)
             else:
                 server = smtplib.SMTP(options.host, options.port)
                 if options.encryption == 'TLS':
                     server.starttls()
-
             # Аутентификация если есть учетные данные
             if options.username and options.password:
-                server.login(options.username, options.password)
-
+                conn = server.login(options.username, options.decrypted_password)
             # Отправка сообщения
-            server.send_message(msg)
+            res = server.send_message(msg)
             server.quit()
 
             return True

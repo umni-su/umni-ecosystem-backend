@@ -13,6 +13,7 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from classes.notifications.notification_handler import NotificationHandler
 from classes.notifications.via.email_notification_handler import EmailNotificationHandler
 from classes.notifications.via.telegram_notification_handler import TelegramNotificationHandler

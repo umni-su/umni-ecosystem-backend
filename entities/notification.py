@@ -27,10 +27,6 @@ class NotificationEntityBase:
     name: str = Field(
         nullable=False
     )
-    to: str = Field(
-        index=True,
-        nullable=False
-    )
     type: Optional[int] = Field(
         index=True,
         nullable=False,

@@ -94,7 +94,6 @@ class Crypto:
             # Загружаем ключ из файла
             encryption_key = cls._load_key_from_file()
             key = bytes.fromhex(encryption_key)
-            print(encryption_key, key)
             cls._fernet = Fernet(key)
 
         return cls._fernet

@@ -13,13 +13,17 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, status, Depends
 
 from classes.auth.auth import Auth
+from classes.l10n.l10n import _
 from classes.notifications.notification_service import NotificationService
 from models.notification_model import NotificationModel
+from models.notification_queue_model import NotificationQueueModel, NotificationQueueBaseModel
+from repositories.notification_queue_repository import NotificationQueueRepository
 from repositories.notification_repository import NotificationRepository
 from responses.user import UserResponseOut
 
@@ -50,6 +54,21 @@ def get_notification(
             detail="Notification not found"
         )
     return notification
+
+
+@notifications.get('/{notification_id}/schema')
+def get_notification(
+        notification_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    """Получить уведомление по ID"""
+    notification = NotificationRepository.get_notification(notification_id)
+    if not notification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found"
+        )
+    return notification.options.get_ui_schema()
 
 
 @notifications.post('')
@@ -87,18 +106,18 @@ def update_notification(
     # Валидируем конфигурацию
     if not NotificationService.validate_notification_config(
             notification.type,
-            notification.options.dict() if notification.options else {}
+            notification.options.model_dump() if notification.options else {}
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid notification configuration"
+            detail=_("Invalid notification configuration")
         )
 
     result = NotificationRepository.update_notification(notification_id, notification)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found"
+            detail=_("Notification not found")
         )
     return result
 
@@ -118,31 +137,41 @@ def delete_notification(
     return {"message": "Notification deleted successfully"}
 
 
-@notifications.post('/{notification_id}/send')
-async def send_notification(
-        notification_id: int,
-        message: str,
+@notifications.post('/test', )
+async def test_notification(
+        model: NotificationQueueBaseModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
-    """Отправить тестовое уведомление"""
-    success = await NotificationService.send_notification(notification_id, message)
+    queue = NotificationQueueModel(
+        id=0,
+        to=model.to,
+        subject=model.subject,
+        message=model.message,
+        priority=model.priority or 2,
+        notification_id=model.notification_id,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+    success = await NotificationService.send_notification(queue)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send notification"
+            detail=_("Failed to send notification")
         )
-    return {"message": "Notification sent successfully"}
+    return {"message": _("Notification sent successfully")}
 
 
-@notifications.post('/broadcast')
-async def broadcast_notification(
-        message: str,
+@notifications.post('/queue/{queue_id}/send')
+async def send_notification(
+        queue_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
-    """Разослать сообщение всем активным уведомлениям"""
-    results = await NotificationService.broadcast_message(message)
-    success_count = sum(results)
-    return {
-        "message": f"Notification sent to {success_count} of {len(results)} recipients",
-        "results": results
-    }
+    """Отправить тестовое уведомление"""
+    queue = NotificationQueueRepository.get_queue_item(queue_id)
+    success = await NotificationService.send_notification(queue)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=_("Failed to send notification")
+        )
+    return {"message": _("Notification sent successfully")}

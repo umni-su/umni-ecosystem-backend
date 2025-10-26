@@ -21,6 +21,7 @@ from database.session import write_session
 from entities.notification import NotificationEntity
 from models.notification_model import NotificationModel
 from repositories.base_repository import BaseRepository
+from repositories.notification_queue_repository import NotificationQueueRepository
 
 
 class NotificationRepository(BaseRepository):
@@ -67,7 +68,6 @@ class NotificationRepository(BaseRepository):
                 notification_entity = NotificationEntity()
                 notification_entity.name = model.name
                 notification_entity.type = model.type.value
-                notification_entity.to = model.to
                 notification_entity.active = model.active
                 notification_entity.options = model.options.model_dump() if model.options else None
 
@@ -79,7 +79,7 @@ class NotificationRepository(BaseRepository):
                     notification_entity.to_dict()
                 )
             except Exception as e:
-                Logger.err(str(e), LoggerType.APP)
+                Logger.err(str(e), LoggerType.NOTIFICATIONS)
                 return None
 
     @classmethod
@@ -90,14 +90,29 @@ class NotificationRepository(BaseRepository):
                 if not notification_entity:
                     return None
 
+                # Получаем текущие options из БД
+                current_options = notification_entity.options or {}
+
+                # Обрабатываем sensitive поля
+                processed_options = cls._process_sensitive_fields(
+                    model.options.model_dump() if model.options else {},
+                    current_options
+                )
+
                 notification_entity.name = model.name
                 notification_entity.type = model.type.value
-                notification_entity.to = model.to
-                notification_entity.options = model.options.model_dump() if model.options else None
+                notification_entity.active = model.active
+                notification_entity.options = processed_options
 
                 sess.add(notification_entity)
                 sess.commit()
                 sess.refresh(notification_entity)
+
+                # Обновляем приоритет для уведомлений при смене статуса активности. -1 - уведомления не попадут в выборку в сервисе
+                NotificationQueueRepository.update_notifications_priority_batch(
+                    notification_id=notification_entity.id,
+                    new_priority=2 if notification_entity.active else -1,
+                )
 
                 return NotificationModel.model_validate(
                     notification_entity.to_dict()
@@ -105,6 +120,26 @@ class NotificationRepository(BaseRepository):
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
                 return None
+
+    @classmethod
+    def _process_sensitive_fields(cls, new_options: dict, current_options: dict) -> dict:
+        """Обрабатываем sensitive поля: сохраняем зашифрованные значения если не изменились"""
+        result = new_options.copy()
+
+        # Здесь можно добавить логику для определения sensitive полей
+        # Пока просто проверяем зашифрованные значения
+        for key, value in new_options.items():
+            current_value = current_options.get(key)
+
+            # Если новое значение - маска или равно текущему зашифрованному
+            if (current_value and
+                    isinstance(current_value, str) and
+                    current_value.startswith('gAAAAA') and
+                    (value == '********' or value == current_value)):
+                # Сохраняем оригинальное зашифрованное значение
+                result[key] = current_value
+
+        return result
 
     @classmethod
     def delete_notification(cls, notification_id: int) -> bool:

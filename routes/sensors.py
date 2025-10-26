@@ -24,7 +24,6 @@ from classes.events.event_types import EventType
 from classes.l10n.l10n import _
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
-from repositories.device_repository import DeviceRepository
 from repositories.sensor_history_repository import SensorHistoryRepository
 from repositories.sensor_repository import SensorRepository
 from responses.user import UserResponseOut

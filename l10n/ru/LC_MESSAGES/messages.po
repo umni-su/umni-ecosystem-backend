@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-08 10:26+0300\n"
+"POT-Creation-Date: 2025-10-26 14:29+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -63,47 +63,128 @@ msgstr "MQTT пользователь"
 msgid "MQTT password"
 msgstr "MQTT пароль"
 
-#: classes/rules/rule_conditions.py:66
+#: classes/notifications/via/telegram_notification_handler.py:144
+#: routes/notifications.py:118
+msgid "Notification not found"
+msgstr "Уведомление не найдено"
+
+#: classes/rules/rule_conditions.py:80
 msgid "Availability"
 msgstr "Доступность"
 
-#: classes/rules/rule_conditions.py:70
+#: classes/rules/rule_conditions.py:85
 msgid "Device availability"
 msgstr "Доступность устройства"
 
-#: classes/rules/rule_conditions.py:74
+#: classes/rules/rule_conditions.py:90
 msgid "Camera availability"
 msgstr "Доступность камеры"
 
-#: classes/rules/rule_conditions.py:78
+#: classes/rules/rule_conditions.py:95
 msgid "Sensor availability"
 msgstr "Доступность сенсора"
 
-#: classes/rules/rule_conditions.py:84
+#: classes/rules/rule_conditions.py:102
 msgid "Comparison"
 msgstr "Сравнение"
 
-#: classes/rules/rule_conditions.py:88
+#: classes/rules/rule_conditions.py:107
 msgid "Storage size"
 msgstr "Размер хранилища"
 
-#: classes/rules/rule_conditions.py:92
+#: classes/rules/rule_conditions.py:112
 msgid "Sensor value"
 msgstr "Значение сенсора"
 
-#: classes/rules/rule_conditions.py:98
+#: classes/rules/rule_conditions.py:119
 msgid "State"
 msgstr "Состояние"
 
-#: classes/rules/rule_conditions.py:102
+#: classes/rules/rule_conditions.py:124
 msgid "Recording state"
 msgstr "Статус записи"
+
+#: models/notification_model.py:46
+msgid "Telegram Configuration"
+msgstr "Конфигурация Telegram"
+
+#: models/notification_model.py:48
+msgid "Bot name"
+msgstr "Имя бота"
+
+#: models/notification_model.py:54
+msgid "Bot token"
+msgstr "Токен бота"
+
+#: models/notification_model.py:70
+msgid "SMTP Email Configuration"
+msgstr "Конфигурация SMTP"
+
+#: models/notification_model.py:72
+msgid "SMTP host server"
+msgstr "SMTP сервер"
+
+#: models/notification_model.py:74
+msgid "SMTP port number"
+msgstr "SMTP порт сервера"
+
+#: models/notification_model.py:78
+msgid "Encryption type"
+msgstr "Тип шифрования"
+
+#: models/notification_model.py:82
+msgid "Username"
+msgstr "Имя пользователя"
+
+#: models/notification_model.py:90
+msgid "Password"
+msgstr "Пароль"
+
+#: models/notification_model.py:94
+msgid "Sender name displayed in emails"
+msgstr "Имя отправителя в письме"
+
+#: models/notification_model.py:112 models/notification_model.py:124
+#: models/notification_model.py:142
+msgid "Notification name"
+msgstr "Название уведомления"
+
+#: models/notification_model.py:113 models/notification_model.py:125
+#: models/notification_model.py:143
+msgid "Notification type"
+msgstr "Тип уведомления"
+
+#: models/notification_model.py:114 models/notification_model.py:126
+#: models/notification_model.py:144
+msgid "Notification is active"
+msgstr "Активность уведомления"
+
+#: models/notification_model.py:117 models/notification_model.py:129
+#: models/notification_model.py:147
+msgid "Notification settings"
+msgstr "Настройки уведомления"
+
+#: models/notification_model.py:123
+msgid "Notification ID"
+msgstr "Идентификатор уведомления"
 
 #: routes/configuration.py:48
 msgid "Failed to save configuration"
 msgstr "Ошибка сохранения конфигурации"
 
-#: routes/sensors.py:78
+#: routes/notifications.py:111
+msgid "Invalid notification configuration"
+msgstr "Неверная конфигурация уведомления"
+
+#: routes/notifications.py:149
+msgid "Failed to send notification"
+msgstr "Ошибка отправки уведомления"
+
+#: routes/notifications.py:151
+msgid "Notification sent successfully"
+msgstr "Уведомление отправлено"
+
+#: routes/sensors.py:77
 msgid "Error getting sensors history"
 msgstr "Ошибка получения истории сенсоров"
 

@@ -17,18 +17,26 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 from models.notification_model import NotificationModel
+from models.notification_queue_model import NotificationQueueModel
 
 
 class NotificationHandler(ABC):
     """Абстрактный базовый класс для обработчиков уведомлений"""
 
     @abstractmethod
-    async def send(self, notification: NotificationModel, message: str, **kwargs) -> bool:
+    async def send(
+            self,
+            notification: NotificationModel,
+            notification_queue: NotificationQueueModel,
+            message: str,
+            **kwargs
+    ) -> bool:
         """
         Отправляет уведомление
 
         Args:
             notification: Модель уведомления с настройками
+            notification_queue: модель уведомления из БД
             message: Текст сообщения для отправки
             **kwargs: Дополнительные параметры
 
