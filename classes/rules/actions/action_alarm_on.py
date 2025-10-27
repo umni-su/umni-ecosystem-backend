@@ -12,17 +12,13 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from classes.rules.rule_base_executor import RuleBaseExecutor
-from classes.rules.rule_execution_factory import ActionExecutorFactory
-from models.rule_model import NodeVisualize
 
 
-class RuleActionExecutor(RuleBaseExecutor):
-    node: NodeVisualize
-
+class ActionAlarmOnExecutor(RuleBaseExecutor):
     def execute(self):
-        print(f'execute action {self.node.type}, key {self.node.key}, data{self.node.data}')
-        ActionExecutorFactory.execute_action(
-            node=self.node
-        )
+        Logger.info(f"Sending email - {self.node.data}", LoggerType.RULES)
+        # Реализация включения сигнализации
+        # Например: self._alarm_system.turn_on()

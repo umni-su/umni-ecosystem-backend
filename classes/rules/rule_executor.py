@@ -171,4 +171,4 @@ class RuleExecutor:
         )
 
     def execute_action(self, node: NodeVisualize):
-        RuleActionExecutor(node).execute()
+        return RuleActionExecutor(node).execute()
