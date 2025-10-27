@@ -101,8 +101,9 @@ class NodeConditionOptions(BaseModel):
     conditions: Optional[List[RuleNodeConditionItem]] | None = None
 
 
-class NodeActionOptions(BaseModel):
-    actions: Optional[List[str, Any]] | None = None
+#
+# class NodeActionOptions(BaseModel):
+#     actions: Optional[List[str, Any]] | None = None
 
 
 # class NodeOptions(BaseModel):

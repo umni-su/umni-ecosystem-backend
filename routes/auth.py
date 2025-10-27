@@ -22,6 +22,7 @@ from classes.auth.auth import Auth, Token, ACCESS_TOKEN_EXPIRE_MINUTES
 from config.dependencies import get_ecosystem
 from entities.user import UserEntity
 from responses.auth_check import AuthCheckResponse
+from responses.success import SuccessResponse
 
 from responses.user import UserResponseOut, UserLoginForm
 
@@ -67,3 +68,10 @@ def login(
         token_type="bearer",
         user=UserResponseOut.model_validate(user.model_dump())
     )
+
+
+@auth.get("/logout", response_model=SuccessResponse)
+def logout(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    return SuccessResponse(success=True)
