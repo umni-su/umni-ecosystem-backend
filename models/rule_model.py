@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import StrEnum
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -99,6 +99,10 @@ class NodeTriggerOptions(BaseModel):
 
 class NodeConditionOptions(BaseModel):
     conditions: Optional[List[RuleNodeConditionItem]] | None = None
+
+
+class NodeActionOptions(BaseModel):
+    actions: Optional[List[str, Any]] | None = None
 
 
 # class NodeOptions(BaseModel):

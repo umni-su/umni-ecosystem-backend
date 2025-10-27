@@ -19,6 +19,7 @@ from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.rules.rule_action_executor import RuleActionExecutor
 from classes.rules.rule_condition_executor import RuleConditionExecutor
 from classes.rules.rules_store import rules_triggers_store
 from models.rule_model import RuleModel, NodeVisualize, EdgeStyle
@@ -99,6 +100,8 @@ class RuleExecutor:
             if not result:
                 Logger.debug(f"Trigger {node.id} failed, stopping execution", LoggerType.RULES)
                 return res_data
+        elif node.type == 'action':
+            self.execute_action(node)
 
         Logger.debug(f"Parsing node: {node.id} {node.data.flow.el.key}", LoggerType.RULES)
 
@@ -156,21 +159,16 @@ class RuleExecutor:
 
     def execute_condition(self, node: NodeVisualize):
         # print(node.model_dump_json(indent=2))
-
         return RuleConditionExecutor(node).execute()
 
     def execute_trigger(self, node: NodeVisualize):
         # Skip checking trigger when testing request
         if self.test:
             return True
-        # print(
-        #     node.key,
-        #     self.trigger_entity_id,
-        #     rules_triggers_store.find(node.key).exists(
-        #         self.trigger_entity_id
-        #     )
-        # )
+
         return rules_triggers_store.find(node.key).exists(
             self.trigger_entity_id
         )
-        # return random.choice([True, False])
+
+    def execute_action(self, node: NodeVisualize):
+        RuleActionExecutor(node).execute()
