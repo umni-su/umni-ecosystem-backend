@@ -15,13 +15,13 @@
 
 import time
 from threading import Thread
-from typing import Callable
+from typing import Callable, Dict, Any
 
 
 class Daemon:
     thread: Thread | None = None
 
-    def __init__(self, handle: Callable):
-        self.thread = Thread(target=handle, daemon=True)
+    def __init__(self, handle: Callable, data: Dict[str, Any] = None):
+        self.thread = Thread(target=handle, daemon=True, kwargs=data)
         self.thread.start()
         time.sleep(1)  # Даем время на инициализацию

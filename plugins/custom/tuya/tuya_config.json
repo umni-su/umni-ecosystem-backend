@@ -1,0 +1,8 @@
+{
+  "author": "Mikhail Sazanov",
+  "url": "https://sazanof.ru",
+  "name": "tuya",
+  "display_name": "UMNI Server Tuya Plugin",
+  "version": "1.0.0",
+  "description": "Tuya integration for UMNI Server"
+}

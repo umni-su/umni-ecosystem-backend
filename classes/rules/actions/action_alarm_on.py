@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.rules.rule_base_executor import RuleBaseExecutor

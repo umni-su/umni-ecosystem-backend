@@ -19,6 +19,7 @@ from fastapi import FastAPI
 from classes.app.lifespan_manager import lifespan_manager
 from routes.cameras import cameras
 from routes.events import events
+from routes.plugins import plugins
 from routes.storages import storages
 from routes.auth import auth
 from routes.devices import devices
@@ -65,6 +66,7 @@ app.include_router(initialize)
 app.include_router(install)
 app.include_router(notifications)
 app.include_router(rules)
+app.include_router(plugins)
 app.include_router(sensors)
 app.include_router(storages)
 app.include_router(systeminfo)

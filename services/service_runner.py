@@ -16,6 +16,7 @@
 import os
 
 from importlib import import_module
+from typing import Optional
 
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
 from classes.logger.logger import Logger
@@ -54,6 +55,22 @@ class ServiceRunner:
                         self.services.append(service_instance)
                     except Exception as e:
                         Logger.err(f"⏩ ServiceRunner __init__ {e}", LoggerType.SERVICES)
+
+    def get_service_by_name(self, service_name: str) -> Optional[BaseService]:
+        """
+        Получить инстанс сервиса по его имени
+
+        Args:
+            service_name: Имя сервиса (например, 'plugin', 'rule', 'notification')
+
+        Returns:
+            BaseService или None если сервис не найден
+        """
+        for service in self.services:
+            if service.name == service_name:
+                return service
+        Logger.warn(f"Service '{service_name}' not found", LoggerType.SERVICES)
+        return None
 
     def get_service_class_name(self, name: str):
         __name__ = ''

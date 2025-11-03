@@ -506,6 +506,9 @@ msgstr "Выберите дату"
 msgid "Please confirm you action"
 msgstr "Пожалуйста, подтвердите действие"
 
+msgid "Plugins"
+msgstr "Плагины"
+
 msgid "Port"
 msgstr "Порт"
 
