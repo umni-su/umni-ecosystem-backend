@@ -3,6 +3,9 @@ from pathlib import Path
 from typing import Dict
 from fastapi import Request
 
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
+
 
 class GettextTranslator:
     """Улучшенный переводчик с поддержкой UI переводов"""
@@ -13,10 +16,14 @@ class GettextTranslator:
         self.default_lang = default_lang
         self.translations = {}
         self.ui_translations = {}  # Кэш для UI переводов
+        self.plugin_translations = {}  # Кэш для переводов плагинов
 
     def set_language(self, lang: str) -> str:
         """Установка языка по умолчанию"""
         self.default_lang = lang
+        return self.default_lang
+
+    def get_default_lang(self):
         return self.default_lang
 
     def get_current_language(self, request: Request = None, accept_language: str = None) -> str:
@@ -157,6 +164,89 @@ class GettextTranslator:
                 })
         return languages
 
+    # Добавляем в класс GettextTranslator
+
+    def add_plugin_translations(self, plugin_name: str, plugin_locale_dir: Path):
+        """Добавление переводов плагина в общую систему"""
+        try:
+            # Компилируем MO файлы если нужно
+            # self._compile_plugin_translations(plugin_locale_dir, plugin_name)
+
+            # Создаем отдельный домен для плагина
+            domain = f"messages"
+
+            # Загружаем переводы плагина
+            for lang_dir in plugin_locale_dir.iterdir():
+                if lang_dir.is_dir() and lang_dir.name != "templates":
+                    lang = lang_dir.name
+
+                    try:
+                        plugin_translation = gettext.translation(
+                            domain,
+                            localedir=str(plugin_locale_dir),
+                            languages=[lang],
+                            fallback=True
+                        )
+
+                        # Сохраняем в отдельном кэше плагинов
+                        if lang not in self.plugin_translations:
+                            self.plugin_translations[lang] = {}
+                        self.plugin_translations[lang][plugin_name] = plugin_translation
+
+                    except FileNotFoundError:
+                        # Переводы для этого языка не найдены - игнорируем
+                        pass
+
+            Logger.info(f"Translations for plugin {plugin_name} loaded", LoggerType.PLUGINS)
+
+        except Exception as e:
+            Logger.err(f"Error loading translations for plugin {plugin_name}: {str(e)}", LoggerType.PLUGINS)
+
+    def _compile_plugin_translations(self, plugin_locale_dir: Path, plugin_name: str):
+        """Компиляция PO в MO файлы для плагина"""
+        try:
+            import polib
+
+            for lang_dir in plugin_locale_dir.iterdir():
+                if lang_dir.is_dir():
+                    lc_messages_dir = lang_dir / "LC_MESSAGES"
+                    po_file = lc_messages_dir / f"messages.po"
+                    mo_file = lc_messages_dir / f"messages.mo"
+
+                    if po_file.exists() and (not mo_file.exists() or po_file.stat().st_mtime > mo_file.stat().st_mtime):
+                        po = polib.pofile(str(po_file))
+                        po.save_as_mofile(str(mo_file))
+
+        except ImportError:
+            # polib не установлен - пропускаем компиляцию
+            pass
+        except Exception as e:
+            Logger.err(f"Error compiling plugin translations: {str(e)}", LoggerType.PLUGINS)
+
+    def get_plugin_translation(self, message: str, plugin_name: str, lang: str = None) -> str:
+        """Получение перевода для плагина"""
+        # Используем переданный язык или default_lang
+        lang = lang or self.default_lang
+
+        # Сначала проверяем переводы плагина
+        if (lang in self.plugin_translations and
+                plugin_name in self.plugin_translations[lang]):
+            plugin_translation = self.plugin_translations[lang][plugin_name]
+            translated = plugin_translation.gettext(message)
+            if translated != message:  # Если нашли перевод в плагине
+                return translated
+            else:
+                print(f"DEBUG: No plugin translation found for '{message}'")
+        else:
+            print(f"DEBUG: No plugin translations for lang '{lang}' or plugin '{plugin_name}'")
+
+        # Fallback к основным переводам
+        main_translation = self.get_translation(lang)
+        main_translated = main_translation.gettext(message)
+        print(f"DEBUG: Main translation: '{main_translated}'")
+
+        return main_translated
+
 
 # Глобальный экземпляр
 translator = GettextTranslator()
@@ -173,3 +263,18 @@ def ui(key: str, lang: str = None, **kwargs) -> str:
 
 def ngettext(singular: str, plural: str, count: int, lang: str = None, **kwargs) -> str:
     return translator.ngettext(singular, plural, count, lang, **kwargs)
+
+
+def plugin_translate(plugin_name: str, message: str, **kwargs) -> str:
+    """Функция перевода для использования в плагинах"""
+    translated = translator.get_plugin_translation(
+        message=message,
+        plugin_name=plugin_name
+    )
+
+    if kwargs:
+        try:
+            return translated.format(**kwargs)
+        except (KeyError, ValueError):
+            return translated
+    return translated

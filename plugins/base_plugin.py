@@ -17,8 +17,15 @@ import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from classes.l10n.l10n import translator, plugin_translate
 from classes.thread.daemon import Daemon
+from classes.ui.ui_form_generator import UIEnhancedModel
 from models.plugin_model import PluginModel, PluginConfigModel
+from fastapi import Request
+
+
+class BasePluginConfig(UIEnhancedModel):
+    pass
 
 
 class BasePlugin(ABC):
@@ -28,23 +35,72 @@ class BasePlugin(ABC):
     plugin_dir = "plugins"
     daemon: Daemon | None = None
     _is_running: bool = False
+    _translate_func = None
+    plugin_name = None
 
-    def __init__(self, plugin_model: PluginModel):
+    def __init__(self, plugin_model: PluginModel, plugin_config: BasePluginConfig | None = None):
         self.plugin_model = plugin_model
         self._is_running = False
         self._get_config()
+        self.config = plugin_config
+
+    @classmethod
+    def translate(cls, message: str, **kwargs) -> str:
+        """Статический метод для переводов в конфигах"""
+        if cls.plugin_name:
+            from classes.l10n.l10n import plugin_translate
+            return plugin_translate(
+                plugin_name=cls.plugin_name,
+                message=message,
+                **kwargs
+            )
+
+        # Fallback
+        if kwargs:
+            try:
+                return message.format(**kwargs)
+            except (KeyError, ValueError):
+                return message
+        return message
+
+    def _(self, message: str, **kwargs) -> str:
+        """Функция перевода для плагина"""
+        if self.plugin_name:
+            result = plugin_translate(
+                plugin_name=self.plugin_name,
+                message=message,
+                **kwargs
+            )
+            return result
+
+        # Fallback
+        if kwargs:
+            try:
+                return message.format(**kwargs)
+            except (KeyError, ValueError):
+                return message
+        return message
+
+    def get_current_language(self) -> str:
+        """Получить текущий язык"""
+        return translator.get_default_lang()
 
     @classmethod
     def load_config(cls, name: str):
         config_file = os.path.join(cls.plugin_dir, "custom", name, f"{name}_config.json")
-        print(config_file)
         if os.path.exists(os.path.abspath(config_file)):
             with open(config_file, 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
                 cls.plugin_config_model = PluginConfigModel.model_validate(json_data)
+            cls.set_configuration()
 
     def _get_config(self):
         self.load_config(self.name)
+
+    @classmethod
+    @abstractmethod
+    def set_configuration(cls):
+        pass
 
     @property
     def name(self) -> str:

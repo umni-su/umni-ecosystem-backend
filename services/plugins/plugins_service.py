@@ -25,6 +25,7 @@ from warnings import deprecated
 from sqlmodel import select
 
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
+from classes.l10n.l10n import translator, plugin_translate
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.thread.task_manager import TaskManager
@@ -119,11 +120,19 @@ class PluginsService(BaseService):
 
             plugin_split = plugin_name.split("_")
             new_plugin_split = [s.capitalize() for s in plugin_split]
+
             # 4. Поиск класса плагина
             plugin_class_name = f"{''.join(new_plugin_split)}Plugin"
             plugin_class = getattr(module, plugin_class_name, None)
 
+            # 5. Загружаем переводы плагина если есть
+            plugin_locale_dir = plugin_dir / "l10n"
+            if plugin_locale_dir.exists():
+                translator.add_plugin_translations(plugin_name, plugin_locale_dir)
+
             if plugin_class and issubclass(plugin_class, BasePlugin):
+                plugin_class.plugin_name = plugin_name
+
                 # Загружаем конфиг если есть
                 config_file = plugin_dir / f"{plugin_name}_config.json"
                 if config_file.exists():
@@ -549,6 +558,13 @@ class PluginsService(BaseService):
         for plugin in plugins_list:
             if plugin["name"] == plugin_name:
                 return plugin
+        return None
+
+    def get_plugin_config_schema(self, plugin_name: str) -> Optional[Dict[str, Any]]:
+        """Получить детальную информацию о плагине"""
+        plugin = self._plugin_classes[plugin_name]
+        if plugin:
+            return plugin.config.get_ui_schema()
         return None
 
     def reload_all_plugins(self) -> Dict[str, bool]:

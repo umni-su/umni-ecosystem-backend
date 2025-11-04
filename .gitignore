@@ -20,4 +20,6 @@ l10n/templates/*.pot~
 # Временные файлы
 l10n/*/LC_MESSAGES/.#*
 
+plugins/custom/**/
+
 .ecosystem.key
