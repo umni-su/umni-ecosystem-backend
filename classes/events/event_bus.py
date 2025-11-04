@@ -129,7 +129,7 @@ class EventBus:
         """Безопасное выполнение callback с обработкой ошибок"""
         try:
             callback(*args, **kwargs)
-            Logger.debug(f"Successfully executed handler {callback.__name__} for {event_type}")
+            # Logger.debug(f"Successfully executed handler {callback.__name__} for {event_type}")
         except Exception as e:
             Logger.err(f"Error in event handler {callback.__name__} for {event_type}: {e}")
 

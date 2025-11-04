@@ -64,7 +64,7 @@ class RuleExecutor:
         self.trigger_entity_id = trigger_id
         self.nodes = self.rule.nodes
         self.edges = self.rule.edges
-        Logger.debug(f"Parsing rule, loads {len(self.nodes)} nodes and {len(self.edges)} edges", LoggerType.RULES)
+        # Logger.debug(f"Parsing rule, loads {len(self.nodes)} nodes and {len(self.edges)} edges", LoggerType.RULES)
         self.start_node = self.find_start_node()
         self.res = self.parse_recursive(self.start_node)
 
@@ -80,7 +80,7 @@ class RuleExecutor:
     def find_start_node(self):
         for node in self.nodes:
             if node.type == 'start':
-                Logger.debug(f'Founded start node: {node.id}', LoggerType.RULES)
+                # Logger.debug(f'Founded start node: {node.id}', LoggerType.RULES)
                 return node
         return None
 
@@ -92,10 +92,10 @@ class RuleExecutor:
         # Выполняем проверку для разных типов узлов
         if node.type == 'condition':
             result = self.execute_condition(node)
-            Logger.debug(f"Condition node {node.id} result: {result}", LoggerType.RULES)
+            # Logger.debug(f"Condition node {node.id} result: {result}", LoggerType.RULES)
         elif node.type == 'trigger':
             result = self.execute_trigger(node)
-            Logger.debug(f"Trigger node {node.id} result: {result}", LoggerType.RULES)
+            # Logger.debug(f"Trigger node {node.id} result: {result}", LoggerType.RULES)
             # Если триггер не сработал, не идем дальше
             if not result:
                 Logger.debug(f"Trigger {node.id} failed, stopping execution", LoggerType.RULES)
@@ -103,10 +103,10 @@ class RuleExecutor:
         elif node.type == 'action':
             self.execute_action(node)
 
-        Logger.debug(f"Parsing node: {node.id} {node.data.flow.el.key}", LoggerType.RULES)
+        # Logger.debug(f"Parsing node: {node.id} {node.data.flow.el.key}", LoggerType.RULES)
 
         _edges = [(i, e) for i, e in enumerate(self.edges) if e.source == node.id]
-        Logger.debug(f'Found {len(_edges)} edges from node {node.id}', LoggerType.RULES)
+        # Logger.debug(f'Found {len(_edges)} edges from node {node.id}', LoggerType.RULES)
 
         for edge in _edges:
             edge_id, edge_data = edge
@@ -144,7 +144,7 @@ class RuleExecutor:
                 edge_type = 'default'
 
             if should_process:
-                Logger.debug(f'Processing {edge_type} edge: {edge_data.source_handle}', LoggerType.RULES)
+                # Logger.debug(f'Processing {edge_type} edge: {edge_data.source_handle}', LoggerType.RULES)
 
                 index, founded_node_by_edge = self.find_node_by_id(edge_data.target)
                 if isinstance(founded_node_by_edge, NodeVisualize):

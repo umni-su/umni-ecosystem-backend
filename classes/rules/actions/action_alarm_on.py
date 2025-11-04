@@ -20,6 +20,6 @@ from classes.rules.rule_base_executor import RuleBaseExecutor
 
 class ActionAlarmOnExecutor(RuleBaseExecutor):
     def execute(self):
-        Logger.info(f"Sending email - {self.node.data}", LoggerType.RULES)
+        Logger.info(f"Alarm on", LoggerType.RULES)
         # Реализация включения сигнализации
         # Например: self._alarm_system.turn_on()

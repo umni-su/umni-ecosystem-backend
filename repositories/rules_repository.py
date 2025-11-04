@@ -145,6 +145,7 @@ class RulesRepository(BaseRepository):
             rule_id: int,
             graph_data: RuleGraphUpdate
     ):
+        print(123)
         with write_session() as session:
             try:
                 # Удаляем старые узлы и связи
@@ -153,9 +154,9 @@ class RulesRepository(BaseRepository):
 
                 # Добавляем новые узлы
                 for node in graph_data.nodes:
+                    if node.key == RuleNodeTypeKeys.ACTION_WEBHOOK:
+                        print(node.data.model_dump(), node_data.model_dump_json(), "\r\n")
                     node_data = NodeDataWithList(**node.data.model_dump())
-                    if node.key == RuleNodeTypeKeys.RULE_CONDITION:
-                        print(node_data.model_dump_json(), "\r\n")
 
                     # Определяем entity_type и entity_id
                     entity_type, entity_id = None, None

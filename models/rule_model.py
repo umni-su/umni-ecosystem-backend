@@ -14,9 +14,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from enum import StrEnum
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict, AnyHttpUrl
 
 from classes.rules.rule_conditions import RuleComparison, RuleAvailability
 from models.ui_models import UiListItem
@@ -55,6 +55,7 @@ class RuleNodeTypeKeys(StrEnum):
     ENTITIES_SENSOR = 'action.sensor'
     ACTION_ALARM_ON = 'action.alarm.on'
     ACTION_ALARM_OFF = 'action.alarm.off'
+    ACTION_NOTIFICATION = 'action.notification'
     ACTION_EMAIL = 'action.email'
     ACTION_TELEGRAM = 'action.telegram'
     ACTION_WEBHOOK = 'action.webhook'
@@ -101,9 +102,23 @@ class NodeConditionOptions(BaseModel):
     conditions: Optional[List[RuleNodeConditionItem]] | None = None
 
 
-#
-# class NodeActionOptions(BaseModel):
-#     actions: Optional[List[str, Any]] | None = None
+class NodeActionWebhookOptions(BaseModel):
+    url: str | None = None
+
+
+class NodeActionNotificationOptions(BaseModel):
+    notification_id: int
+    to: [str] = Field(default_factory=list)
+    subject: str | None = None
+    message: str | None = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class NodeActionOptions(BaseModel):
+    """
+    Action universal model
+    """
+    action: NodeActionNotificationOptions | NodeActionWebhookOptions
 
 
 # class NodeOptions(BaseModel):
@@ -125,7 +140,7 @@ class RuleNodeFlow(BaseModel):
 
 
 class RuleNodeData(BaseModel):
-    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
+    options: Optional[NodeTriggerOptions | NodeConditionOptions | NodeActionOptions] | None = None
     flow: RuleNodeFlow
 
 
@@ -194,7 +209,7 @@ class NodeDataFlow(BaseModel):
 
 
 class NodeData(BaseModel):
-    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
+    options: Optional[NodeTriggerOptions | NodeConditionOptions | NodeActionOptions] | None = None
     flow: NodeDataFlow
 
 
@@ -206,7 +221,7 @@ class NodeCreate(BaseModel):
 
 
 class NodeDataWithList(NodeData):
-    options: Optional[NodeTriggerOptions | NodeConditionOptions] | None = None
+    options: Optional[NodeTriggerOptions | NodeConditionOptions | NodeActionOptions] | None = None
     flow: NodeDataFlow
 
 
