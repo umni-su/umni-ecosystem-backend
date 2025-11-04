@@ -145,7 +145,6 @@ class RulesRepository(BaseRepository):
             rule_id: int,
             graph_data: RuleGraphUpdate
     ):
-        print(123)
         with write_session() as session:
             try:
                 # Удаляем старые узлы и связи
