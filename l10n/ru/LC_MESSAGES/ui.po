@@ -109,6 +109,9 @@ msgstr "Камеры"
 msgid "Change cover"
 msgstr "Изменить обложку"
 
+msgid "Change plugin state"
+msgstr "Изменить состояние плагина"
+
 msgid "Change credentials"
 msgstr "Изменить учетные данные"
 
@@ -208,6 +211,9 @@ msgstr "Устройства"
 msgid "Disable alarm"
 msgstr "Выключить тревогу"
 
+msgid "Disable"
+msgstr "Отключить"
+
 msgid "Disks usage"
 msgstr "Использование дисков"
 
@@ -243,6 +249,9 @@ msgstr "Электронная почта"
 
 msgid "Empty"
 msgstr "Пусто"
+
+msgid "Enable"
+msgstr "Включить"
 
 msgid "Enable alarm"
 msgstr "Включить тревогу"
@@ -452,6 +461,9 @@ msgstr "Нормальный"
 msgid "Not"
 msgstr "Не"
 
+msgid "Notification"
+msgstr "Уведомление"
+
 msgid "Notifications settings"
 msgstr "Настройки уведомлений"
 
@@ -508,6 +520,12 @@ msgstr "Пожалуйста, подтвердите действие"
 
 msgid "Plugins"
 msgstr "Плагины"
+
+msgid "Plugin will be stopped"
+msgstr "Плагин будет остановлен"
+
+msgid "Plugin will be started"
+msgstr "Плагин будет запущен"
 
 msgid "Port"
 msgstr "Порт"
