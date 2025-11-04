@@ -13,9 +13,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from plugins.base_plugin import BasePlugin
+from plugins.base_plugin import BasePlugin, BasePluginConfig
 from typing import Any, Dict
-import json
+from pydantic import Field
+
+
+class TemplatePluginConfig(BasePluginConfig):
+    region: str = Field('eu')
+    key: str = Field(None)
+    secret: str = Field(None)
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Обновляем описания после инициализации
+        self.model_fields['region'].description = TemplatePlugin.translate('Region')
+        self.model_fields['key'].description = TemplatePlugin.translate('API key')
+        self.model_fields['secret'].description = TemplatePlugin.translate('API secret')
 
 
 class TemplatePlugin(BasePlugin):
@@ -25,7 +38,14 @@ class TemplatePlugin(BasePlugin):
         super().__init__(plugin_model)
         self._config = {}
 
-    async def execute(self, data: Dict[str, Any] = None) -> Any:
+    @classmethod
+    def set_configuration(cls):
+        """
+        Init config schema
+        """
+        cls.config = TemplatePluginConfig()
+
+    def execute(self, data: Dict[str, Any] = None) -> Any:
         """Основная логика плагина"""
         if not self._is_running:
             raise RuntimeError("Plugin is not running")
@@ -40,19 +60,19 @@ class TemplatePlugin(BasePlugin):
 
         return result
 
-    async def on_start(self):
-        await super().on_start()
+    def on_start(self):
+        super().on_start()
         # Инициализация плагина
         self._config = self.plugin_model.config or {}
         print(f"Plugin {self.name} started")
 
-    async def on_stop(self):
-        await super().on_stop()
+    def on_stop(self):
+        super().on_stop()
         # Очистка ресурсов
         print(f"Plugin {self.name} stopped")
 
-    async def on_config_update(self, new_config: Dict[str, Any]):
-        await super().on_config_update(new_config)
+    def on_config_update(self, new_config: Dict[str, Any]):
+        super().on_config_update(new_config)
         self._config = new_config
 
     def validate_config(self, config: Dict[str, Any]) -> bool:
