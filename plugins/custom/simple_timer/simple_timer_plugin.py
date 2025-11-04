@@ -12,34 +12,37 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import datetime
+import time
 
 from plugins.base_plugin import BasePlugin
 from typing import Any, Dict
-import tinytuya
 
 
-class TuyaPlugin(BasePlugin):
+class SimpleTimerPlugin(BasePlugin):
     """Пример плагина-шаблона"""
 
     def execute(self, data: Dict[str, Any] = None) -> Any:
         """Основная логика плагина"""
-        if not self._is_running:
-            raise RuntimeError("Plugin is not running")
-
-        return 12345678
+        while self._is_running:
+            print(datetime.datetime.now())
+            time.sleep(5)
+        return None
 
     def on_start(self):
         super().on_start()
         # Инициализация плагина
-        print(f"Plugin {self.name} started")
+
+        print(f"Plugin {self.name} started, st: {self._is_running}")
 
     def on_stop(self):
         super().on_stop()
         # Очистка ресурсов
-        print(f"Plugin {self.name} stopped")
+        print(f"Plugin {self.name} stopped, st: {self._is_running}")
 
     def on_config_update(self, new_config: Dict[str, Any]):
         super().on_config_update(new_config)
+        self._config = new_config
 
     def validate_config(self, config: Dict[str, Any]) -> bool:
         required_fields = ["api_key", "endpoint"]  # Пример обязательных полей

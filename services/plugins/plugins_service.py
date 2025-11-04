@@ -1,6 +1,19 @@
-# services/plugins/plugins_service.py
+# Copyright (C) 2025 Mikhail Sazanov
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import importlib.util
-import json
 import subprocess
 import sys
 import venv
@@ -129,7 +142,7 @@ class PluginsService(BaseService):
 
     def _setup_plugin_environment(self, plugin_dir: Path, plugin_name: str) -> Optional[str]:
         """Создание и настройка виртуального окружения для плагина"""
-        env_path = plugin_dir / "venv"
+        env_path = plugin_dir / ".venv"
         requirements_file = plugin_dir / "requirements.txt"
 
         try:
@@ -567,7 +580,7 @@ class PluginsService(BaseService):
                 self._stop_single_plugin(plugin_name)
 
             # 2. При принудительной переустановке удаляем venv
-            env_path = plugin_dir / "venv"
+            env_path = plugin_dir / ".venv"
             if force and env_path.exists():
                 shutil.rmtree(env_path)
                 Logger.info(f"Force removed environment for {plugin_name}", LoggerType.PLUGINS)
@@ -642,7 +655,7 @@ class PluginsService(BaseService):
 
             # 4. Удаляем виртуальное окружение
             plugin_dir = self.plugins_dir / "custom" / plugin_name
-            env_path = plugin_dir / "venv"
+            env_path = plugin_dir / ".venv"
             if env_path.exists():
                 shutil.rmtree(env_path)
                 Logger.info(f"Removed environment for {plugin_name}", LoggerType.PLUGINS)
