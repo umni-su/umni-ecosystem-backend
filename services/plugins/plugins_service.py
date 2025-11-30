@@ -283,8 +283,6 @@ class PluginsService(BaseService):
                 Logger.err(f"Plugin {plugin_name} not found", LoggerType.PLUGINS)
                 return False
 
-            # print(self._plugins[plugin_name].daemon)
-
             with write_session() as session:
                 plugin_entity = session.exec(
                     select(PluginEntity).where(PluginEntity.name == plugin_name)

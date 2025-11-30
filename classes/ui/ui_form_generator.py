@@ -40,30 +40,25 @@ class UIEnhancedModel(BaseModel):
         if not hasattr(cls, 'model_uuid') or cls.model_uuid is None:
             cls.model_uuid = str(uuid.uuid4())
 
-    @classmethod
-    def get_ui_schema(cls) -> Dict[str, Any]:
-        schema = cls.model_json_schema()
+    def get_ui_schema(self) -> Dict[str, Any]:
+        schema = self.model_json_schema()
         ui_schema = {
-            "model_name": cls.__name__,
-            "model_uuid": cls.model_uuid,
-            "model_description": _(cls.model_description),
+            "model_name": self.__class__.__name__,
+            "model_uuid": self.__class__.model_uuid,
+            "model_description": _(self.__class__.model_description),
             "fields": {}
         }
 
-        for field_name, field_info in cls.model_fields.items():
+        for field_name, field_info in self.model_fields.items():
             field_schema = schema["properties"][field_name]
 
             # Определяем тип ТОЛЬКО из JSON schema
-            field_type = cls._get_type_from_json_schema_only(field_schema)
+            field_type = self._get_type_from_json_schema_only(field_schema)
 
             # Получаем метаданные из json_schema_extra
             extra = field_info.json_schema_extra or {}
             is_sensitive = extra.get('sensitive', False)
             sensitive_type = extra.get('sensitive_type', 'encrypted')
-
-            # Определяем, является ли поле чувствительным (автоматически)
-            if not is_sensitive:
-                is_sensitive = cls._is_sensitive_field(field_name, field_info)
 
             description = field_info.description or ""
             if description and hasattr(_, '__call__'):
@@ -76,12 +71,13 @@ class UIEnhancedModel(BaseModel):
             ui_field = {
                 "type": field_type,
                 "required": field_name in schema.get("required", []),
-                "ui_type": cls._get_ui_type_with_enum(field_schema, field_info, is_sensitive),
+                "ui_type": self.__class__._get_ui_type_with_enum(field_schema, field_info, is_sensitive),
                 "label": label,
                 "description": description,
-                "constraints": cls._get_field_constraints_with_enum(field_schema, field_info),
+                "constraints": self.__class__._get_field_constraints_with_enum(field_schema, field_info),
                 "is_sensitive": is_sensitive,
-                "sensitive_type": sensitive_type if is_sensitive else None
+                "sensitive_type": sensitive_type if is_sensitive else None,
+                "value": getattr(self, field_name)  # вот эта строчка
             }
             ui_schema["fields"][field_name] = ui_field
 
@@ -104,33 +100,6 @@ class UIEnhancedModel(BaseModel):
             return field_schema["type"]
 
         return "string"
-
-    @classmethod
-    def _is_sensitive_field(cls, field_name: str, field_info) -> bool:
-        """Определяем, является ли поле чувствительным"""
-        sensitive_keywords = [
-            'password', 'token', 'secret', 'key', 'credential',
-            'пароль', 'токен', 'ключ', 'секрет', 'auth',
-            'private', 'access', 'refresh', 'apikey', 'apisecret'
-        ]
-
-        # Проверяем по имени поля
-        field_name_lower = field_name.lower()
-        if any(keyword in field_name_lower for keyword in sensitive_keywords):
-            return True
-
-        # Проверяем по описанию
-        if field_info.description:
-            description_lower = field_info.description.lower()
-            if any(keyword in description_lower for keyword in sensitive_keywords):
-                return True
-
-        # Проверяем json_schema_extra если есть
-        if hasattr(field_info, 'json_schema_extra') and field_info.json_schema_extra:
-            if field_info.json_schema_extra.get('sensitive'):
-                return True
-
-        return False
 
     @classmethod
     def _get_localized_label(cls, label: str) -> str:

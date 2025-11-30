@@ -445,6 +445,40 @@ async def get_plugin_schema(
         )
 
 
+@plugins.post("/{plugin_id}/schema")
+def save_plugin_schema(
+        plugin_id: int,
+        model: Dict[str, Any],
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    print(type(model), model.get('schema'))
+    try:
+        ecosystem = get_ecosystem()
+        plugin_service: "PluginsService" = ecosystem.service_runner.get_service_by_name('plugins')
+        if not plugin_service:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Plugin service not initialized"
+            )
+
+        plugin = PluginRepository.get_plugin(plugin_id)
+        if not plugin:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Plugin not found"
+            )
+
+        return plugin_service.get_plugin_config_schema(plugin.name)
+    except HTTPException:
+        raise
+    except Exception as e:
+        Logger.err(f"Error getting plugin status {plugin_id}: {str(e)}", LoggerType.PLUGINS)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get plugin schema"
+        )
+
+
 @plugins.post("/{plugin_id}/execute")
 def execute_plugin(
         plugin_id: int,
