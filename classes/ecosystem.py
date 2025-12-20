@@ -79,3 +79,15 @@ class Ecosystem:
 
     def is_installed(self):
         return self.installed
+
+    def get_logger_service(self):
+        """Безопасное получение сервиса логирования"""
+        if self.service_runner is not None:
+            try:
+                return self.service_runner.get_service_by_name('log')
+            except:
+                pass
+        return None
+
+
+ecosystem = Ecosystem()

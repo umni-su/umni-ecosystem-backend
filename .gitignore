@@ -22,4 +22,6 @@ l10n/*/LC_MESSAGES/.#*
 
 plugins/custom/**/
 
+logs
+
 .ecosystem.key

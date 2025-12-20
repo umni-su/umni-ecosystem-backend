@@ -40,3 +40,6 @@ class SchedulerService(BaseService):
 
         # Запускаем планировщик в фоновом режиме
         scheduler.start()
+
+        cleanup_manager = CameraCleanupManager()
+        cleanup_manager.run_cleanup_for_all_cameras()

@@ -24,6 +24,7 @@ class DeviceModelMain(BaseModel):
     title: str | None = None
     description: str | None = None
     online: bool | None = None
+    source: str | None = None
 
 
 class DeviceModel(DeviceModelMain):

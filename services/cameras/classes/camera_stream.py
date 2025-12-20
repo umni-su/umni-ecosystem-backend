@@ -37,6 +37,8 @@ from classes.thread.daemon import Daemon
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from models.camera_model import CameraModelWithRelations
+from models.enums.log_code import LogCode
+from models.log_model import LogEntityCode
 from repositories.camera_events_repository import CameraEventsRepository
 from repositories.camera_repository import CameraRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
@@ -249,6 +251,12 @@ class CameraStream:
             filename=filename,
         )
 
+    def get_current_frame(self) -> np.ndarray:
+        """Безопасно возвращает текущий кадр"""
+        if self.resized is not None and self.opened:
+            return self.resized.copy()  # Делаем копию для потокобезопасности
+        return self.get_no_signal_frame()
+
     def _create_input_container(self):
         options = {
             'rtsp_transport': 'tcp',
@@ -261,13 +269,34 @@ class CameraStream:
             self.capture_error = False
             if not self.camera.online:
                 CameraRepository.set_online(camera_id=self.camera.id)
+                Logger.info(
+                    f"🎉 [{self.camera.name}] Camera online!",
+                    LoggerType.CAMERAS,
+                    with_db=True,
+                    entity_code=LogEntityCode(
+                        id=self.camera.id,
+                        code=LogCode.CAMERA_ONLINE
+                    )
+                )
             Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
             # Set online
         except Exception as e:
             self.capture_error = True
             if self.camera.online:
                 CameraRepository.set_online(camera_id=self.camera.id, online=False)
-            Logger.err(f"⚠️ [{self.camera.name}] Failed to open stream: {e}", LoggerType.CAMERAS)
+                Logger.err(
+                    f"⚠️ [{self.camera.name}] Camera offline: {e}",
+                    LoggerType.CAMERAS,
+                    with_db=True,
+                    entity_code=LogEntityCode(
+                        id=self.camera.id,
+                        code=LogCode.CAMERA_OFFLINE
+                    )
+                )
+            Logger.err(
+                f"⚠️ [{self.camera.name}] Failed to open stream: {e}",
+                LoggerType.CAMERAS
+            )
             time.sleep(3)
             # Set offline
             self._create_input_container()

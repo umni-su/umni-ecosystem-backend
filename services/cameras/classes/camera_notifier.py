@@ -36,6 +36,8 @@ from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
 from entities.camera_event import CameraEventEntity
 from models.camera_event_model import CameraEventBaseModel
 from models.camera_recording import CameraRecordingModel
+from models.enums.log_code import LogCode
+from models.log_model import LogEntityCode
 
 from services.cameras.classes.roi_tracker import ROIDetectionEvent, ROIRecordEvent, ROIEventType
 
@@ -186,8 +188,14 @@ class CameraNotifier:
             WebSockets.send_broadcast(message)
 
             Logger.debug(
-                f"👋 [{event.camera.name} EvID#{event_model.id}] Начало движения в {event_model.area.name}. Время: {event_model.start}"
-                , LoggerType.CAMERAS)
+                f"👋 [{event.camera.name} EvID#{event_model.id}] Начало движения в {event_model.area.name}. Время: {event_model.start}",
+                LoggerType.CAMERAS,
+                with_db=True,
+                entity_code=LogEntityCode(
+                    id=event.camera.id,
+                    code=LogCode.CAMERA_MOTION_START
+                )
+            )
             if new_record and recording is not None:
                 recording_model = CameraRecordingModel.model_validate(
                     recording.to_dict()
@@ -244,7 +252,12 @@ class CameraNotifier:
 
             Logger.debug(
                 f"🤚 [{event_model.camera.name} EvID#{event_model.id}] Конец движения в {event_model.area.name}. Время: {event_model.end}",
-                LoggerType.CAMERAS)
+                LoggerType.CAMERAS,
+                with_db=True,
+                entity_code=LogEntityCode(
+                    id=event_model.camera.id,
+                    code=LogCode.CAMERA_MOTION_START
+                ))
 
     @staticmethod
     def _on_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):

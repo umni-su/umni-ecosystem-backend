@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "UMNI Ecosystem"
     API_ROOT: str = "/api"
     LOG_LEVEL: str = 'DEBUG'
+    LOG_DIR: str = 'logs'
+    LOG_BATCH_SIZE: int = 50
+    LOG_FLUSH_INTERVAL: int = 5
+    LOG_DB_DELETE_AFTER_DAYS: int = 90
     DEBUG_MODE: str = ''
     ENCRYPTION_KEY_FILE: str = '.ecosystem.key'
 

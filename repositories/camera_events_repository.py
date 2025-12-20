@@ -167,7 +167,7 @@ class CameraEventsRepository(BaseRepository):
                     select(CameraEventEntity)
                     .where(
                         (CameraEventEntity.camera_id == camera.id) &
-                        (CameraEventEntity.end < cutoff_time)
+                        (CameraEventEntity.start < cutoff_time)
                     )
                 ).all()
                 return [

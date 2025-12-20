@@ -14,7 +14,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import paho.mqtt.client as mqtt
+
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
+from models.enums.device_model_source import DeviceModelSource
 from models.sensor_model import SensorModelWithDevice
+from services.mqtt.payload.mqtt_payload_models import MqttSensorPayloadModel, MqttManageRelayPayloadModel
+from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
 
 
@@ -22,5 +28,24 @@ class MqttEventSubscriber:
     def __init__(self, client: mqtt.Client):
         self.client = client
 
-    def manage_topic(self, sensor: SensorModelWithDevice, topic: MqttTopicEnum):
-        return f'{MqttTopicEnum.MANAGE}/{sensor.device.name}/{topic.value}'
+        event_bus.subscribe(EventType.SENSOR_SET_STATE, self.run_set_sensor_state)
+
+    def run_set_sensor_state(
+            self,
+            sensor: SensorModelWithDevice,
+            payload: MqttSensorPayloadModel | MqttManageRelayPayloadModel
+    ):
+        topic = None
+        real_payload = payload
+        if sensor.device.source == DeviceModelSource.SERVICE_MQTT.value:
+            if sensor.type == MqttSensorTypeEnum.RELAY:
+                real_payload = MqttManageRelayPayloadModel(
+                    index=sensor.options.get('index'),
+                    level=payload.value
+                )
+                topic = MqttTopicEnum.REL
+
+        if topic is not None:
+            self.client.publish(
+                topic=f'{MqttTopicEnum.MANAGE}/{sensor.device.name}/{topic}',
+                payload=real_payload.model_dump_json())

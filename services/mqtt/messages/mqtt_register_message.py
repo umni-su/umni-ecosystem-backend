@@ -22,6 +22,9 @@ from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
+from models.enums.device_model_source import DeviceModelSource
+from models.enums.log_code import LogCode
+from models.log_model import LogEntityCode
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.models.mqtt_register_model import MqttRegisterModel
 
@@ -78,6 +81,7 @@ class MqttRegisterMessage(BaseMessage):
                 device.uptime = self.model.systeminfo.uptime
                 device.last_sync = datetime.datetime.now()
                 device.online = True
+                device.source = DeviceModelSource.SERVICE_MQTT.value
                 session.add(device)
                 session.commit()
                 session.refresh(device)
@@ -101,7 +105,15 @@ class MqttRegisterMessage(BaseMessage):
                     #     ni = founded
                 session.commit()
 
-                Logger.info(f'📟💡 [Device ID{device.id} / {device.name}] - registration success', LoggerType.DEVICES)
+                Logger.info(
+                    f'📟💡 [Device ID{device.id} / {device.name}] - registration success',
+                    LoggerType.DEVICES,
+                    with_db=True,
+                    entity_code=LogEntityCode(
+                        id=device.id,
+                        code=LogCode.DEVICE_REGISTERED,
+                    )
+                )
 
         except Exception as e:
             Logger.err(f'MqttRegisterMessage->save() {str(e)}', LoggerType.DEVICES)

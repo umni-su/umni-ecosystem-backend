@@ -30,3 +30,4 @@ from entities.notification import NotificationEntity
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
 from entities.notification_queue import NotificationQueueEntity
 from entities.plugin_entity import PluginEntity
+from entities.log_entry import LogEntity

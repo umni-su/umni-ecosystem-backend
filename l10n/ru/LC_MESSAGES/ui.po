@@ -130,6 +130,9 @@ msgstr "Выберите сущность"
 msgid "Close"
 msgstr "Закрыть"
 
+msgid "Clear"
+msgstr "Очистить"
+
 msgid "Comment"
 msgstr "Комментарий"
 
@@ -277,6 +280,9 @@ msgstr "Равно"
 msgid "Event"
 msgstr "Событие"
 
+msgid "Event log"
+msgstr "Журнал событий"
+
 msgid "Event has been deleted"
 msgstr "Событие было удалено"
 
@@ -329,6 +335,9 @@ msgstr "Больше или равно"
 msgid "High"
 msgstr "Высокий"
 
+msgid "History"
+msgstr "История"
+
 msgid "Host"
 msgstr "Хост"
 
@@ -376,6 +385,9 @@ msgstr "Легкий"
 
 msgid "Less than"
 msgstr "Меньше"
+
+msgid "Level"
+msgstr "Уровень"
 
 msgid "Less than or equal"
 msgstr "Меньше или равно"

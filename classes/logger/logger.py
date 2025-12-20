@@ -12,20 +12,30 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import os
+from datetime import datetime
 
 import uvicorn.logging as u_logging
 import logging
-from typing import Set, Optional, Union
+import logging.handlers
+from typing import Set, Optional, Union, Dict
 
 from classes.logger.logger_types import LoggerType
 from config.settings import settings
+from models.log_model import LogEntityCode
 
+FILE_FORMAT: str = "%(levelname)s %(asctime)s [%(threadName)s] [%(name)s] [%(loggertype)s] %(message)s"
 FORMAT: str = "%(levelprefix)s %(asctime)s [%(threadName)s] [%(name)s] [%(loggertype)s] %(message)s"
-
-# Чтение настроек из environment variables
 DEBUG_MODE = settings.DEBUG_MODE.lower()
 DEBUG_MODULES = set(module.strip() for module in DEBUG_MODE.split(',') if module.strip())
 LOG_LEVEL = settings.LOG_LEVEL.upper()
+LOG_DIR = settings.LOG_DIR
+
+if not os.path.exists(LOG_DIR):
+    try:
+        os.makedirs(os.path.abspath(LOG_DIR))
+    except Exception as e:
+        print(e)
 
 
 # Кастомный форматтер для добавления типа лога
@@ -48,11 +58,24 @@ except AttributeError:
     logger.setLevel(logging.INFO)
     logger.warning(f"Invalid LOG_LEVEL '{LOG_LEVEL}', defaulting to INFO")
 
+formatter = CustomFormatter(FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
+file_formatter = logging.Formatter(FILE_FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
+
+file_handler = logging.handlers.RotatingFileHandler(
+    f"{LOG_DIR}/ecosystem.log",
+    maxBytes=100 * 1024 * 1024,  # 100MB
+    backupCount=10,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(file_formatter)
+
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
-formatter = CustomFormatter(FORMAT, datefmt="%Y-%m-%d %H:%M:%S")
 console_handler.setFormatter(formatter)
+
 logger.addHandler(console_handler)
+logger.addHandler(file_handler)
 
 
 class Logger:
@@ -74,7 +97,30 @@ class Logger:
         return logger_type.value in DEBUG_MODULES
 
     @staticmethod
-    def _log_with_type(level: str, msg: str, logger_type: Optional[LoggerType] = None):
+    def _prepare_for_db(
+            msg: str,
+            level: str,
+            logger_type: Optional[LoggerType] = None,
+            entity_code: int | None = None
+    ) -> Dict:
+        """Подготовка данных для БД"""
+        return {
+            'timestamp': datetime.now(),
+            'level': level.upper(),
+            'logger_type': logger_type if logger_type else 'GLOBAL',
+            'message': msg,
+            'entity_id': entity_code.id if isinstance(entity_code, LogEntityCode) else None,
+            'code': entity_code.code.value if isinstance(entity_code, LogEntityCode) else None,
+        }
+
+    @staticmethod
+    def _log_with_type(
+            level: str,
+            msg: str,
+            logger_type: Optional[LoggerType] = None,
+            with_db: bool = False,
+            entity_code: LogEntityCode | None = None
+    ):
         """Вспомогательный метод для логирования с типом"""
         if Logger._should_log(logger_type):
             # Создаем extra dict с информацией о типе
@@ -90,21 +136,61 @@ class Logger:
             elif level == 'debug':
                 logger.debug(msg, extra=extra)
 
-    @staticmethod
-    def info(msg: str, logger_type: Optional[LoggerType] = None):
-        Logger._log_with_type('info', msg, logger_type)
+            if with_db:
+                try:
+                    # Импортируем только когда нужно
+                    from classes.ecosystem import ecosystem
+
+                    # Используем новый метод ecosystem
+                    logger_service = ecosystem.get_logger_service()
+                    if logger_service:
+                        log_data = Logger._prepare_for_db(
+                            msg=msg,
+                            level=level,
+                            logger_type=logger_type.value.upper() if logger_type else 'GLOBAL',
+                            entity_code=entity_code
+                        )
+                        logger_service.add_log(log_data=log_data)
+                except Exception as e:
+                    # Молча игнорируем ошибки БД логирования
+                    print(e)
+                    pass
 
     @staticmethod
-    def warn(msg: str, logger_type: Optional[LoggerType] = None):
-        Logger._log_with_type('warning', msg, logger_type)
+    def info(
+            msg: str,
+            logger_type: Optional[LoggerType] = None,
+            with_db: bool = False,
+            entity_code: LogEntityCode | None = None
+    ):
+        Logger._log_with_type('info', msg, logger_type, with_db=with_db, entity_code=entity_code)
 
     @staticmethod
-    def err(msg: Union[str, Exception], logger_type: Optional[LoggerType] = None):
-        Logger._log_with_type('error', str(msg), logger_type)
+    def warn(
+            msg: str,
+            logger_type: Optional[LoggerType] = None,
+            with_db: bool = False,
+            entity_code: LogEntityCode | None = None
+    ):
+        Logger._log_with_type('warning', msg, logger_type, with_db=with_db, entity_code=entity_code)
 
     @staticmethod
-    def debug(msg: str, logger_type: Optional[LoggerType] = None):
-        Logger._log_with_type('debug', msg, logger_type)
+    def err(
+            msg: str,
+            logger_type: Optional[LoggerType] = None,
+            with_db: bool = False,
+            entity_code: LogEntityCode | None = None
+    ):
+        Logger._log_with_type('error', str(msg), logger_type, with_db=with_db, entity_code=entity_code)
+
+    @staticmethod
+    def debug(
+            msg: str,
+            logger_type: Optional[LoggerType] = None,
+            with_db: bool = False,
+            entity_code: LogEntityCode | None = None
+    ):
+        Logger._log_with_type('debug', msg, logger_type, with_db=with_db, entity_code=entity_code)
 
     @staticmethod
     def set_level(level: str):

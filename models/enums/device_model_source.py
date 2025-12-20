@@ -12,14 +12,8 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from enum import Enum
 
-from enum import StrEnum
 
-
-class EventType(StrEnum):
-    DEVICE_CHANGE_STATE = "device.change.state"
-    SENSOR_CHANGE_STATE = "sensor.change.state"
-    SENSOR_SET_STATE = "sensor.set.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+class DeviceModelSource(str, Enum):
+    SERVICE_MQTT = "services.mqtt"

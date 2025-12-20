@@ -96,9 +96,9 @@ def get_camera_cover(
             if not stream.is_opened() and not stream.resized:
                 frame = stream.get_no_signal_frame()
             else:
-                frame = stream.resized
-        except cv2.error as e:
-            frame = stream.get_no_signal_frame()
+                frame = stream.get_current_frame()
+        except Exception as e:
+            frame = stream.get_no_signal_frame() if stream else get_no_signal_frame(width=640)
             Logger.err(f"[{camera.name}] can not get cover with message {e}", LoggerType.APP)
 
     success, im = cv2.imencode('.jpg', frame)

@@ -12,14 +12,15 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from enum import Enum
 
-from enum import StrEnum
 
-
-class EventType(StrEnum):
-    DEVICE_CHANGE_STATE = "device.change.state"
-    SENSOR_CHANGE_STATE = "sensor.change.state"
-    SENSOR_SET_STATE = "sensor.set.state"
-    RULE_EXECUTED = "rule.executed"
-    MOTION_START = "motion.start"
-    MOTION_END = "motion.end"
+class LogCode(Enum):
+    DEVICE_REGISTERED = 1
+    DEVICE_ONLINE = 2
+    DEVICE_OFFLINE = 3
+    CAMERA_ONLINE = 4
+    CAMERA_OFFLINE = 5
+    CAMERA_MOTION_START = 6
+    CAMERA_MOTION_END = 7
+    SENSOR_DATA = 8
