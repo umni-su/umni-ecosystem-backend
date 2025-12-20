@@ -211,7 +211,7 @@ class CameraStream:
                    and getattr(self.camera, field) != new_value
             }
 
-            if changed_fields:
+            if changed_fields and not 'cover' in changed_fields:
                 Logger.debug(f"Changes detected in {self.camera.name}: {changed_fields}", LoggerType.CAMERAS)
                 Logger.debug(f'{self.camera.name} was changed! Changes: {changed_fields}', LoggerType.CAMERAS)
                 self.need_restart = True
@@ -250,6 +250,10 @@ class CameraStream:
             directory=path,
             filename=filename,
         )
+
+    def get_current_cover(self, w: int) -> str | None:
+        """Безопасно возвращает текущий кадр"""
+        return CameraStorage.get_cover(camera=self.camera, width=w)
 
     def get_current_frame(self) -> np.ndarray:
         """Безопасно возвращает текущий кадр"""

@@ -24,6 +24,7 @@ from classes.app.lifespan_manager import lifespan_manager
 from classes.auth.auth import Auth
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.storages.camera_storage import CameraStorage
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel, CameraEventBaseModel
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
@@ -87,23 +88,11 @@ def get_camera_cover(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     camera = CameraRepository.get_camera(camera_id)
-    stream = StreamRegistry.find_by_camera(camera)
+    # stream = StreamRegistry.find_by_camera(camera)
 
-    if stream is None or stream.is_stopped():
-        frame = get_no_signal_frame(width=640)
-    else:
-        try:
-            if not stream.is_opened() and not stream.resized:
-                frame = stream.get_no_signal_frame()
-            else:
-                frame = stream.get_current_frame()
-        except Exception as e:
-            frame = stream.get_no_signal_frame() if stream else get_no_signal_frame(width=640)
-            Logger.err(f"[{camera.name}] can not get cover with message {e}", LoggerType.APP)
-
-    success, im = cv2.imencode('.jpg', frame)
-    headers = {'Content-Disposition': f'inline; filename="{camera.id}"'}
-    return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
+    return CameraStorage.get_cover(
+        camera=camera,
+        width=640)
 
 
 @cameras.get('/{camera_id}/stream')

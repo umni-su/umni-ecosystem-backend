@@ -12,6 +12,7 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import time
 
 import cv2
 import os
@@ -23,6 +24,9 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
 from classes.storages.storage import StorageBase
+from database.session import write_session
+from entities.camera import CameraEntity
+from services.cameras.utils.cameras_helpers import get_no_signal_frame
 
 if TYPE_CHECKING:
     from models.camera_model import CameraModelWithRelations
@@ -43,7 +47,7 @@ class CameraStorage(StorageBase):
             cls.path = camera.storage.path
             rel_path = os.path.join(
                 str(camera.id),
-                'cover.jpg'
+                f'cover_{cls.date_filename()}.jpg'
             )
             image_path = os.path.join(
                 cls.path,
@@ -52,10 +56,38 @@ class CameraStorage(StorageBase):
             if not cls.exists(os.path.dirname(image_path)):
                 Filesystem.mkdir(os.path.dirname(image_path))
             if cv2.imwrite(image_path, frame):
+
+                cls.remove_cover_file(camera)
+
+                with write_session() as session:
+                    try:
+                        cam = session.get(CameraEntity, camera.id)
+                        cam.cover = rel_path
+                        session.add(cam)
+                        Logger.debug(f"[{camera.name}] upload_cover to {image_path}")
+                    except Exception as e:
+                        Logger.err(f"[{camera.name}]  error upload_cover to {image_path} code: {str(e)}")
                 return camera
         except Exception as e:
             Logger.err(f"[{camera.name}] upload_cover error - {e}", LoggerType.STORAGES)
             raise e
+
+    @classmethod
+    def remove_cover_file(cls, camera: "CameraModelWithRelations") -> bool:
+        prev_path = camera.cover
+        if camera.cover is not None:
+            full_path = os.path.join(
+                cls.path,
+                prev_path
+            )
+            if os.path.exists(full_path):
+                try:
+                    os.remove(full_path)
+                    return True
+                except Exception as e:
+                    Logger.err(str(e), LoggerType.CAMERAS)
+                    return False
+        return False
 
     @classmethod
     def date_filename(cls):
@@ -104,7 +136,10 @@ class CameraStorage(StorageBase):
             camera.storage.path,
             camera.cover
         )
-        return cls.image_response(path, width)
+        if os.path.exists(path):
+            return cls.image_response(path, width)
+        else:
+            return get_no_signal_frame(width=width)
 
     @classmethod
     def camera_path(cls, camera: "CameraModelWithRelations"):
