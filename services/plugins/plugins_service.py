@@ -39,6 +39,7 @@ from services.base_service import BaseService
 
 class PluginsService(BaseService):
     name = "plugins"
+    plugins_dir: str | Path = Path("plugins")
 
     def __init__(self, config: EcosystemDatabaseConfiguration):
         super().__init__(config)
