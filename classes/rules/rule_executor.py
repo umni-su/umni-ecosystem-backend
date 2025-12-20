@@ -92,7 +92,7 @@ class RuleExecutor:
         # Выполняем проверку для разных типов узлов
         if node.type == 'condition':
             result = self.execute_condition(node)
-            # Logger.debug(f"Condition node {node.id} result: {result}", LoggerType.RULES)
+            Logger.debug(f"Condition node {node.id} result: {result}", LoggerType.RULES)
         elif node.type == 'trigger':
             result = self.execute_trigger(node)
             # Logger.debug(f"Trigger node {node.id} result: {result}", LoggerType.RULES)

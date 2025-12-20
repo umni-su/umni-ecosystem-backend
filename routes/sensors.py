@@ -22,6 +22,7 @@ from classes.charts.chart_sensor_history import SensorHistoryChart
 from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
 from classes.l10n.l10n import _
+from classes.storages.device_storage import device_storage
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
 from repositories.sensor_history_repository import SensorHistoryRepository
@@ -75,6 +76,23 @@ def get_sensors_history(
         raise HTTPException(
             status_code=400,
             detail=_('Error getting sensors history')
+        )
+
+
+@sensors.get('/{sensor_id}/cover/{width}', description="Get sensor cover")
+def get_sensor_cover(
+        sensor_id: int,
+        width: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    try:
+        sensor = SensorRepository.get_sensor(sensor_id)
+        return device_storage.sensor_cover_response(sensor, width=width)
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail='Sensors not found'
         )
 
 
