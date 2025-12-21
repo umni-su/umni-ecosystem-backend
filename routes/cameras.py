@@ -55,7 +55,7 @@ def get_cameras(
 
 
 @cameras.post('', response_model=CameraModelWithRelations)
-def get_cameras(
+def add_camera(
         model: CameraBaseModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
@@ -64,7 +64,7 @@ def get_cameras(
 
 
 @cameras.put('/{camera_id}', response_model=CameraModelWithRelations)
-def get_cameras(
+def update_camera(
         model: CameraBaseModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
@@ -73,7 +73,7 @@ def get_cameras(
 
 
 @cameras.get('/{camera_id}', response_model=CameraModelWithRelations)
-def get_cameras(
+def get_camera(
         camera_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 
