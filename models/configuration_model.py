@@ -24,6 +24,7 @@ class ConfigurationModelWithTranslation(BaseModel):
 
 
 class ConfigurationGroup(BaseModel):
+    key: str
     label: str
     items: List[ConfigurationModelWithTranslation] = Field(default=list)
 

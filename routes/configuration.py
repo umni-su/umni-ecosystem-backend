@@ -16,9 +16,9 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from classes.auth.auth import Auth
+from classes.ecosystem import ecosystem
 from classes.l10n.l10n import translator, _
-from config.dependencies import get_ecosystem
-from models.configuration_model import ConfigurationGroup, ConfigurationModel, ConfigurationModelBase
+from models.configuration_model import ConfigurationGroup, ConfigurationModelBase
 from repositories.configuration_repository import ConfigurationRepository
 from responses.LanguageResponse import LanguageResponse
 from responses.user import UserResponseOut
@@ -36,8 +36,22 @@ def get_configuration(
     return ConfigurationRepository.get_ecosystem_db_configuration()
 
 
+@conf.get('/state')
+def get_configuration_state(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    return ecosystem.config.db_config
+
+
+@conf.post('/state')
+def get_configuration_state_by_keys(
+        config_list: list[str]
+):
+    return [config for config in ecosystem.config.db_config if config.key in config_list]
+
+
 @conf.post('', response_model=list[ConfigurationGroup])
-def get_configuration(
+def save_configuration(
         config_list: list[ConfigurationModelBase],
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
@@ -61,7 +75,7 @@ def set_set(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     l = translator.set_language(lang=lang)
-    get_ecosystem().config.prepare_groups()
+    ecosystem.config.prepare_groups()
 
     return LanguageResponse(lang=l)
 

@@ -44,6 +44,7 @@ class EcosystemDatabaseConfiguration:
         self.groups = []
         app_group = ConfigurationGroup(
             label=_('Base settings'),
+            key='base',
             items=[
                 ConfigurationModelWithTranslation(
                     key=ConfigurationKeys.APP_LOCALE,
@@ -65,6 +66,7 @@ class EcosystemDatabaseConfiguration:
 
         device_group = ConfigurationGroup(
             label=_('Devices settings'),
+            key='devices',
             items=[
                 ConfigurationModelWithTranslation(
                     key=ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT,
@@ -76,6 +78,7 @@ class EcosystemDatabaseConfiguration:
 
         mqtt_group = ConfigurationGroup(
             label=_('MQTT settings'),
+            key='mqtt',
             items=[
                 ConfigurationModelWithTranslation(
                     key=ConfigurationKeys.MQTT_HOST,
