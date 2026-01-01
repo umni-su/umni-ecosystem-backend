@@ -12,8 +12,13 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import re
+from typing import List, Optional
+from pydantic import BaseModel, Field, ConfigDict, ValidationInfo, field_validator
 
-from pydantic import BaseModel
+from classes.l10n.l10n import _
+from models.mixins.password_mixin import PasswordMixin
+from models.permission_model import UserRoleModel
 
 
 class UserResponseOut(BaseModel):
@@ -22,6 +27,10 @@ class UserResponseOut(BaseModel):
     email: str
     firstname: str
     lastname: str
+    is_superuser: bool
+    is_active: bool
+    roles: List[UserRoleModel] = Field(default_factory=list)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserLoginForm(BaseModel):
@@ -29,9 +38,29 @@ class UserLoginForm(BaseModel):
     password: str
 
 
-class UserResponseIn(UserResponseOut):
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    firstname: str
+    lastname: str
+
+
+class UserResponseIn(UserCreate, PasswordMixin):
     password: str
     password_repeat: str
+
+    _validate_password = field_validator('password')(PasswordMixin.validate_password)
+    _validate_password_repeat = field_validator('password_repeat')(PasswordMixin.validate_password_repeat)
+
+
+class UserUpdate(UserCreate):
+    id: int
+    change_password: Optional[bool] = False
+    password: Optional[str] = None
+    password_repeat: Optional[str] = None
+
+    _validate_password = field_validator('password')(PasswordMixin.validate_password_optional)
+    _validate_password_repeat = field_validator('password_repeat')(PasswordMixin.validate_password_repeat_optional)
 
 
 class UserResponseInDb(UserResponseOut):

@@ -1,14 +1,14 @@
 # Translations template for PROJECT.
-# Copyright (C) 2025 ORGANIZATION
+# Copyright (C) 2026 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-26 21:54+0300\n"
+"POT-Creation-Date: 2026-01-01 17:12+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,43 +21,43 @@ msgstr ""
 msgid "Base settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:50
+#: classes/configuration/configuration.py:51
 msgid "Application locale"
 msgstr ""
 
-#: classes/configuration/configuration.py:55
+#: classes/configuration/configuration.py:56
 msgid "Application uploads path"
 msgstr ""
 
-#: classes/configuration/configuration.py:60
+#: classes/configuration/configuration.py:61
 msgid "Application uploads max size"
 msgstr ""
 
-#: classes/configuration/configuration.py:67
+#: classes/configuration/configuration.py:68
 msgid "Devices settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:71
+#: classes/configuration/configuration.py:73
 msgid "Device sync timeout"
 msgstr ""
 
-#: classes/configuration/configuration.py:78
+#: classes/configuration/configuration.py:80
 msgid "MQTT settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:82
+#: classes/configuration/configuration.py:85
 msgid "MQTT host"
 msgstr ""
 
-#: classes/configuration/configuration.py:87
+#: classes/configuration/configuration.py:90
 msgid "MQTT port"
 msgstr ""
 
-#: classes/configuration/configuration.py:92
+#: classes/configuration/configuration.py:95
 msgid "MQTT user"
 msgstr ""
 
-#: classes/configuration/configuration.py:97
+#: classes/configuration/configuration.py:100
 msgid "MQTT password"
 msgstr ""
 
@@ -166,11 +166,93 @@ msgstr ""
 msgid "Notification ID"
 msgstr ""
 
-#: repositories/rules_repository.py:95
+#: models/mixins/password_mixin.py:29
+msgid "Password must be at least 8 characters long"
+msgstr ""
+
+#: models/mixins/password_mixin.py:35
+msgid ""
+"Password must contain: uppercase letter, lowercase letter, digit, and "
+"special character (!@#$%^&*()_+=-~)"
+msgstr ""
+
+#: models/mixins/password_mixin.py:48 models/mixins/password_mixin.py:68
+msgid "Passwords do not match"
+msgstr ""
+
+#: models/mixins/password_mixin.py:65
+msgid "Password is required when changing password"
+msgstr ""
+
+#: repositories/rules_repository.py:96
 msgid "Rule not found"
 msgstr ""
 
-#: routes/configuration.py:48
+#: routes/access.py:35
+msgid "View roles"
+msgstr ""
+
+#: routes/access.py:36
+msgid "Allow to view roles list"
+msgstr ""
+
+#: routes/access.py:41
+msgid "Create roles"
+msgstr ""
+
+#: routes/access.py:42
+msgid "Allow to create roles"
+msgstr ""
+
+#: routes/access.py:47
+msgid "Update roles"
+msgstr ""
+
+#: routes/access.py:48
+msgid "Allow to update roles"
+msgstr ""
+
+#: routes/access.py:53
+msgid "Delete roles"
+msgstr ""
+
+#: routes/access.py:54
+msgid "Allow to delete roles"
+msgstr ""
+
+#: routes/cameras.py:54
+msgid "View cameras"
+msgstr ""
+
+#: routes/cameras.py:55
+msgid "Allow to view cameras list"
+msgstr ""
+
+#: routes/cameras.py:60
+msgid "Add cameras"
+msgstr ""
+
+#: routes/cameras.py:61
+msgid "Allow to create new cameras"
+msgstr ""
+
+#: routes/cameras.py:66
+msgid "Update cameras"
+msgstr ""
+
+#: routes/cameras.py:67
+msgid "Allow to update cameras"
+msgstr ""
+
+#: routes/cameras.py:72
+msgid "Delete cameras"
+msgstr ""
+
+#: routes/cameras.py:73
+msgid "Allow to delete cameras"
+msgstr ""
+
+#: routes/configuration.py:62
 msgid "Failed to save configuration"
 msgstr ""
 
@@ -190,7 +272,39 @@ msgstr ""
 msgid "Rule deleted"
 msgstr ""
 
-#: routes/sensors.py:77
+#: routes/sensors.py:78
 msgid "Error getting sensors history"
+msgstr ""
+
+#: routes/users.py:35
+msgid "View users"
+msgstr ""
+
+#: routes/users.py:36
+msgid "Allow to view users list"
+msgstr ""
+
+#: routes/users.py:41
+msgid "Creating users"
+msgstr ""
+
+#: routes/users.py:42
+msgid "Allow to create users"
+msgstr ""
+
+#: routes/users.py:47
+msgid "Updating users"
+msgstr ""
+
+#: routes/users.py:48
+msgid "Allow to update users"
+msgstr ""
+
+#: routes/users.py:53
+msgid "Deleting users"
+msgstr ""
+
+#: routes/users.py:54
+msgid "Allow to delete users"
 msgstr ""
 

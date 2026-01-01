@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from pydantic import Field
 from datetime import datetime
 from enum import StrEnum
 
@@ -26,7 +27,12 @@ T = TypeVar('T')
 class PageParams(BaseModel):
     page: int = 1
     size: int = 10
-    term: str | None = None
+    term: str | None = Field(
+        default=None,
+        json_schema_extra={
+            'examples': [None],
+        }
+    )
 
 
 class EventsPageType(StrEnum):

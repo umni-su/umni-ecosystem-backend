@@ -59,6 +59,8 @@ def install_ecosystem(body: InstallBody, response: Response):
                 user.email = account.email
                 user.firstname = account.firstname
                 user.lastname = account.lastname
+                user.is_active = True
+                user.is_superuser = True
                 session.add(session.merge(user))
 
                 # Save mqtt info

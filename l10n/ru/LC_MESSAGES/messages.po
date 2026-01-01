@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-26 21:54+0300\n"
+"POT-Creation-Date: 2026-01-01 17:12+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -23,43 +23,43 @@ msgstr ""
 msgid "Base settings"
 msgstr "Основные настройки"
 
-#: classes/configuration/configuration.py:50
+#: classes/configuration/configuration.py:51
 msgid "Application locale"
 msgstr "Язык системы"
 
-#: classes/configuration/configuration.py:55
+#: classes/configuration/configuration.py:56
 msgid "Application uploads path"
 msgstr "Путь для загрузок"
 
-#: classes/configuration/configuration.py:60
+#: classes/configuration/configuration.py:61
 msgid "Application uploads max size"
 msgstr "Максимальный размер загружаемых файлов"
 
-#: classes/configuration/configuration.py:67
+#: classes/configuration/configuration.py:68
 msgid "Devices settings"
 msgstr "Настройки устройств"
 
-#: classes/configuration/configuration.py:71
+#: classes/configuration/configuration.py:73
 msgid "Device sync timeout"
 msgstr "Интервал синхронизации устройств"
 
-#: classes/configuration/configuration.py:78
+#: classes/configuration/configuration.py:80
 msgid "MQTT settings"
 msgstr "Настройки MQTT"
 
-#: classes/configuration/configuration.py:82
+#: classes/configuration/configuration.py:85
 msgid "MQTT host"
 msgstr "MQTT хост"
 
-#: classes/configuration/configuration.py:87
+#: classes/configuration/configuration.py:90
 msgid "MQTT port"
 msgstr "MQTT порт"
 
-#: classes/configuration/configuration.py:92
+#: classes/configuration/configuration.py:95
 msgid "MQTT user"
 msgstr "MQTT пользователь"
 
-#: classes/configuration/configuration.py:97
+#: classes/configuration/configuration.py:100
 msgid "MQTT password"
 msgstr "MQTT пароль"
 
@@ -168,11 +168,95 @@ msgstr "Настройки уведомления"
 msgid "Notification ID"
 msgstr "Идентификатор уведомления"
 
-#: repositories/rules_repository.py:95
+#: models/mixins/password_mixin.py:29
+msgid "Password must be at least 8 characters long"
+msgstr "Длина пароля должна составлять не менее 8 символов"
+
+#: models/mixins/password_mixin.py:35
+msgid ""
+"Password must contain: uppercase letter, lowercase letter, digit, and "
+"special character (!@#$%^&*()_+=-~)"
+msgstr ""
+"Пароль должен содержать: заглавную букву, строчную букву, цифру и "
+"специальный символ (!@#$%^&*()_+=-~)"
+
+#: models/mixins/password_mixin.py:48 models/mixins/password_mixin.py:68
+msgid "Passwords do not match"
+msgstr "Пароли не совпадают"
+
+#: models/mixins/password_mixin.py:65
+msgid "Password is required when changing password"
+msgstr ""
+
+#: repositories/rules_repository.py:96
 msgid "Rule not found"
 msgstr "Правило не найдено"
 
-#: routes/configuration.py:48
+#: routes/access.py:35
+msgid "View roles"
+msgstr "Просмотр ролей"
+
+#: routes/access.py:36
+msgid "Allow to view roles list"
+msgstr "Разрешить просматривать список ролей"
+
+#: routes/access.py:41
+msgid "Create roles"
+msgstr "Создание ролей"
+
+#: routes/access.py:42
+msgid "Allow to create roles"
+msgstr "Разрешить создание ролей"
+
+#: routes/access.py:47
+msgid "Update roles"
+msgstr "Обновление ролей"
+
+#: routes/access.py:48
+msgid "Allow to update roles"
+msgstr "Разрешить обновлять роли"
+
+#: routes/access.py:53
+msgid "Delete roles"
+msgstr "Удаление ролей"
+
+#: routes/access.py:54
+msgid "Allow to delete roles"
+msgstr "Разрешить удалять роли"
+
+#: routes/cameras.py:54
+msgid "View cameras"
+msgstr "Просмотр камер"
+
+#: routes/cameras.py:55
+msgid "Allow to view cameras list"
+msgstr "Разрешить просматривать список камер"
+
+#: routes/cameras.py:60
+msgid "Add cameras"
+msgstr "Добавление камер"
+
+#: routes/cameras.py:61
+msgid "Allow to create new cameras"
+msgstr "Разрешить добавлять новые камеры"
+
+#: routes/cameras.py:66
+msgid "Update cameras"
+msgstr "Обновление камер"
+
+#: routes/cameras.py:67
+msgid "Allow to update cameras"
+msgstr "Разрешить обновлять камеры"
+
+#: routes/cameras.py:72
+msgid "Delete cameras"
+msgstr "Удаление камер"
+
+#: routes/cameras.py:73
+msgid "Allow to delete cameras"
+msgstr "Разрешить удалять камеры"
+
+#: routes/configuration.py:62
 msgid "Failed to save configuration"
 msgstr "Ошибка сохранения конфигурации"
 
@@ -192,16 +276,39 @@ msgstr "Уведомление отправлено"
 msgid "Rule deleted"
 msgstr "Правило удалено"
 
-#: routes/sensors.py:77
+#: routes/sensors.py:78
 msgid "Error getting sensors history"
 msgstr "Ошибка получения истории сенсоров"
 
-#~ msgid "Application install status"
-#~ msgstr "Статус установки системы"
+#: routes/users.py:35
+msgid "View users"
+msgstr "Просмотр пользователей"
 
-#~ msgid "Application install date"
-#~ msgstr "Дата установки системы"
+#: routes/users.py:36
+msgid "Allow to view users list"
+msgstr "Разрешить просматривать список пользователей"
 
-#~ msgid "Application key"
-#~ msgstr "Ключ приложения"
+#: routes/users.py:41
+msgid "Creating users"
+msgstr "Создание пользователей"
+
+#: routes/users.py:42
+msgid "Allow to create users"
+msgstr "Разрешить создание пользователей"
+
+#: routes/users.py:47
+msgid "Updating users"
+msgstr "Обновление пользователей"
+
+#: routes/users.py:48
+msgid "Allow to update users"
+msgstr "Разрешить обновление пользователей"
+
+#: routes/users.py:53
+msgid "Deleting users"
+msgstr "Удаление пользователей"
+
+#: routes/users.py:54
+msgid "Allow to delete users"
+msgstr "Разрешить удаление пользователей"
 

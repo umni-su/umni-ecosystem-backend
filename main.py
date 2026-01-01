@@ -17,6 +17,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from classes.app.lifespan_manager import lifespan_manager
+from routes.access import access
 from routes.cameras import cameras
 from routes.events import events
 from routes.logs import logs
@@ -28,12 +29,13 @@ from routes.install import install
 from routes.initialize import initialize
 from routes.configuration import conf
 from routes.rules import rules
-
-from config.settings import settings
 from routes.sensors import sensors
 from routes.systeminfo import systeminfo
+from routes.users import users
 from routes.websockets import websockets
 from routes.notifications import notifications
+from config.settings import settings
+
 from services.cameras.classes.stream_registry import StreamRegistry
 
 app = FastAPI(
@@ -58,6 +60,7 @@ async def health_check():
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
+app.include_router(access)
 app.include_router(auth)
 app.include_router(cameras)
 app.include_router(conf)
@@ -72,6 +75,7 @@ app.include_router(plugins)
 app.include_router(sensors)
 app.include_router(storages)
 app.include_router(systeminfo)
+app.include_router(users)
 app.include_router(websockets)
 
 if __name__ == "__main__":

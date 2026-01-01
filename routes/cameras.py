@@ -22,8 +22,11 @@ from starlette.responses import Response
 
 from classes.app.lifespan_manager import lifespan_manager
 from classes.auth.auth import Auth
+from classes.l10n.l10n import _
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.permissions.permission_decorators import register_permission
+from classes.permissions.permission_dependency import check_permission, check_permission_by_token
 from classes.storages.camera_storage import CameraStorage
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel, CameraEventBaseModel
@@ -38,17 +41,41 @@ from starlette.exceptions import HTTPException
 
 from services.cameras.classes.static_stream_manager import static_stream_manager
 from services.cameras.classes.stream_registry import StreamRegistry
-from services.cameras.utils.cameras_helpers import get_no_signal_frame
 
+tag = "cameras"
 cameras = APIRouter(
     prefix='/cameras',
     tags=['cameras']
 )
 
 
+@register_permission(
+    code=f'{tag}:view',
+    name=_('View cameras'),
+    description=_('Allow to view cameras list'),
+    category=tag
+)
+@register_permission(
+    code=f'{tag}:create',
+    name=_('Add cameras'),
+    description=_('Allow to create new cameras'),
+    category=tag
+)
+@register_permission(
+    code=f'{tag}:update',
+    name=_('Update cameras'),
+    description=_('Allow to update cameras'),
+    category=tag
+)
+@register_permission(
+    code=f'{tag}:delete',
+    name=_('Delete cameras'),
+    description=_('Allow to delete cameras'),
+    category=tag
+)
 @cameras.get('', response_model=list[CameraModelWithRelations])
 def get_cameras(
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
 ):
     camera_list = CameraRepository.get_cameras()
     return camera_list
@@ -57,7 +84,7 @@ def get_cameras(
 @cameras.post('', response_model=CameraModelWithRelations)
 def add_camera(
         model: CameraBaseModel,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:create"))]
 ):
     camera = CameraRepository.add_camera(model)
     return camera
@@ -66,7 +93,7 @@ def add_camera(
 @cameras.put('/{camera_id}', response_model=CameraModelWithRelations)
 def update_camera(
         model: CameraBaseModel,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:update"))]
 ):
     camera = CameraRepository.update_camera(model)
     return camera
@@ -75,7 +102,7 @@ def update_camera(
 @cameras.get('/{camera_id}', response_model=CameraModelWithRelations)
 def get_camera(
         camera_id: int,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
 
 ):
     camera = CameraRepository.get_camera(camera_id)
@@ -85,7 +112,7 @@ def get_camera(
 @cameras.get('/{camera_id}/cover')
 def get_camera_cover(
         camera_id: int,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
 ):
     camera = CameraRepository.get_camera(camera_id)
     # stream = StreamRegistry.find_by_camera(camera)
@@ -98,7 +125,7 @@ def get_camera_cover(
 @cameras.get('/{camera_id}/stream')
 async def get_camera_stream(
         camera_id: int,
-        user: Annotated[UserResponseOut, Depends(Auth.validate_token)],
+        user: Annotated[UserResponseOut, Depends(check_permission_by_token("cameras:view"))],
         background_tasks: BackgroundTasks,
 ):
     # Проверяем глобальное состояние shutdown
@@ -133,7 +160,7 @@ async def get_camera_stream(
 
 @cameras.get('/streams')
 def get_streams_as_list(
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
 ):
     return StreamRegistry.get_streams_as_models()
 
@@ -141,7 +168,7 @@ def get_streams_as_list(
 @cameras.put('/{camera_id}/stream')
 def start_camera_stream(
         camera_id: int,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:update"))]
 ):
     camera = CameraRepository.get_camera(camera_id)
     stream = StreamRegistry.find_by_camera(camera)
@@ -152,7 +179,7 @@ def start_camera_stream(
 @cameras.delete('/{camera_id}/stream')
 def stop_camera_stream(
         camera_id: int,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:delete"))]
 ):
     camera = CameraRepository.get_camera(camera_id)
     stream = StreamRegistry.find_by_camera(camera)

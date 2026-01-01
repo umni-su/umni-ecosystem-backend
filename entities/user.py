@@ -12,11 +12,13 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import List, TYPE_CHECKING
 
-from sqlmodel import Field
+from sqlmodel import Field, Relationship
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
+from entities.permission import UserRoleEntity
 
 
 class UserEntityBase:
@@ -37,6 +39,13 @@ class UserEntityBase:
     lastname: str = Field(
         nullable=True
     )
+    is_active: bool = Field(
+        default=True
+    )
+    is_superuser: bool = Field(
+        default=False,
+        index=True
+    )
 
 
 class UserEntity(
@@ -46,3 +55,7 @@ class UserEntity(
     table=True
 ):
     __tablename__ = 'users'
+
+    roles: List["UserRoleEntity"] = Relationship(
+        back_populates="user"
+    )

@@ -56,7 +56,7 @@ class Auth:
     @staticmethod
     def get_user(username: str) -> UserResponseInDb:
         with write_session() as session:
-            user = session.exec(
+            user: UserEntity | None = session.exec(
                 select(UserEntity).where(UserEntity.username == username)
             ).first()
             if not user:
@@ -137,8 +137,8 @@ class Auth:
     def get_current_active_user(
             current_user: Annotated[UserResponseOut, Depends(get_current_user)]
     ):
-        # if current_user.disabled:
-        #     raise HTTPException(status_code=400, detail="Inactive user")
+        if not current_user.is_active:
+            raise HTTPException(status_code=400, detail="Inactive user")
         return current_user
 
     @staticmethod

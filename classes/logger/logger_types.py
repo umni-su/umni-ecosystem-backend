@@ -27,6 +27,7 @@ class LoggerType(StrEnum):
     SERVICES = 'services'
     STORAGES = 'storages'
     PLUGINS = 'plugins'
+    USERS = 'users'
     WEBSOCKETS = 'websockets'
     SYSTEMINFO = 'systeminfo'
     SCHEDULER = 'scheduler'
