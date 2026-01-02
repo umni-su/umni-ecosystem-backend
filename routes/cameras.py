@@ -25,7 +25,8 @@ from classes.auth.auth import Auth
 from classes.l10n.l10n import _
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from classes.permissions.permission_decorators import register_permission
+from classes.permissions.permission_decorators import register_permission, register_permission_category, \
+    register_category_permissions
 from classes.permissions.permission_dependency import check_permission, check_permission_by_token
 from classes.storages.camera_storage import CameraStorage
 from models.camera_area_model import CameraAreaBaseModel
@@ -48,31 +49,33 @@ cameras = APIRouter(
     tags=['cameras']
 )
 
+register_category_permissions(
+    category_code=tag,
+    category_name=_('Cameras management'),
+    permissions=[
+        {
+            "code": f"{tag}:view",
+            "name": _("View cameras"),
+            "description": _("Allow to view cameras list")
+        },
+        {
+            "code": f"{tag}:create",
+            "name": _("Add cameras"),
+            "description": _("Allow to create new cameras")
+        },
+        {
+            "code": f"{tag}:update",
+            "name": _("Update cameras"),
+            "description": _("Allow to update cameras")
+        },
+        {
+            "code": f"{tag}:delete",
+            "name": _("Delete cameras"),
+            "description": _("Allow to delete cameras")
+        }
+    ]
+)
 
-@register_permission(
-    code=f'{tag}:view',
-    name=_('View cameras'),
-    description=_('Allow to view cameras list'),
-    category=tag
-)
-@register_permission(
-    code=f'{tag}:create',
-    name=_('Add cameras'),
-    description=_('Allow to create new cameras'),
-    category=tag
-)
-@register_permission(
-    code=f'{tag}:update',
-    name=_('Update cameras'),
-    description=_('Allow to update cameras'),
-    category=tag
-)
-@register_permission(
-    code=f'{tag}:delete',
-    name=_('Delete cameras'),
-    description=_('Allow to delete cameras'),
-    category=tag
-)
 @cameras.get('', response_model=list[CameraModelWithRelations])
 def get_cameras(
         user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]

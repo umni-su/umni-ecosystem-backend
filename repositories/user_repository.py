@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
@@ -19,12 +20,28 @@ from entities.user import UserEntity
 from models.pagination_model import PageParams
 from repositories.base_repository import BaseRepository
 from responses.user import UserResponseOut, UserResponseIn, UserUpdate
-from sqlmodel import delete, col
+from sqlmodel import delete, col, select, func
 
 
 class UserRepository(BaseRepository):
     entity_class = UserEntity
     model_class = UserResponseOut
+
+    @classmethod
+    def count_users(
+            cls,
+            superusers_only: bool = False
+    ) -> int:
+        with write_session() as session:
+            try:
+                query = select(func.count(UserEntity.id)).select_from(cls.entity_class)
+                if superusers_only:
+                    query = query.where(col(UserEntity.is_superuser) == True)
+                return session.exec(query).one_or_none()
+
+            except Exception as e:
+                Logger.err(str(e), LoggerType.USERS)
+                return -1
 
     @classmethod
     def get_users(cls, params: PageParams):

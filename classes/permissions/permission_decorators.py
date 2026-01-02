@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import wraps
-from typing import Optional
+from typing import Optional, Dict, List
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
@@ -23,7 +23,81 @@ from entities.permission import PermissionEntity
 from sqlmodel import select
 
 _created_permissions = set()
+_permission_categories: Dict[str, str] = {}
 
+def register_permission_category(code: str, name: str):
+    """
+    Декоратор для регистрации категории разрешений.
+    Категория сохраняется в памяти для доступа из других мест.
+
+    Args:
+        code: Код категории (например "video", "smart_home", "roles")
+        name: Человеческое название категории
+    """
+
+    def decorator(func):
+        # Сохраняем категорию в памяти
+        _permission_categories[code] = name
+
+        # Добавляем метаданные к функции
+        func.permission_category_code = code
+        func.permission_category_name = name
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Выполняем оригинальную функцию
+            result = func(*args, **kwargs)
+
+            # Опционально: можно создавать базовые разрешения для категории
+            # Например, автоматически создать view разрешение
+            base_permission_code = f"{code}:view"
+            if base_permission_code not in _created_permissions:
+                _create_permission(
+                    code=base_permission_code,
+                    name=f"Просмотр {name}",
+                    description=f"Базовое разрешение на просмотр {name}",
+                    category=code
+                )
+
+            return result
+
+        return wrapper
+
+    return decorator
+
+def get_permission_categories() -> Dict[str, str]:
+    """
+    Получить все зарегистрированные категории.
+    Returns: dict {category_code: category_name}
+    """
+    return _permission_categories.copy()
+
+
+# Утилита для массовой регистрации
+def register_category_permissions(category_code: str, category_name: str,
+                                  permissions: List[Dict]):
+    """
+    Зарегистрировать категорию и несколько разрешений сразу.
+
+    Example:
+        register_category_permissions(
+            code="video",
+            name="Видеонаблюдение",
+            permissions=[
+                {"code": "video:camera:view", "name": "Просмотр камер"},
+                {"code": "video:camera:create", "name": "Создание камер"},
+            ]
+        )
+    """
+    _permission_categories[category_code] = category_name
+
+    for perm in permissions:
+        _create_permission(
+            code=perm["code"],
+            name=perm.get("name", ""),
+            description=perm.get("description", ""),
+            category=category_code
+        )
 
 def register_permission(
         code: str,
@@ -47,7 +121,7 @@ def register_permission(
             generated_category = category
 
         if not description:
-            generated_description = f"Разрешение: {generated_name}"
+            generated_description = generated_name
         else:
             generated_description = description
 

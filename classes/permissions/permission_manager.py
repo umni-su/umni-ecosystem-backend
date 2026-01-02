@@ -188,12 +188,18 @@ class PermissionManager:
                 Logger.err(str(e), LoggerType.USERS)
                 return False
 
-    def remove_permission_from_role(self, permission_id: int) -> bool:
+    def remove_permission_from_role(
+            self,
+            role_id:int,
+            permission_id: int
+    ) -> bool:
         with write_session() as session:
             try:
                 session.exec(
                     delete(RolePermissionEntity).where(
                         col(RolePermissionEntity.permission_id) == permission_id,
+                    ).where(
+                        col(RolePermissionEntity.role_id) == role_id
                     )
                 )
                 return True

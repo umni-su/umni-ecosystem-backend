@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-01 17:12+0300\n"
+"POT-Creation-Date: 2026-01-02 11:43+0300\n"
 "PO-Revision-Date: 2025-08-29 13:24+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -190,66 +190,102 @@ msgid "Rule not found"
 msgstr ""
 
 #: routes/access.py:35
+msgid "Roles management"
+msgstr ""
+
+#: routes/access.py:39
 msgid "View roles"
 msgstr ""
 
-#: routes/access.py:36
+#: routes/access.py:40
 msgid "Allow to view roles list"
 msgstr ""
 
-#: routes/access.py:41
+#: routes/access.py:45
 msgid "Create roles"
 msgstr ""
 
-#: routes/access.py:42
+#: routes/access.py:46
 msgid "Allow to create roles"
 msgstr ""
 
-#: routes/access.py:47
+#: routes/access.py:51
 msgid "Update roles"
 msgstr ""
 
-#: routes/access.py:48
+#: routes/access.py:52
 msgid "Allow to update roles"
 msgstr ""
 
-#: routes/access.py:53
-msgid "Delete roles"
+#: routes/access.py:57
+msgid "Assign permissions to role"
 msgstr ""
 
-#: routes/access.py:54
-msgid "Allow to delete roles"
+#: routes/access.py:58
+msgid "Allow to assign permissions to role"
 msgstr ""
 
-#: routes/cameras.py:54
+#: routes/access.py:63
+msgid "Remove permissions from role"
+msgstr ""
+
+#: routes/access.py:64
+msgid "Allow to remove permissions from role"
+msgstr ""
+
+#: routes/access.py:70
+msgid "Permissions management"
+msgstr ""
+
+#: routes/access.py:74
+msgid "View permissions"
+msgstr ""
+
+#: routes/access.py:75
+msgid "Allow to view permissions"
+msgstr ""
+
+#: routes/access.py:80
+msgid "Delete permissions"
+msgstr ""
+
+#: routes/access.py:81
+msgid "Allow to delete permissions"
+msgstr ""
+
+#: routes/cameras.py:53
+msgid "Cameras management"
+msgstr ""
+
+#: routes/cameras.py:57
 msgid "View cameras"
 msgstr ""
 
-#: routes/cameras.py:55
+#: routes/cameras.py:58
 msgid "Allow to view cameras list"
 msgstr ""
 
-#: routes/cameras.py:60
+#: routes/cameras.py:63
 msgid "Add cameras"
 msgstr ""
 
-#: routes/cameras.py:61
+#: routes/cameras.py:64
 msgid "Allow to create new cameras"
 msgstr ""
 
-#: routes/cameras.py:66
+#: routes/cameras.py:69
 msgid "Update cameras"
 msgstr ""
 
-#: routes/cameras.py:67
+#: routes/cameras.py:70
 msgid "Allow to update cameras"
 msgstr ""
 
-#: routes/cameras.py:72
+#: routes/cameras.py:75
 msgid "Delete cameras"
 msgstr ""
 
-#: routes/cameras.py:73
+#: routes/cameras.py:76
 msgid "Allow to delete cameras"
 msgstr ""
 
@@ -278,35 +314,47 @@ msgid "Error getting sensors history"
 msgstr ""
 
 #: routes/users.py:35
+msgid "Users management"
+msgstr ""
+
+#: routes/users.py:40
 msgid "View users"
 msgstr ""
 
-#: routes/users.py:36
+#: routes/users.py:41
 msgid "Allow to view users list"
 msgstr ""
 
-#: routes/users.py:41
+#: routes/users.py:46
 msgid "Creating users"
 msgstr ""
 
-#: routes/users.py:42
+#: routes/users.py:47
 msgid "Allow to create users"
 msgstr ""
 
-#: routes/users.py:47
+#: routes/users.py:52
 msgid "Updating users"
 msgstr ""
 
-#: routes/users.py:48
+#: routes/users.py:53
 msgid "Allow to update users"
 msgstr ""
 
-#: routes/users.py:53
+#: routes/users.py:58
 msgid "Deleting users"
 msgstr ""
 
-#: routes/users.py:54
+#: routes/users.py:59
 msgid "Allow to delete users"
+msgstr ""
+
+#: routes/users.py:70
+msgid "User not found"
+msgstr ""
+
+#: routes/users.py:104
+msgid "Could not delete last user"
 msgstr ""
 
 #~ msgid "Application install status"
@@ -328,5 +376,11 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "Password must contain at least one letter"
+#~ msgstr ""
+
+#~ msgid "Delete roles"
+#~ msgstr ""
+
+#~ msgid "Allow to delete roles"
 #~ msgstr ""
 

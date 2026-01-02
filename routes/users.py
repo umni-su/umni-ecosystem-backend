@@ -15,51 +15,58 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from classes.l10n.l10n import _
-from classes.permissions.permission_decorators import register_permission
+from classes.permissions.permission_decorators import register_permission, register_permission_category, \
+    register_category_permissions
 from classes.permissions.permission_dependency import check_permission
 from models.pagination_model import PageParams
 from repositories.user_repository import UserRepository
 from responses.user import UserResponseOut, UserResponseIn, UserUpdate
 
+tag = "users"
 users = APIRouter(
     prefix='/users',
     tags=['users']
 )
 
+register_category_permissions(
+    category_code=tag,
+    category_name=_('Users management'),
+    permissions=[
+        {
+            "code": f"{tag}:view",
+            "name": _("View users"),
+            "description": _("Allow to view users list")
+        },
+        {
+            "code": f"{tag}:create",
+            "name": _("Creating users"),
+            "description": _("Allow to create users")
+        },
+        {
+            "code": f"{tag}:update",
+            "name": _("Updating users"),
+            "description": _("Allow to update users")
+        },
+        {
+            "code": f"{tag}:delete",
+            "name": _("Deleting users"),
+            "description": _("Allow to delete users")
+        }
+    ]
+)
 
-@register_permission(
-    code="users:view",
-    name=_("View users"),
-    description=_("Allow to view users list"),
-    category="users"
-)
-@register_permission(
-    code="users:create",
-    name=_("Creating users"),
-    description=_("Allow to create users"),
-    category="users"
-)
-@register_permission(
-    code="users:update",
-    name=_("Updating users"),
-    description=_("Allow to update users"),
-    category="users"
-)
-@register_permission(
-    code="users:delete",
-    name=_("Deleting users"),
-    description=_("Allow to delete users"),
-    category="users"
-)
 @users.post('/list')
 def get_users(
         params: PageParams,
         user: Annotated[UserResponseOut, Depends(check_permission("users:view"))]
 ):
-    return UserRepository.get_users(params=params)
+    if UserRepository.count_users(superusers_only=True) > 1:
+        return UserRepository.get_users(params=params)
+    else:
+        raise HTTPException(status_code=404, detail=_("User not found"))
 
 
 @users.post('')
@@ -84,4 +91,14 @@ def delete_user(
         user_id: int,
         user: Annotated[UserResponseOut, Depends(check_permission("users:delete"))]
 ):
-    return UserRepository.delete_user(user_id)
+    if user.is_superuser:
+        _count = UserRepository.count_users(
+            superusers_only=True
+        )
+        if _count > 1:
+            return UserRepository.delete_user(user_id=user_id)
+        else :
+            raise HTTPException(
+                status_code=401,
+                detail=_("Could not delete last user")
+            )

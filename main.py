@@ -21,6 +21,7 @@ from routes.access import access
 from routes.cameras import cameras
 from routes.events import events
 from routes.logs import logs
+from routes.permissions import permissions
 from routes.plugins import plugins
 from routes.storages import storages
 from routes.auth import auth
@@ -71,6 +72,7 @@ app.include_router(install)
 app.include_router(logs)
 app.include_router(notifications)
 app.include_router(rules)
+app.include_router(permissions)
 app.include_router(plugins)
 app.include_router(sensors)
 app.include_router(storages)

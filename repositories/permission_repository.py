@@ -12,16 +12,19 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional, List
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.permissions.permission_decorators import get_permission_categories
 from database.session import write_session
 from entities.permission import PermissionEntity
 from entities.user import UserEntity
 from models.pagination_model import PageParams
-from models.permission_model import PermissionModel
+from models.permission_model import PermissionModel, PermissionGroupModel
 from repositories.base_repository import BaseRepository
 from responses.user import UserResponseOut, UserResponseIn, UserUpdate
-from sqlmodel import delete, col
+from sqlmodel import delete, col, select
 
 
 class PermissionRepository(BaseRepository):
@@ -36,3 +39,50 @@ class PermissionRepository(BaseRepository):
                 page_params=params,
             )
 
+    @classmethod
+    def get_all_permissions(cls):
+        with write_session() as session:
+            try:
+                permissions = session.exec(
+                    select(PermissionEntity).order_by(
+                        col(PermissionEntity.category).asc()
+                    ).order_by(
+                        col(PermissionEntity.name).asc()
+                    )
+                )
+                return [
+                    PermissionModel.model_validate(
+                        p.to_dict()
+                    ) for p in permissions
+                ]
+            except Exception as e:
+                Logger.err(str(e))
+                return None
+
+    @classmethod
+    def get_permissions_grouped(cls) -> List[PermissionGroupModel]:
+        permissions = cls.get_all_permissions()
+        groups = get_permission_categories()
+        res: List[PermissionGroupModel] = []
+        for code, name in groups.items():
+            group = PermissionGroupModel(
+                name=name,
+                code=code,
+                permissions=[p for p in permissions if p.category == code],
+            )
+            res.append(group)
+        return res
+
+    @classmethod
+    def get_permission_by_id(cls, permission_id: int) -> Optional[PermissionModel]:
+        with write_session() as session:
+            try:
+                return PermissionModel.model_validate(
+                    session.get(PermissionEntity, permission_id).to_dict(
+                        include_relationships=True
+                    )
+                )
+
+            except Exception as e:
+                Logger.err(str(e))
+                return None

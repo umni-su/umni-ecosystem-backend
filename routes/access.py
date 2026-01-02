@@ -12,15 +12,19 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 from typing import Optional, Annotated
 
 from fastapi import APIRouter, HTTPException, Depends
 
 from classes.l10n.l10n import _
-from classes.permissions.permission_decorators import register_permission
+from classes.permissions.permission_decorators import register_permission, register_permission_category, \
+    register_category_permissions
 from classes.permissions.permission_dependency import check_permission
+from classes.permissions.permission_manager import permission_manager
 from models.pagination_model import PageParams
 from models.permission_model import RoleModelWithPermissions, RoleCreate, RoleUpdate
+from repositories.permission_repository import PermissionRepository
 from repositories.role_repository import RoleRepository
 from responses.user import UserResponseOut
 
@@ -30,30 +34,39 @@ access = APIRouter(
 )
 
 
-@register_permission(
-    code="roles:view",
-    name=_("View roles"),
-    description=_("Allow to view roles list"),
-    category="roles"
+register_category_permissions(
+    category_code="roles",
+    category_name=_('Roles management'),
+    permissions=[
+        {
+            "code": "roles:view",
+            "name": _("View roles"),
+            "description": _("Allow to view roles list")
+        },
+        {
+            "code": "roles:create",
+            "name": _("Create roles"),
+            "description": _("Allow to create roles")
+        },
+        {
+            "code": "roles:update",
+            "name": _("Update roles"),
+            "description": _("Allow to update roles")
+        },
+        {
+            "code": "role:permissions:create",
+            "name": _("Assign permissions to role"),
+            "description": _("Allow to assign permissions to role")
+        },
+        {
+            "code": "role:permissions:remove",
+            "name": _("Remove permissions from role"),
+            "description": _("Allow to remove permissions from role")
+        }
+    ]
 )
-@register_permission(
-    code="roles:create",
-    name=_("Create roles"),
-    description=_("Allow to create roles"),
-    category="roles"
-)
-@register_permission(
-    code="roles:update",
-    name=_("Update roles"),
-    description=_("Allow to update roles"),
-    category="roles"
-)
-@register_permission(
-    code="roles:delete",
-    name=_("Delete roles"),
-    description=_("Allow to delete roles"),
-    category="roles"
-)
+
+
 @access.post('/roles/list')
 def get_roles(
         params: PageParams,
@@ -137,3 +150,32 @@ def delete_role(
             status_code=500,
             detail=str(e)
         )
+
+@access.put('/roles/{role_id}/permissions/{permission_id}')
+def add_permissions_to_role(
+    role_id: int,
+    permission_id: int,
+    user: Annotated[UserResponseOut, Depends(check_permission("role:permissions:create"))]
+):
+    permission = PermissionRepository.get_permission_by_id(permission_id=permission_id)
+    res = permission_manager.add_permission_to_role(
+        role_id=role_id,
+        permission_code=permission.code
+    )
+    return HTTPException(
+        status_code=200 if res else 500,
+    )
+
+@access.delete('/roles/{role_id}/permissions/{permission_id}')
+def add_permissions_to_role(
+    role_id: int,
+    permission_id: int,
+    user: Annotated[UserResponseOut, Depends(check_permission("role:permissions:remove"))]
+):
+    res = permission_manager.remove_permission_from_role(
+        role_id=role_id,
+        permission_id=permission_id
+    )
+    return HTTPException(
+        status_code=200 if res else 500,
+    )

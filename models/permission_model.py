@@ -56,6 +56,11 @@ class PermissionModel(BaseModel):
     description: str | None = None
     category: str
 
+class PermissionGroupModel(BaseModel):
+    name: str
+    code: str
+    permissions: List[PermissionModel]
+
 
 class RoleModel(BaseModel):
     """Упрощенная модель роли"""
