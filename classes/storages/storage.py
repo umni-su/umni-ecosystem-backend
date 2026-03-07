@@ -14,6 +14,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os.path
+
+from numpy import ndarray
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
@@ -84,6 +87,16 @@ class StorageBase:
         h, w, channels = img.shape
         scale = width / w
         resized = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+        success, im = cv2.imencode('.jpg', resized)
+        headers = {'Content-Disposition': f'inline; filename="{name}"'}
+        return Response(im.tobytes(), headers=headers, media_type='image/jpeg')
+
+    @classmethod
+    def image_response_from_bytes(cls, _bytes: ndarray, width: int = 200):
+        name = 'image_response_from_bytes'
+        h, w, channels = _bytes.shape
+        scale = width / w
+        resized = cv2.resize(_bytes, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         success, im = cv2.imencode('.jpg', resized)
         headers = {'Content-Disposition': f'inline; filename="{name}"'}
         return Response(im.tobytes(), headers=headers, media_type='image/jpeg')

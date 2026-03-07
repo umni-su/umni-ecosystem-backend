@@ -251,9 +251,10 @@ class CameraStream:
             filename=filename,
         )
 
-    def get_current_cover(self, w: int) -> str | None:
-        """Безопасно возвращает текущий кадр"""
-        return CameraStorage.get_cover(camera=self.camera, width=w)
+    #
+    # def get_current_cover(self, w: int) -> str | None:
+    #     """Безопасно возвращает текущий кадр"""
+    #     return CameraStorage.get_cover(camera=self.camera, width=w)
 
     def get_current_frame(self) -> np.ndarray:
         """Безопасно возвращает текущий кадр"""

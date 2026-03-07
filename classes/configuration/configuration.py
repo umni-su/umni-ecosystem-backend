@@ -130,7 +130,7 @@ class EcosystemDatabaseConfiguration:
         conf = self.get_setting(ConfigurationKeys.APP_INSTALLED)
         if conf is None:
             return False
-        return conf.value == 'true'
+        return conf.value.lower() == 'true'
 
     def check_and_create_configuration_values(self):
         created: [str] = []

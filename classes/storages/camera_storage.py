@@ -132,14 +132,20 @@ class CameraStorage(StorageBase):
 
     @classmethod
     def get_cover(cls, camera: "CameraModelWithRelations", width: int):
-        path = os.path.join(
-            camera.storage.path,
-            camera.cover
-        )
-        if os.path.exists(path):
-            return cls.image_response(path, width)
-        else:
-            return get_no_signal_frame(width=width)
+        try:
+            if camera.cover is None:
+                return cls.image_response_from_bytes(get_no_signal_frame(width=width))
+            path = os.path.join(
+                camera.storage.path,
+                camera.cover
+            )
+            if os.path.exists(path):
+                return cls.image_response(path, width)
+            else:
+                return cls.image_response_from_bytes(get_no_signal_frame(width=width))
+        except Exception as e:
+            Logger.err(str(e), LoggerType.CAMERAS)
+            return cls.image_response_from_bytes(get_no_signal_frame(width=width))
 
     @classmethod
     def camera_path(cls, camera: "CameraModelWithRelations"):
