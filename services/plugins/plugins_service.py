@@ -20,12 +20,11 @@ import venv
 import shutil
 from pathlib import Path
 from typing import Dict, List, Optional, Type, Any
-from warnings import deprecated
-
+from typing_extensions import deprecated
 from sqlmodel import select
 
 from classes.configuration.configuration import EcosystemDatabaseConfiguration
-from classes.l10n.l10n import translator, plugin_translate
+from classes.l10n.l10n import translator
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.thread.task_manager import TaskManager
