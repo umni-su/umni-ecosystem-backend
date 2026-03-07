@@ -33,7 +33,8 @@ class EcosystemDatabaseConfiguration:
         self.reread()
 
     def _after_reread(self):
-        self.language = self.get_setting(ConfigurationKeys.APP_LOCALE).value or 'en'
+        locale = self.get_setting(ConfigurationKeys.APP_LOCALE)
+        self.language = locale.value if isinstance(locale, ConfigurationModel) and locale.value is not None else 'ru'
         current_language = translator.get_current_language()
         if current_language != self.language:
             translator.set_language(self.language)

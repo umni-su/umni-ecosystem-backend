@@ -18,13 +18,12 @@ from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, Relationship
-
-from entities.device import DeviceEntity
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
+from entities.sensor_history import SensorHistory
 
 if TYPE_CHECKING:
-    from entities.sensor_history import SensorHistory
+    from entities.device import DeviceEntity
 
 
 class SensorBase:
@@ -73,7 +72,7 @@ class SensorEntity(
 ):
     __tablename__ = 'device_sensors'
 
-    device: DeviceEntity | None = Relationship(
+    device: Optional["DeviceEntity"] = Relationship(
         back_populates="sensors"
     )
     history: list["SensorHistory"] = Relationship(

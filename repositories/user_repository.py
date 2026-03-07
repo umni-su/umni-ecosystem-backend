@@ -52,6 +52,16 @@ class UserRepository(BaseRepository):
             )
 
     @classmethod
+    def get_user(cls, user_id: int):
+        with write_session() as session:
+            user = session.get(cls.entity_class, user_id)
+            return cls.model_class.model_validate(
+                user.to_dict(
+                    include_relationships=True
+                )
+            )
+
+    @classmethod
     def create_user(cls, user: UserResponseIn) -> UserResponseOut | None:
         with write_session() as session:
             try:

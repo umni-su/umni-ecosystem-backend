@@ -58,15 +58,13 @@ register_category_permissions(
     ]
 )
 
+
 @users.post('/list')
 def get_users(
         params: PageParams,
         user: Annotated[UserResponseOut, Depends(check_permission("users:view"))]
 ):
-    if UserRepository.count_users(superusers_only=True) > 1:
-        return UserRepository.get_users(params=params)
-    else:
-        raise HTTPException(status_code=404, detail=_("User not found"))
+    return UserRepository.get_users(params=params)
 
 
 @users.post('')
@@ -75,6 +73,14 @@ def create_user(
         user: Annotated[UserResponseOut, Depends(check_permission("users:create"))]
 ):
     return UserRepository.create_user(model)
+
+
+@users.get('/{user_id}', response_model=UserResponseOut)
+def get_users(
+        user_id: int,
+        user: Annotated[UserResponseOut, Depends(check_permission("users:view"))]
+):
+    return UserRepository.get_user(user_id=user_id)
 
 
 @users.put('/{user_id}')
@@ -97,7 +103,7 @@ def delete_user(
         )
         if _count > 1:
             return UserRepository.delete_user(user_id=user_id)
-        else :
+        else:
             raise HTTPException(
                 status_code=401,
                 detail=_("Could not delete last user")

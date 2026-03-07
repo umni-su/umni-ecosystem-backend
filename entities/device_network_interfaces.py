@@ -14,11 +14,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from typing import Optional, TYPE_CHECKING
 
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import Field, Relationship
 from entities.mixins.created_updated import TimeStampMixin
-from entities.device import DeviceEntity
 from entities.mixins.id_column import IdColumnMixin
+
+if TYPE_CHECKING:
+    from entities.device import DeviceEntity
 
 
 class DeviceNetworkInterfaceBase:
@@ -57,6 +60,6 @@ class DeviceNetworkInterface(
 ):
     __tablename__ = 'device_network_interfaces'
 
-    device: DeviceEntity | None = Relationship(
+    device: Optional["DeviceEntity"] = Relationship(
         back_populates="network_interfaces"
     )

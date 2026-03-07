@@ -16,15 +16,13 @@
 from datetime import datetime
 
 from sqlmodel import Field, Relationship, BIGINT
-
 from entities.mixins.created_updated import TimeStampMixin
-
 from typing import TYPE_CHECKING
 from entities.mixins.id_column import IdColumnMixin
 
-if TYPE_CHECKING:
-    from entities.device_network_interfaces import DeviceNetworkInterface
-    from entities.sensor_entity import SensorEntity
+# if TYPE_CHECKING:
+from entities.device_network_interfaces import DeviceNetworkInterface
+from entities.sensor_entity import SensorEntity
 
 
 class DeviceBase:

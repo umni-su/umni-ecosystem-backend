@@ -43,14 +43,23 @@ class UserCreate(BaseModel):
     email: str
     firstname: str
     lastname: str
+    is_superuser: bool = Field(default=False)
+    is_active: bool = Field(default=True)
 
 
 class UserResponseIn(UserCreate, PasswordMixin):
     password: str
     password_repeat: str
 
-    _validate_password = field_validator('password')(PasswordMixin.validate_password)
-    _validate_password_repeat = field_validator('password_repeat')(PasswordMixin.validate_password_repeat)
+    @field_validator('password', mode='after')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        return PasswordMixin.validate_password(v)
+
+    @field_validator('password_repeat', mode='after')
+    @classmethod
+    def validate_password_repeat(cls, v: str, info: ValidationInfo) -> str:
+        return PasswordMixin.validate_password_repeat(v, info)
 
 
 class UserUpdate(UserCreate):
@@ -59,8 +68,15 @@ class UserUpdate(UserCreate):
     password: Optional[str] = None
     password_repeat: Optional[str] = None
 
-    _validate_password = field_validator('password')(PasswordMixin.validate_password_optional)
-    _validate_password_repeat = field_validator('password_repeat')(PasswordMixin.validate_password_repeat_optional)
+    @field_validator('password', mode='after')
+    @classmethod
+    def validate_password(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        return PasswordMixin.validate_password_optional(v, info)
+
+    @field_validator('password_repeat', mode='after')
+    @classmethod
+    def validate_password_repeat(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
+        return PasswordMixin.validate_password_repeat_optional(v, info)
 
 
 class UserResponseInDb(UserResponseOut):

@@ -12,12 +12,15 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional, TYPE_CHECKING
 
 from sqlmodel import Field, Relationship
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from entities.sensor_entity import SensorEntity
+
+if TYPE_CHECKING:
+    from entities.sensor_entity import SensorEntity
 
 
 class SensorHistoryBase:
@@ -39,6 +42,6 @@ class SensorHistory(
 ):
     __tablename__ = 'device_sensors_history'
 
-    sensor: SensorEntity | None = Relationship(
+    sensor: Optional["SensorEntity"] = Relationship(
         back_populates="history"
     )

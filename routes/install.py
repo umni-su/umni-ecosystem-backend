@@ -21,7 +21,7 @@ from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
 from database.session import write_session
-from entities.configuration import ConfigurationKeys
+from entities.configuration import ConfigurationKeys, ConfigurationEntity
 from entities.user import UserEntity
 from responses.account import AccountBody
 from responses.install import InstallBody
@@ -68,30 +68,36 @@ def install_ecosystem(body: InstallBody, response: Response):
 
                     host = ecosystem.config.get_setting(ConfigurationKeys.MQTT_HOST)
                     host.value = mqtt.host
-                    session.add(session.merge(host))
+                    host_db = ConfigurationEntity.model_validate(host)
+                    session.merge(host_db)
 
                     port = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PORT)
-                    port.value = mqtt.port
-                    session.add(session.merge(port))
+                    port.value = str(mqtt.port)
+                    port_db = ConfigurationEntity.model_validate(port)
+                    session.merge(port_db)
 
                     if mqtt.password is not None and mqtt.user is not None:
                         mqtt_password = ecosystem.crypto.encrypt(str(mqtt.password))
 
                         user = ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER)
                         user.value = mqtt.user
-                        session.add(session.merge(user))
+                        user_db = ConfigurationEntity.model_validate(user)
+                        session.merge(user_db)
 
                         pwd = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PASSWORD)
                         pwd.value = mqtt_password
-                        session.add(session.merge(pwd))
+                        pwd_db = ConfigurationEntity.model_validate(pwd)
+                        session.merge(pwd_db)
 
                 installed = ecosystem.config.get_setting(ConfigurationKeys.APP_INSTALLED)
-                installed.value = True
-                session.add(session.merge(installed))
+                installed.value = str(True)
+                installed_db = ConfigurationEntity.model_validate(installed)
+                session.merge(installed_db)
 
                 install_date = ecosystem.config.get_setting(ConfigurationKeys.APP_INSTALL_DATE)
-                install_date.value = datetime.datetime.now()
-                session.add(session.merge(install_date))
+                install_date.value = str(datetime.datetime.now())
+                install_date_db = ConfigurationEntity.model_validate(install_date)
+                session.merge(install_date_db)
                 ecosystem.config.reread()
 
     except InvalidToken:
@@ -101,6 +107,7 @@ def install_ecosystem(body: InstallBody, response: Response):
     except Exception as e:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         Logger.err(f'Error install {e}', LoggerType.APP)
+        raise e
         return SuccessResponse(success=False)
 
     response.status_code = 201

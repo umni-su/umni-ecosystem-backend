@@ -18,7 +18,9 @@ from sqlmodel import Field, Relationship
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from entities.permission import UserRoleEntity
+
+if TYPE_CHECKING:
+    from entities.permission import UserRoleEntity
 
 
 class UserEntityBase:

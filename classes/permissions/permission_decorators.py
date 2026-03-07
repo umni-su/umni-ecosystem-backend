@@ -25,6 +25,7 @@ from sqlmodel import select
 _created_permissions = set()
 _permission_categories: Dict[str, str] = {}
 
+
 def register_permission_category(code: str, name: str):
     """
     Декоратор для регистрации категории разрешений.
@@ -65,6 +66,7 @@ def register_permission_category(code: str, name: str):
 
     return decorator
 
+
 def get_permission_categories() -> Dict[str, str]:
     """
     Получить все зарегистрированные категории.
@@ -98,6 +100,7 @@ def register_category_permissions(category_code: str, category_name: str,
             description=perm.get("description", ""),
             category=category_code
         )
+
 
 def register_permission(
         code: str,
@@ -184,6 +187,7 @@ def _create_permission(code: str, name: str, description: str, category: str):
         except Exception as e:
             Logger.err(f"❌ Error creating permission {code}: {e}", LoggerType.USERS)
             session.rollback()
+            raise e
 
 
 # Вспомогательная функция для массового создания

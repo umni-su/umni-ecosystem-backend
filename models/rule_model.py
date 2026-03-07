@@ -108,7 +108,7 @@ class NodeActionWebhookOptions(BaseModel):
 
 class NodeActionNotificationOptions(BaseModel):
     notification_id: int
-    to: [str] = Field(default_factory=list)
+    to: list[str] = Field(default_factory=list)
     subject: str | None = None
     message: str | None = None
     model_config = ConfigDict(arbitrary_types_allowed=True)

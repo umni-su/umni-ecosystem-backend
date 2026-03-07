@@ -115,6 +115,9 @@ msgstr "Изменить состояние плагина"
 msgid "Change credentials"
 msgstr "Изменить учетные данные"
 
+msgid "Change password"
+msgstr "Изменить пароль"
+
 msgid "Check"
 msgstr "Проверить"
 
@@ -760,6 +763,9 @@ msgstr "Время в сети"
 
 msgid "User"
 msgstr "Пользователь"
+
+msgid "Users and access"
+msgstr "Пользователи и доступ"
 
 msgid "Username"
 msgstr "Имя пользователя"
