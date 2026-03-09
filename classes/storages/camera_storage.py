@@ -64,9 +64,10 @@ class CameraStorage(StorageBase):
                         cam = session.get(CameraEntity, camera.id)
                         cam.cover = rel_path
                         session.add(cam)
-                        Logger.debug(f"[{camera.name}] upload_cover to {image_path}")
+                        Logger.debug(f"[{camera.name}] upload_cover to {image_path}", LoggerType.STORAGES)
                     except Exception as e:
-                        Logger.err(f"[{camera.name}]  error upload_cover to {image_path} code: {str(e)}")
+                        Logger.err(f"[{camera.name}]  error upload_cover to {image_path} code: {str(e)}",
+                                   LoggerType.STORAGES)
                 return camera
         except Exception as e:
             Logger.err(f"[{camera.name}] upload_cover error - {e}", LoggerType.STORAGES)

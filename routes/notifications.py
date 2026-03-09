@@ -20,8 +20,9 @@ from fastapi import APIRouter, HTTPException, status, Depends
 
 from classes.auth.auth import Auth
 from classes.l10n.l10n import _
+from classes.notifications.notification_factory import NotificationFactory
 from classes.notifications.notification_service import NotificationService
-from models.notification_model import NotificationModel
+from models.notification_model import NotificationModel, NotificationCreateModel
 from models.notification_queue_model import NotificationQueueModel, NotificationQueueBaseModel
 from repositories.notification_queue_repository import NotificationQueueRepository
 from repositories.notification_repository import NotificationRepository
@@ -39,6 +40,14 @@ def get_notifications(
 ):
     """Получить все уведомления"""
     return NotificationRepository.get_notifications()
+
+
+@notifications.get('/types')
+def get_notifications(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    """Получить все уведомления"""
+    return NotificationService.get_all_notification_types()
 
 
 @notifications.get('/{notification_id}')
@@ -62,29 +71,44 @@ def get_notification(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
     """Получить уведомление по ID"""
+    from classes.notifications.notification_factory import NotificationFactory
+
     notification = NotificationRepository.get_notification(notification_id)
     if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found"
+            detail=_("Notification not found")
         )
-    return notification.options.get_ui_schema()
+
+    # Получаем обработчик по типу уведомления
+    handler = NotificationFactory.get_handler(notification.type)
+    if not handler:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=_("Notification type not found")
+        )
+
+    # Создаем экземпляр модели опций из данных
+    options_model = handler.get_options_model_instance(notification.options)
+
+    # Возвращаем UI схему
+    return options_model.get_ui_schema()
 
 
 @notifications.post('')
 def create_notification(
-        notification: NotificationModel,
+        notification: NotificationCreateModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
     """Создать новое уведомление"""
     # Валидируем конфигурацию
     if not NotificationService.validate_notification_config(
             notification.type,
-            notification.options.model_dump() if notification.options else {}
+            notification.options if notification.options else {}
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid notification configuration"
+            detail=_("Invalid notification configuration")
         )
 
     result = NotificationRepository.create_notification(notification)
@@ -106,7 +130,7 @@ def update_notification(
     # Валидируем конфигурацию
     if not NotificationService.validate_notification_config(
             notification.type,
-            notification.options.model_dump() if notification.options else {}
+            notification.options if notification.options else {}
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

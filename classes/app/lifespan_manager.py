@@ -20,6 +20,10 @@ from fastapi import FastAPI
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.notifications.notification_factory import NotificationFactory
+from classes.notifications.via.email_notification import EmailNotification
+from classes.notifications.via.telegram_notification import TelegramNotification
+from entities.enums.notification_type_enum import NotificationTypeEnum
 from services.cameras.cameras_service import CamerasService
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
 
@@ -82,6 +86,10 @@ class LifespanManager:
         self._shutting_down = False
         self._setup_signal_handlers()
         StreamRegistry.set_state(StreamState.RUNNING)
+
+        NotificationFactory.register_notification(TelegramNotification)
+        NotificationFactory.register_notification(EmailNotification)
+
         Logger.debug("Application starting up...", LoggerType.APP)
 
         yield

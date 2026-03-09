@@ -61,7 +61,7 @@ class RuleConditionExecutor(RuleBaseExecutor):
                         )
                     # СЕНСОР
                     # @TODO это временная заглушка, гарантирующая, что при отключенном устройстве будет отключен и сенсор
-                    if condition.key == RuleConditionKey.AVAILABILITY_CAMERA.value:
+                    if condition.key == RuleConditionKey.AVAILABILITY_SENSOR.value:
                         condition_result = self.availability_sensor(
                             operand=condition.operand,
                             state=condition.action.state,

@@ -41,7 +41,9 @@ class ActionNotificationExecutor(RuleBaseExecutor):
                                 subject=self._modify_subject(rule, options),
                                 message=options.action.message
                             )
-                            NotificationQueueRepository.create_queue_item(n)
+                            noty = NotificationQueueRepository.create_queue_item(n)
+                            if isinstance(noty, NotificationQueueCreateModel):
+                                Logger.info(f"Successfully executed action : {noty.id}", LoggerType.RULES)
                     except Exception as e:
                         Logger.err(f"Failed to create notification queue item: {e}", LoggerType.RULES)
 

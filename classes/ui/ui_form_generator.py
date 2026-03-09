@@ -159,7 +159,7 @@ class UIEnhancedModel(BaseModel):
         # Проверяем enum в JSON schema (в $defs)
         if "anyOf" in field_schema:
             for item in field_schema["anyOf"]:
-                if "$ref" in item and "EncryptionEnum" in item["$ref"]:
+                if "$ref" in item:
                     return "select"
 
         # Проверяем наличие $ref в JSON schema
@@ -215,15 +215,28 @@ class UIEnhancedModel(BaseModel):
         # Options для select
         options = []
 
-        # 1. Проверяем Enum через аннотацию (самый надежный способ)
+        # 1. Проверяем Enum через аннотацию
         if cls._is_enum_field(field_info):
             options = cls._get_enum_options_from_class(field_info)
 
-        # 2. Если не получили options из класса, проверяем JSON schema $defs
+        # 2. Проверяем прямой enum в схеме (ИНЛАЙН)
+        if not options and "enum" in field_schema:
+            options = [
+                {"value": opt, "label": cls._get_localized_label(str(opt))}
+                for opt in field_schema["enum"]
+            ]
+
+        # 3. Проверяем enum в anyOf (инлайн)
         if not options and "anyOf" in field_schema:
             for item in field_schema["anyOf"]:
-                if "$ref" in item and "EncryptionEnum" in item["$ref"]:
-                    # Получаем enum из $defs JSON schema
+                if "enum" in item:
+                    options = [
+                        {"value": opt, "label": cls._get_localized_label(str(opt))}
+                        for opt in item["enum"]
+                    ]
+                    break
+                # 4. Если в anyOf есть ref - проверяем $defs (как было)
+                elif "$ref" in item:
                     defs_key = item["$ref"].split("/")[-1]
                     if defs_key in cls.model_json_schema().get("$defs", {}):
                         enum_def = cls.model_json_schema()["$defs"][defs_key]
@@ -232,6 +245,7 @@ class UIEnhancedModel(BaseModel):
                                 {"value": opt, "label": cls._get_localized_label(opt)}
                                 for opt in enum_def["enum"]
                             ]
+                            break
 
         if options:
             constraints["options"] = options

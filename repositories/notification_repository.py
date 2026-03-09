@@ -19,7 +19,7 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.notification import NotificationEntity
-from models.notification_model import NotificationModel
+from models.notification_model import NotificationModel, NotificationCreateModel
 from repositories.base_repository import BaseRepository
 from repositories.notification_queue_repository import NotificationQueueRepository
 
@@ -62,14 +62,14 @@ class NotificationRepository(BaseRepository):
                 return None
 
     @classmethod
-    def create_notification(cls, model: NotificationModel) -> NotificationModel | None:
+    def create_notification(cls, model: NotificationCreateModel) -> NotificationModel | None:
         with write_session() as sess:
             try:
                 notification_entity = NotificationEntity()
                 notification_entity.name = model.name
-                notification_entity.type = model.type.value
+                notification_entity.type = model.type
                 notification_entity.active = model.active
-                notification_entity.options = model.options.model_dump() if model.options else None
+                notification_entity.options = model.options if model.options else None
 
                 sess.add(notification_entity)
                 sess.commit()
@@ -95,12 +95,12 @@ class NotificationRepository(BaseRepository):
 
                 # Обрабатываем sensitive поля
                 processed_options = cls._process_sensitive_fields(
-                    model.options.model_dump() if model.options else {},
+                    model.options if model.options else {},
                     current_options
                 )
 
                 notification_entity.name = model.name
-                notification_entity.type = model.type.value
+                notification_entity.type = model.type
                 notification_entity.active = model.active
                 notification_entity.options = processed_options
 

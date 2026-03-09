@@ -60,16 +60,21 @@ class NotificationService:
         """
         try:
             handler = NotificationFactory.get_handler(notification.type)
+            if not handler:
+                Logger.err(f'🔊 Handler for notification type {notification.type} not found', LoggerType.NOTIFICATIONS)
+                return False
+
             if not notification.active:
                 Logger.warn(f'🔊 Notification {notification.id} is not active, skipping', LoggerType.NOTIFICATIONS)
                 return False
+
             return await handler.send(
                 notification=notification,
                 notification_queue=notification_queue,
                 **kwargs
             )
         except Exception as e:
-            print(f"Notification service error: {e}")
+            Logger.err(f"Notification service error: {e}", LoggerType.NOTIFICATIONS)
             return False
 
     @staticmethod
@@ -78,14 +83,15 @@ class NotificationService:
         Проверяет корректность конфигурации уведомления
 
         Args:
-            notification_type: Тип уведомления
+            notification_type: Тип уведомления (ID)
             options: Настройки уведомления
 
         Returns:
             bool: Результат валидации
         """
-        try:
-            handler = NotificationFactory.get_handler(notification_type)
-            return handler.validate_config(options)
-        except Exception:
-            return False
+        return NotificationFactory.validate_notification_config(notification_type, options)
+
+    @staticmethod
+    def get_all_notification_types():
+        """Возвращает все доступные типы уведомлений"""
+        return NotificationFactory.get_all_notifications()

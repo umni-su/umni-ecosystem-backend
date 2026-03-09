@@ -22,6 +22,9 @@ msgstr "Активно"
 msgid "Add"
 msgstr "Добавить"
 
+msgid "Add notification"
+msgstr "Добавить уведомление"
+
 msgid "Add area"
 msgstr "Добавить зону"
 
@@ -129,6 +132,9 @@ msgstr "Выберите условие"
 
 msgid "Choose entity"
 msgstr "Выберите сущность"
+
+msgid "Choose notification type"
+msgstr "Выберите тип уведомления"
 
 msgid "Close"
 msgstr "Закрыть"

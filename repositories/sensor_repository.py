@@ -43,10 +43,7 @@ class SensorRepository(BaseRepository):
                             include_relationships=True
                         )
                     )
-                raise HTTPException(
-                    status_code=404,
-                    detail="Sensor not found"
-                )
+                return None
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 

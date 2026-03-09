@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-06 10:51+0300\n"
+"POT-Creation-Date: 2026-03-07 21:01+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,53 +17,104 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: classes/configuration/configuration.py:46
+#: classes/configuration/configuration.py:47
 msgid "Base settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:51
+#: classes/configuration/configuration.py:52
 msgid "Application locale"
 msgstr ""
 
-#: classes/configuration/configuration.py:56
+#: classes/configuration/configuration.py:57
 msgid "Application uploads path"
 msgstr ""
 
-#: classes/configuration/configuration.py:61
+#: classes/configuration/configuration.py:62
 msgid "Application uploads max size"
 msgstr ""
 
-#: classes/configuration/configuration.py:68
+#: classes/configuration/configuration.py:69
 msgid "Devices settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:73
+#: classes/configuration/configuration.py:74
 msgid "Device sync timeout"
 msgstr ""
 
-#: classes/configuration/configuration.py:80
+#: classes/configuration/configuration.py:81
 msgid "MQTT settings"
 msgstr ""
 
-#: classes/configuration/configuration.py:85
+#: classes/configuration/configuration.py:86
 msgid "MQTT host"
 msgstr ""
 
-#: classes/configuration/configuration.py:90
+#: classes/configuration/configuration.py:91
 msgid "MQTT port"
 msgstr ""
 
-#: classes/configuration/configuration.py:95
+#: classes/configuration/configuration.py:96
 msgid "MQTT user"
 msgstr ""
 
-#: classes/configuration/configuration.py:100
+#: classes/configuration/configuration.py:101
 msgid "MQTT password"
 msgstr ""
 
-#: classes/notifications/via/telegram_notification_handler.py:152
-#: routes/notifications.py:120
-msgid "Notification not found"
+#: classes/notifications/base_registered_notification.py:116
+msgid "title"
+msgstr ""
+
+#: classes/notifications/base_registered_notification.py:120
+msgid "description"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:35
+msgid "SMTP Email Configuration"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:39
+msgid "SMTP host server"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:43
+msgid "SMTP port number"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:47
+msgid "Encryption type"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:51
+msgid "Username"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:59
+msgid "Password"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:63
+msgid "Sender name displayed in emails"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:81
+msgid "Send notifications via SMTP email"
+msgstr ""
+
+#: classes/notifications/via/telegram_notification.py:30
+msgid "Telegram Configuration"
+msgstr ""
+
+#: classes/notifications/via/telegram_notification.py:32
+msgid "Bot name"
+msgstr ""
+
+#: classes/notifications/via/telegram_notification.py:39
+msgid "Bot token"
+msgstr ""
+
+#: classes/notifications/via/telegram_notification.py:57
+msgid "Send notifications via Telegram bot"
 msgstr ""
 
 #: classes/rules/rule_conditions.py:80
@@ -100,46 +151,6 @@ msgstr ""
 
 #: classes/rules/rule_conditions.py:124
 msgid "Recording state"
-msgstr ""
-
-#: models/notification_model.py:46
-msgid "Telegram Configuration"
-msgstr ""
-
-#: models/notification_model.py:48
-msgid "Bot name"
-msgstr ""
-
-#: models/notification_model.py:54
-msgid "Bot token"
-msgstr ""
-
-#: models/notification_model.py:70
-msgid "SMTP Email Configuration"
-msgstr ""
-
-#: models/notification_model.py:72
-msgid "SMTP host server"
-msgstr ""
-
-#: models/notification_model.py:74
-msgid "SMTP port number"
-msgstr ""
-
-#: models/notification_model.py:78
-msgid "Encryption type"
-msgstr ""
-
-#: models/notification_model.py:82
-msgid "Username"
-msgstr ""
-
-#: models/notification_model.py:90
-msgid "Password"
-msgstr ""
-
-#: models/notification_model.py:94
-msgid "Sender name displayed in emails"
 msgstr ""
 
 #: models/notification_model.py:112 models/notification_model.py:124
@@ -272,15 +283,19 @@ msgstr ""
 msgid "Failed to save configuration"
 msgstr ""
 
-#: routes/notifications.py:113
+#: routes/notifications.py:122
 msgid "Invalid notification configuration"
 msgstr ""
 
-#: routes/notifications.py:159 routes/notifications.py:175
+#: routes/notifications.py:129
+msgid "Notification not found"
+msgstr ""
+
+#: routes/notifications.py:168 routes/notifications.py:184
 msgid "Failed to send notification"
 msgstr ""
 
-#: routes/notifications.py:161 routes/notifications.py:177
+#: routes/notifications.py:170 routes/notifications.py:186
 msgid "Notification sent successfully"
 msgstr ""
 
@@ -348,11 +363,7 @@ msgstr ""
 msgid "Allow to delete users"
 msgstr ""
 
-#: routes/users.py:69
-msgid "User not found"
-msgstr ""
-
-#: routes/users.py:103
+#: routes/users.py:109
 msgid "Could not delete last user"
 msgstr ""
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-01-06 10:51+0300\n"
+"POT-Creation-Date: 2026-03-07 21:01+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -19,54 +19,106 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: classes/configuration/configuration.py:46
+#: classes/configuration/configuration.py:47
 msgid "Base settings"
 msgstr "Основные настройки"
 
-#: classes/configuration/configuration.py:51
+#: classes/configuration/configuration.py:52
 msgid "Application locale"
 msgstr "Язык системы"
 
-#: classes/configuration/configuration.py:56
+#: classes/configuration/configuration.py:57
 msgid "Application uploads path"
 msgstr "Путь для загрузок"
 
-#: classes/configuration/configuration.py:61
+#: classes/configuration/configuration.py:62
 msgid "Application uploads max size"
 msgstr "Максимальный размер загружаемых файлов"
 
-#: classes/configuration/configuration.py:68
+#: classes/configuration/configuration.py:69
 msgid "Devices settings"
 msgstr "Настройки устройств"
 
-#: classes/configuration/configuration.py:73
+#: classes/configuration/configuration.py:74
 msgid "Device sync timeout"
 msgstr "Интервал синхронизации устройств"
 
-#: classes/configuration/configuration.py:80
+#: classes/configuration/configuration.py:81
 msgid "MQTT settings"
 msgstr "Настройки MQTT"
 
-#: classes/configuration/configuration.py:85
+#: classes/configuration/configuration.py:86
 msgid "MQTT host"
 msgstr "MQTT хост"
 
-#: classes/configuration/configuration.py:90
+#: classes/configuration/configuration.py:91
 msgid "MQTT port"
 msgstr "MQTT порт"
 
-#: classes/configuration/configuration.py:95
+#: classes/configuration/configuration.py:96
 msgid "MQTT user"
 msgstr "MQTT пользователь"
 
-#: classes/configuration/configuration.py:100
+#: classes/configuration/configuration.py:101
 msgid "MQTT password"
 msgstr "MQTT пароль"
 
-#: classes/notifications/via/telegram_notification_handler.py:152
-#: routes/notifications.py:120
-msgid "Notification not found"
-msgstr "Уведомление не найдено"
+#: classes/notifications/base_registered_notification.py:116
+#, fuzzy
+msgid "title"
+msgstr "Состояние"
+
+#: classes/notifications/base_registered_notification.py:120
+msgid "description"
+msgstr ""
+
+#: classes/notifications/via/email_notification.py:35
+msgid "SMTP Email Configuration"
+msgstr "Конфигурация Email"
+
+#: classes/notifications/via/email_notification.py:39
+msgid "SMTP host server"
+msgstr "SMTP сервер"
+
+#: classes/notifications/via/email_notification.py:43
+msgid "SMTP port number"
+msgstr "SMTP порт сервера"
+
+#: classes/notifications/via/email_notification.py:47
+msgid "Encryption type"
+msgstr "Тип шифрования"
+
+#: classes/notifications/via/email_notification.py:51
+msgid "Username"
+msgstr "Имя пользователя"
+
+#: classes/notifications/via/email_notification.py:59
+msgid "Password"
+msgstr "Пароль"
+
+#: classes/notifications/via/email_notification.py:63
+msgid "Sender name displayed in emails"
+msgstr "Отображаемое имя"
+
+#: classes/notifications/via/email_notification.py:81
+msgid "Send notifications via SMTP email"
+msgstr "Отправка сообщения через клиент SMTP"
+
+#: classes/notifications/via/telegram_notification.py:30
+msgid "Telegram Configuration"
+msgstr "Конфигурация Telegram"
+
+#: classes/notifications/via/telegram_notification.py:32
+msgid "Bot name"
+msgstr "Имя бота"
+
+#: classes/notifications/via/telegram_notification.py:39
+msgid "Bot token"
+msgstr "Токен бота"
+
+#: classes/notifications/via/telegram_notification.py:57
+msgid "Send notifications via Telegram bot"
+msgstr "Отправка уведомлений через Telegram"
 
 #: classes/rules/rule_conditions.py:80
 msgid "Availability"
@@ -103,46 +155,6 @@ msgstr "Состояние"
 #: classes/rules/rule_conditions.py:124
 msgid "Recording state"
 msgstr "Статус записи"
-
-#: models/notification_model.py:46
-msgid "Telegram Configuration"
-msgstr "Конфигурация Telegram"
-
-#: models/notification_model.py:48
-msgid "Bot name"
-msgstr "Имя бота"
-
-#: models/notification_model.py:54
-msgid "Bot token"
-msgstr "Токен бота"
-
-#: models/notification_model.py:70
-msgid "SMTP Email Configuration"
-msgstr "Конфигурация SMTP"
-
-#: models/notification_model.py:72
-msgid "SMTP host server"
-msgstr "SMTP сервер"
-
-#: models/notification_model.py:74
-msgid "SMTP port number"
-msgstr "SMTP порт сервера"
-
-#: models/notification_model.py:78
-msgid "Encryption type"
-msgstr "Тип шифрования"
-
-#: models/notification_model.py:82
-msgid "Username"
-msgstr "Имя пользователя"
-
-#: models/notification_model.py:90
-msgid "Password"
-msgstr "Пароль"
-
-#: models/notification_model.py:94
-msgid "Sender name displayed in emails"
-msgstr "Имя отправителя в письме"
 
 #: models/notification_model.py:112 models/notification_model.py:124
 #: models/notification_model.py:142
@@ -186,7 +198,7 @@ msgstr "Пароли не совпадают"
 
 #: models/mixins/password_mixin.py:65
 msgid "Password is required when changing password"
-msgstr ""
+msgstr "При смене пароля - пароль обязателен =)"
 
 #: repositories/rules_repository.py:96
 msgid "Rule not found"
@@ -276,15 +288,19 @@ msgstr "Разрешить удалять камеры"
 msgid "Failed to save configuration"
 msgstr "Ошибка сохранения конфигурации"
 
-#: routes/notifications.py:113
+#: routes/notifications.py:122
 msgid "Invalid notification configuration"
 msgstr "Неверная конфигурация уведомления"
 
-#: routes/notifications.py:159 routes/notifications.py:175
+#: routes/notifications.py:129
+msgid "Notification not found"
+msgstr "Уведомление не найдено"
+
+#: routes/notifications.py:168 routes/notifications.py:184
 msgid "Failed to send notification"
 msgstr "Ошибка отправки уведомления"
 
-#: routes/notifications.py:161 routes/notifications.py:177
+#: routes/notifications.py:170 routes/notifications.py:186
 msgid "Notification sent successfully"
 msgstr "Уведомление отправлено"
 
@@ -352,11 +368,7 @@ msgstr "Удаление пользователей"
 msgid "Allow to delete users"
 msgstr "Разрешить удаление пользователей"
 
-#: routes/users.py:69
-msgid "User not found"
-msgstr "Пользователь не найден"
-
-#: routes/users.py:103
+#: routes/users.py:109
 msgid "Could not delete last user"
 msgstr "Нельзя удалить последнего пользователя"
 

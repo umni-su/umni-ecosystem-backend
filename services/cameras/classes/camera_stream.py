@@ -283,7 +283,7 @@ class CameraStream:
                         code=LogCode.CAMERA_ONLINE
                     )
                 )
-            Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}")
+            Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}", LoggerType.CAMERAS)
             # Set online
         except Exception as e:
             self.capture_error = True

@@ -20,7 +20,7 @@ from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
 from repositories.base_repository import BaseRepository
-from sqlmodel import select
+from sqlmodel import select, col
 
 
 class CameraRepository(BaseRepository):
@@ -32,7 +32,7 @@ class CameraRepository(BaseRepository):
         with write_session() as sess:
             try:
                 cameras = sess.exec(
-                    select(CameraEntity)
+                    select(CameraEntity).order_by(col(CameraEntity.name).asc())
                 ).all()
 
                 return [

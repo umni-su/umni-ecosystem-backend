@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pydantic import BaseModel, Field, computed_field
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from classes.crypto.crypto import Crypto
 from classes.l10n.l10n import _
@@ -41,78 +41,78 @@ class NotificationOptionsBaseModel(UIEnhancedModel):
         return val
 
 
-class NotificationTelegramModel(NotificationOptionsBaseModel):
-    """Модель опций для Telegram уведомлений"""
-    model_description = _("Telegram Configuration")
-
-    bot_name: str = Field(..., description=_("Bot name"))
-    bot_token: str = Field(
-        json_schema_extra={
-            "sensitive": True,
-            "sensitive_type": "token"
-        },
-        description=_("Bot token")
-    )
-
-    @property
-    def decrypted_bot_token(self):
-        """Возвращает дешифрованный токен для использования в коде"""
-        return self.get_decrypted(self.bot_token)
-
-    def model_post_init(self, __context):
-        if self.bot_token and not self.bot_token.startswith('gAAAAA'):
-            self.bot_token = Crypto.encrypt(self.bot_token)
-
-
-class NotificationEmailSmtpModel(NotificationOptionsBaseModel):
-    """Модель опций для Email уведомлений"""
-
-    model_description = _("SMTP Email Configuration")
-
-    host: str = Field(..., description=_("SMTP host server"))
-
-    port: int = Field(default=587, description=_("SMTP port number"))
-
-    encryption: Optional[EncryptionEnum] = Field(
-        default=None,
-        description=_("Encryption type")
-    )
-    username: Optional[str] = Field(
-        default=None,
-        description=_("Username")
-    )
-    password: Optional[str] = Field(
-        default=None,
-        json_schema_extra={
-            "sensitive": True,
-            "sensitive_type": "password"
-        },
-        description=_("Password")
-    )
-    from_name: Optional[str] = Field(
-        default=None,
-        description=_("Sender name displayed in emails")
-    )
-
-    def get_valid_from(self):
-        return f"{self.from_name} <{self.username}>"
-
-    def model_post_init(self, __context):
-        if not self.password.startswith('gAAAAA'):
-            self.password = Crypto.encrypt(self.password)
-
-    @property
-    def decrypted_password(self):
-        """Возвращает дешифрованный токен для использования в коде"""
-        return self.get_decrypted(self.password)
+# class NotificationTelegramModel(NotificationOptionsBaseModel):
+#     """Модель опций для Telegram уведомлений"""
+#     model_description = _("Telegram Configuration")
+#
+#     bot_name: str = Field(..., description=_("Bot name"))
+#     bot_token: str = Field(
+#         json_schema_extra={
+#             "sensitive": True,
+#             "sensitive_type": "token"
+#         },
+#         description=_("Bot token")
+#     )
+#
+#     @property
+#     def decrypted_bot_token(self):
+#         """Возвращает дешифрованный токен для использования в коде"""
+#         return self.get_decrypted(self.bot_token)
+#
+#     def model_post_init(self, __context):
+#         if self.bot_token and not self.bot_token.startswith('gAAAAA'):
+#             self.bot_token = Crypto.encrypt(self.bot_token)
+#
+#
+# class NotificationEmailSmtpModel(NotificationOptionsBaseModel):
+#     """Модель опций для Email уведомлений"""
+#
+#     model_description = _("SMTP Email Configuration")
+#
+#     host: str = Field(..., description=_("SMTP host server"))
+#
+#     port: int = Field(default=587, description=_("SMTP port number"))
+#
+#     encryption: Optional[EncryptionEnum] = Field(
+#         default=None,
+#         description=_("Encryption type")
+#     )
+#     username: Optional[str] = Field(
+#         default=None,
+#         description=_("Username")
+#     )
+#     password: Optional[str] = Field(
+#         default=None,
+#         json_schema_extra={
+#             "sensitive": True,
+#             "sensitive_type": "password"
+#         },
+#         description=_("Password")
+#     )
+#     from_name: Optional[str] = Field(
+#         default=None,
+#         description=_("Sender name displayed in emails")
+#     )
+#
+#     def get_valid_from(self):
+#         return f"{self.from_name} <{self.username}>"
+#
+#     def model_post_init(self, __context):
+#         if not self.password.startswith('gAAAAA'):
+#             self.password = Crypto.encrypt(self.password)
+#
+#     @property
+#     def decrypted_password(self):
+#         """Возвращает дешифрованный токен для использования в коде"""
+#         return self.get_decrypted(self.password)
 
 
 class NotificationCreateModel(BaseModel):
     """Модель для создания уведомления"""
     name: str = Field(..., description=_("Notification name"))
-    type: NotificationTypeEnum = Field(..., description=_("Notification type"))
+    type: int = Field(..., description=_("Notification type"))
     active: bool = Field(default=True, description=_("Notification is active"))
-    options: Union[NotificationTelegramModel, NotificationEmailSmtpModel] = Field(
+    options: Any = Field(
         ...,
         description=_("Notification settings")
     )
@@ -122,16 +122,16 @@ class NotificationModel(BaseModel):
     """Полная модель уведомления"""
     id: int = Field(..., description=_("Notification ID"))
     name: str = Field(..., description=_("Notification name"))
-    type: NotificationTypeEnum = Field(..., description=_("Notification type"))
+    type: int = Field(..., description=_("Notification type"))
     active: bool = Field(..., description=_("Notification is active"))
-    options: Union[NotificationTelegramModel, NotificationEmailSmtpModel] = Field(
+    options: Any = Field(
         ...,
         description=_("Notification settings")
     )
 
     @computed_field
     def type_str(self) -> str:
-        return self.type.name
+        return 'deprecated type_str'
 
     class Config:
         from_attributes = True
@@ -142,7 +142,7 @@ class NotificationUpdateModel(BaseModel):
     name: Optional[str] = Field(None, description=_("Notification name"))
     type: Optional[NotificationTypeEnum] = Field(None, description=_("Notification type"))
     active: Optional[bool] = Field(None, description=_("Notification is active"))
-    options: Optional[Union[NotificationTelegramModel, NotificationEmailSmtpModel]] = Field(
+    options: Optional[Any] = Field(
         None,
         description=_("Notification settings")
     )
