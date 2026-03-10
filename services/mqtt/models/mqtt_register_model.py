@@ -12,13 +12,20 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from services.mqtt.models.mqtt_systeminfo_model import MqttSysteminfoModel
+from services.mqtt.models.mqtt_heap_model import MqttHeapModel
+from services.mqtt.models.mqtt_netif_model import MqttNetifModel
 
 
 class MqttRegisterModel(BaseModel):
-    name: str
-    type: int
-    systeminfo: MqttSysteminfoModel
+    hostname: str
+    fw_ver: Optional[str] = Field(None)
+    capabilities: list[str]
+    networks: list[MqttNetifModel]
+    heap: Optional[MqttHeapModel] = Field(default=None)
+    device_type: Optional[str] = Field(default=None)
+    uptime: Optional[int] = Field(default=None)
+    reset_reason: Optional[int] = Field(default=None)

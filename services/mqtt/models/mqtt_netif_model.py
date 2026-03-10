@@ -19,12 +19,13 @@ from pydantic import BaseModel
 
 
 class MqttNetifType(StrEnum):
-    ETHERNET = "Ethernet"
+    ETHERNET = "ethernet"
 
 
 class MqttNetifModel(BaseModel):
     name: MqttNetifType
-    mac: str
     ip: str | None = None
     mask: str | None = None
     gw: str | None = None
+    mac: str | None = None
+    active: bool = False

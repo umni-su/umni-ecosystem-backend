@@ -14,13 +14,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from typing import List, Optional
 
+from sqlalchemy import JSON
 from sqlmodel import Field, Relationship, BIGINT
 from entities.mixins.created_updated import TimeStampMixin
-from typing import TYPE_CHECKING
 from entities.mixins.id_column import IdColumnMixin
 
-# if TYPE_CHECKING:
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
 
@@ -39,7 +39,7 @@ class DeviceBase:
     photo: str | None = Field(
         nullable=True
     )
-    type: int | None = Field(
+    type: str | None = Field(
         index=True,
         nullable=True
     )
@@ -71,6 +71,11 @@ class DeviceBase:
     last_sync: datetime | None = Field(
         index=True,
         nullable=True
+    )
+    capabilities: Optional[List[str]] = Field(
+        sa_type=JSON,
+        default=None,
+        nullable=True,
     )
 
 

@@ -16,10 +16,12 @@
 from typing import List
 
 from pydantic import BaseModel
+from typing_extensions import deprecated
 
 from services.mqtt.models.mqtt_netif_model import MqttNetifModel
 
 
+@deprecated
 class MqttSysteminfoModel(BaseModel):
     uptime: int
     free_heap: int

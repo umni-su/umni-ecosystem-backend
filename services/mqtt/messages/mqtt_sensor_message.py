@@ -28,6 +28,7 @@ from entities.configuration import ConfigurationKeys
 from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
 from models.sensor_model import SensorModelWithDevice
+from models.sensors.sensor_capability_model import SensorCapabilityModel
 from repositories.sensor_history_repository import SensorHistoryRepository
 from services.mqtt.messages.base_message import BaseMessage
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
@@ -36,58 +37,69 @@ from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
 class MqttSensorMessage(BaseMessage):
     sensor: SensorModelWithDevice | None = None
 
+    def prepare_message(self):
+        self.model: SensorCapabilityModel = SensorCapabilityModel.model_validate_json(self.original_message)
+
     def save(self):
         ecosystem = get_ecosystem()
-        if self.identifier is not None and self.has_device:
+        if self.has_device:
             with write_session() as session:
                 founded = session.exec(
-                    select(SensorEntity).where(SensorEntity.identifier == self.identifier)
+                    select(SensorEntity)
+                    .where(SensorEntity.device_id == self.topic.device_model.id)
+                    .where(SensorEntity.identifier == self.model.identifier)
+                    .where(SensorEntity.capability == self.model.capability)
                 ).first()
                 if isinstance(founded, SensorEntity):
-                    try:
-                        sensor = founded
-                        sensor.device_id = self.topic.device_model.id
-                        sensor.identifier = self.identifier
-                        sensor.value = self.sensor_value()
-                        session.add(sensor)
-                        session.commit()
-                        session.refresh(sensor)
-                        self.sensor = SensorModelWithDevice.model_validate(sensor.to_dict(
-                            include_relationships=True
-                        ))
-
-                        event_bus.publish(
-                            EventType.SENSOR_CHANGE_STATE,
-                            sensor=self.sensor
-                        )
-
-                        delta: datetime.timedelta | None = None
-
-                        last = SensorHistoryRepository.get_last_record(sensor)
-                        if isinstance(last, SensorHistory):
-                            delta_types = [
-                                MqttSensorTypeEnum.AI,
-                                MqttSensorTypeEnum.NTC,
-                                MqttSensorTypeEnum.DS18B20,
-                            ]
-                            delta = datetime.datetime.now() - last.created
-                            trigger = int(
-                                ecosystem.config.get_setting(ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT).value)
-                            # Logger.debug(f'{last.id} {last.sensor_id} Delta is {delta.seconds / 60}')
-                            # Not check delta if relays inputs and buttons rf 433
-                        if (delta is None or (delta.seconds / 60 >= trigger)) or (sensor.type not in delta_types):
-                            history = SensorHistory()
-                            history.value = sensor.value
-                            history.sensor = sensor
-                            session.add(history)
+                    device = self.topic.device_model
+                    """
+                    Заносим только если переданная capability в сообщении есть в device
+                    """
+                    if self.model.capability in device.capabilities:
+                        try:
+                            sensor = founded
+                            sensor.device_id = self.topic.device_model.id
+                            sensor.value = self.model.value
+                            session.add(sensor)
                             session.commit()
-                            session.refresh(history)
+                            session.refresh(sensor)
+                            self.sensor = SensorModelWithDevice.model_validate(sensor.to_dict(
+                                include_relationships=True
+                            ))
 
-                            Logger.info(
-                                f"📟📄 [{self.topic.original_topic} / ID#{history.id} / {history.sensor.identifier}], type:{sensor.type}: {self.identifier} -> {self.sensor_value()}",
-                                LoggerType.DEVICES)
-                    except Exception as e:
-                        Logger.err(f'MqttSensorMessage->save(): {str(e)}', LoggerType.DEVICES)
+                            event_bus.publish(
+                                EventType.SENSOR_CHANGE_STATE,
+                                sensor=self.sensor
+                            )
+
+                            delta: datetime.timedelta | None = None
+
+                            last = SensorHistoryRepository.get_last_record(sensor)
+                            if isinstance(last, SensorHistory):
+                                delta_types = [
+                                    MqttSensorTypeEnum.AI,
+                                    MqttSensorTypeEnum.NTC,
+                                    MqttSensorTypeEnum.DS18B20,
+                                ]
+                                delta = datetime.datetime.now() - last.created
+                                trigger = int(
+                                    ecosystem.config.get_setting(ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT).value)
+                                # Logger.debug(f'{last.id} {last.sensor_id} Delta is {delta.seconds / 60}')
+                                # Not check delta if relays inputs and buttons rf 433
+                            if (delta is None or (delta.seconds / 60 >= trigger)) \
+                                    or (sensor.type not in delta_types):
+                                history = SensorHistory()
+                                history.value = sensor.value
+                                history.sensor = sensor
+                                session.add(history)
+                                session.commit()
+                                session.refresh(history)
+
+                                Logger.info(
+                                    f"📟📄 [{self.topic.original_topic} / ID#{history.id} / {history.sensor.capability}], type:{sensor.type} -> {self.sensor.value}",
+                                    LoggerType.DEVICES)
+                        except Exception as e:
+                            Logger.err(f'MqttSensorMessage->save(): {str(e)}', LoggerType.DEVICES)
 
     def sensor_value(self):
         return None

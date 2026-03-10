@@ -410,6 +410,9 @@ msgstr "Режим ссылки"
 msgid "Load more"
 msgstr "Загрузить больше"
 
+msgid "Locate"
+msgstr "Обнаружить"
+
 msgid "Location provides order and expands the possibilities of interaction between device"
 msgstr "Расположение дает упорядоченность и расширяет возможности взаимодействия между устройствами"
 

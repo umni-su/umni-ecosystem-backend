@@ -27,7 +27,6 @@ class BaseMessage:
     topic: MqttTopic
     original_message: str
     model: object
-    identifier: str | None = None
     has_device: bool = False
     unique_prefix: str | None = None
 
@@ -45,12 +44,6 @@ class BaseMessage:
                     self.topic.topic.replace('/', '.')
                 ]
             )
-            add = self.make_identifier()
-            if len(add) > 0:
-                self.identifier = '.'.join([
-                    self.unique_prefix,
-                    self.make_identifier()
-                ])
 
     def prepare_message(self):
         pass
@@ -58,15 +51,20 @@ class BaseMessage:
     def save(self):
         pass
 
-    def get_or_new_sensor(self, identifier: str) -> SensorEntity:
+    def get_or_new_sensor(
+            self,
+            device_id: int,
+            identifier: str,
+            capability: str | None
+    ) -> SensorEntity:
         with write_session() as session:
             sensor = SensorEntity()
             existing = session.exec(
-                select(SensorEntity).where(SensorEntity.identifier == identifier)
+                select(SensorEntity)
+                .where(SensorEntity.device_id == device_id)
+                .where(SensorEntity.capability == capability)
+                .where(SensorEntity.identifier == identifier)
             ).first()
             if isinstance(existing, SensorEntity):
                 sensor = existing
             return sensor
-
-    def make_identifier(self):
-        return ''

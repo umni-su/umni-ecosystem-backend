@@ -19,23 +19,16 @@ from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from config.dependencies import get_crypto, get_ecosystem
+from config.dependencies import get_crypto
 from entities.configuration import ConfigurationKeys
 from models.device_model_relations import DeviceModelWithRelations
 from responses.mqtt import MqttBody
 from services.base_service import BaseService
 from services.mqtt.messages.base_message import BaseMessage
-from services.mqtt.messages.mqtt_ai_message import MqttAiMessage
-from services.mqtt.messages.mqtt_cnf_ai_message import MqttCnfAiMessage
-from services.mqtt.messages.mqtt_cnf_dio_message import MqttCnfDioMessage
-from services.mqtt.messages.mqtt_cnf_ow_message import MqttCnfOwMessage
-from services.mqtt.messages.mqtt_cnf_rf_message import MqttCnfRfMessage
-from services.mqtt.messages.mqtt_dio_message import MqttDioMessage
 from services.mqtt.messages.mqtt_lwt_message import MqttLwtMessage
-from services.mqtt.messages.mqtt_ntc_message import MqttNtcMessage
-from services.mqtt.messages.mqtt_ow_message import MqttOwMessage
-from services.mqtt.messages.mqtt_rf_message import MqttRfMessage
 from services.mqtt.messages.mqtt_register_message import MqttRegisterMessage
+from services.mqtt.messages.mqtt_config_message import MqttConfigMessage
+from services.mqtt.messages.mqtt_sensor_message import MqttSensorMessage
 from services.mqtt.mqtt_event_subscriber import MqttEventSubscriber
 from services.mqtt.topics.mqtt_topic import MqttTopic
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
@@ -87,7 +80,11 @@ class MqttService(BaseService):
         Logger.debug(f"Connected with result code {reason_code}", LoggerType.MQTT)
         # Subscribing in on_connect() means that if we lose the connection and
         # reconnect then subscriptions will be renewed.
-        client.subscribe("#")
+        client.subscribe("device/+/register")
+        client.subscribe("device/+/config")
+        client.subscribe("device/+/sensors")
+        client.subscribe("device/+/pong")
+        client.subscribe("device/+/lwt")
 
     # The callback for when a PUBLISH message is received from the server.
     def on_message(self, client: mqtt.Client, userdata, msg: mqtt.MQTTMessage):
@@ -99,30 +96,26 @@ class MqttService(BaseService):
 
         if t.topic == MqttTopicEnum.REGISTER:
             message: MqttRegisterMessage = MqttRegisterMessage(msg.topic, msg.payload)
-            # @TODO триггер изменения доступности устройства (ONLINE)
-        elif t.topic == MqttTopicEnum.CNF_DIO:
-            message: MqttCnfDioMessage = MqttCnfDioMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.CNF_OW:
-            message: MqttCnfOwMessage = MqttCnfOwMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.CNF_RF433:
-            message: MqttCnfRfMessage = MqttCnfRfMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.CNF_AI:
-            message: MqttCnfAiMessage = MqttCnfAiMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.NTC:
-            message: MqttNtcMessage = MqttNtcMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.AI:
-            message: MqttAiMessage = MqttAiMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.OW:
-            message: MqttOwMessage = MqttOwMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.INP:
-            message: MqttDioMessage = MqttDioMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.REL:
-            message: MqttDioMessage = MqttDioMessage(msg.topic, msg.payload)
-        elif t.topic == MqttTopicEnum.RF433:
-            message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
+        elif t.topic == MqttTopicEnum.CONFIG:
+            message: MqttConfigMessage = MqttConfigMessage(msg.topic, msg.payload)
         elif t.topic == MqttTopicEnum.LWT:
             message: MqttLwtMessage = MqttLwtMessage(msg.topic, msg.payload)
-            # @TODO триггер изменения доступности устройства (OFFLINE)
+        elif t.topic == MqttTopicEnum.SENSORS:
+            message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.NTC:
+        #     message: MqttNtcMessage = MqttNtcMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.AI:
+        #     message: MqttAiMessage = MqttAiMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.OW:
+        #     message: MqttOwMessage = MqttOwMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.INP:
+        #     message: MqttDioMessage = MqttDioMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.REL:
+        #     message: MqttDioMessage = MqttDioMessage(msg.topic, msg.payload)
+        # elif t.topic == MqttTopicEnum.RF433:
+        #     message: MqttRfMessage = MqttRfMessage(msg.topic, msg.payload)
+
+        # @TODO триггер изменения доступности устройства (OFFLINE)
         else:
             # message: MqttSensorMessage = MqttSensorMessage(msg.topic, msg.payload)
             Logger.debug(msg.topic + " " + str(msg.payload), LoggerType.MQTT)

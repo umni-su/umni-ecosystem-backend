@@ -73,12 +73,14 @@ class MqttRegisterMessage(BaseMessage):
                     device = session.get(DeviceEntity, self.topic.device_model.id)
                 else:
                     device = DeviceEntity()
-                device.name = self.model.name
-                device.type = self.model.type
-                device.fw_ver = self.model.systeminfo.fw_ver
-                device.free_heap = self.model.systeminfo.free_heap
-                device.total_heap = self.model.systeminfo.total_heap
-                device.uptime = self.model.systeminfo.uptime
+
+                device.name = self.model.hostname
+                device.type = self.model.device_type
+                device.fw_ver = self.model.fw_ver
+                device.free_heap = self.model.heap.free
+                device.total_heap = self.model.heap.total
+                device.uptime = self.model.uptime
+                device.capabilities = self.model.capabilities
                 device.last_sync = datetime.datetime.now()
                 device.online = True
                 device.source = DeviceModelSource.SERVICE_MQTT.value
@@ -87,7 +89,7 @@ class MqttRegisterMessage(BaseMessage):
                 session.refresh(device)
 
                 # Find network interfaces
-                for netif in self.model.systeminfo.netif:
+                for netif in self.model.networks:
                     ni = DeviceNetworkInterface()
                     for device_netif in device.network_interfaces:
                         if device_netif.mac == netif.mac:

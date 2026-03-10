@@ -12,24 +12,30 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from enum import StrEnum
 
 from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from services.mqtt.messages.base_message import BaseMessage
+from services.mqtt.models.mqtt_lwt_model import MqttLwtMessageState, MqttLwtModel
 
 
 class MqttLwtMessage(BaseMessage):
+    def prepare_message(self):
+        self.model: MqttLwtModel = MqttLwtModel.model_validate_json(self.original_message)
 
     def save(self):
         if self.has_device:
             with write_session() as session:
                 try:
                     device = session.get(DeviceEntity, self.topic.device_model.id)
-                    device.online = False
+                    device.online = self.model.state == MqttLwtMessageState.ONLINE.value
                     session.add(device)
+                    Logger.info(f'Device {device.id} is: {self.model.state.name}', LoggerType.DEVICES)
                 except Exception as e:
-                    Logger.err(f'MqttLwtMessage->save: error with code: {str(e)}')
+                    Logger.err(f'MqttLwtMessage->save: error with code: {str(e)}', LoggerType.DEVICES)
 
     def sensor_value(self):
         return None

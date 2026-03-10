@@ -30,11 +30,12 @@ class DeviceModelMain(BaseModel):
 class DeviceModel(DeviceModelMain):
     location_id: int | None = None
     photo: str | None = None
-    type: int | None = None
+    type: str | None = None
     uptime: int | None = None
     free_heap: int | None = None
     total_heap: int | None = None
     fw_ver: str | None = None
+    capabilities: list[str] | None = None
     last_sync: datetime | None = None
     created: datetime | None = None
     updated: datetime | None = None

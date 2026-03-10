@@ -16,7 +16,7 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import JSON, Column
+from sqlalchemy import JSON, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
@@ -37,9 +37,16 @@ class SensorBase:
         nullable=True,
         description=" -> MqttSensorTypeEnum"
     )
-    identifier: str = Field(
-        unique=True,
+    capability: str = Field(
         index=True
+    )
+    identifier: str | None = Field(
+        nullable=True,
+        max_length=64
+    )
+    active: bool = Field(
+        index=True,
+        default=True
     )
     name: str = Field(
         nullable=True
@@ -71,6 +78,10 @@ class SensorEntity(
     table=True
 ):
     __tablename__ = 'device_sensors'
+
+    __table_args__ = (
+        UniqueConstraint('device_id', 'capability', 'identifier', name='uq_device_id_cap_ident'),
+    )
 
     device: Optional["DeviceEntity"] = Relationship(
         back_populates="sensors"

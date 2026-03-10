@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from models.sensor_history_model import SensorHistoryModel
 from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
@@ -27,7 +27,9 @@ class SensorModel(BaseModel):
     id: int | None = None
     device_id: int | None = None
     type: MqttSensorTypeEnum | None = None
-    identifier: str
+    capability: str
+    identifier: str | None = Field(default=None)
+    active: bool
     name: str | None = None
     visible_name: str | None = None
     options: dict | None = None

@@ -19,10 +19,8 @@ from enum import StrEnum
 class MqttTopicEnum(StrEnum):
     MANAGE = 'manage'
     REGISTER = 'register'
-    CNF_DIO = 'cnf/dio'
-    CNF_OW = 'cnf/ow'
-    CNF_RF433 = 'cnf/rf'
-    CNF_AI = 'cnf/ai'
+    CONFIG = 'config'
+    SENSORS = 'sensors'
     OW = 'ow'
     RF433 = 'rf'
     AI = 'ai'

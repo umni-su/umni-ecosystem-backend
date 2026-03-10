@@ -12,19 +12,15 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from enum import StrEnum
 
-from pydantic import BaseModel
-
-
-class MqttCnfAnalogPortModel(BaseModel):
-    type: int
-    channel: int
-    en: bool
-    label: str | None = None
+from pydantic import BaseModel, Field
 
 
-class MqttCnfAnalogPortsModel(BaseModel):
-    ntc1: MqttCnfAnalogPortModel
-    ntc2: MqttCnfAnalogPortModel
-    ai1: MqttCnfAnalogPortModel
-    ai2: MqttCnfAnalogPortModel
+class MqttLwtMessageState(StrEnum):
+    ONLINE = 'online'
+    OFFLINE = 'offline'
+
+
+class MqttLwtModel(BaseModel):
+    state: MqttLwtMessageState = Field(...)
