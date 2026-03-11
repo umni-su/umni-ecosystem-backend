@@ -15,3 +15,6 @@
 class DeviceRegistry:
     def register_device(self):
         pass
+
+
+device_registry = DeviceRegistry()
