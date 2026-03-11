@@ -25,6 +25,7 @@ class DeviceModelMain(BaseModel):
     description: str | None = None
     online: bool | None = None
     source: str | None = None
+    external_id: str | None = None
 
 
 class DeviceModel(DeviceModelMain):

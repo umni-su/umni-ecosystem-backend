@@ -47,6 +47,10 @@ class DeviceBase:
         index=True,
         nullable=True
     )
+    external_id: str | None = Field(
+        index=True,
+        nullable=True
+    )
     online: bool = Field(
         index=True,
         default=False
