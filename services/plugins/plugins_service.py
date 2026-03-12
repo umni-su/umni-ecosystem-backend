@@ -19,6 +19,7 @@ import sys
 import venv
 import shutil
 from pathlib import Path
+from threading import Thread
 from typing import Dict, List, Optional, Type, Any
 from typing_extensions import deprecated
 from sqlmodel import select
@@ -471,6 +472,15 @@ class PluginsService(BaseService):
             Logger.err(f"Error refreshing plugin {plugin_name}: {str(e)}", LoggerType.PLUGINS)
             return False
 
+    def refresh_plugin_in_thread(self, plugin_name: str) -> bool:
+        def plugin_thread():
+            self.refresh_plugin(plugin_name=plugin_name)
+            # TODO any notification that plugin restarting?
+
+        thread = Thread(target=plugin_thread, daemon=True)
+        thread.start()
+        return True
+
     def update_plugin_config(self, plugin_name: str, new_config: Dict[str, Any]) -> bool:
         """Обновление конфигурации плагина в БД и перезапуск если нужно"""
         try:
@@ -485,7 +495,7 @@ class PluginsService(BaseService):
                 # Валидация конфигурации
                 if plugin_name in self._plugin_classes:
                     plugin_class = self._plugin_classes[plugin_name]
-                    temp_instance = plugin_class(PluginModel.from_orm(plugin_entity))
+                    temp_instance = plugin_class(PluginModel.model_validate(plugin_entity))
                     if not temp_instance.validate_config(new_config):
                         return False
 
@@ -499,7 +509,8 @@ class PluginsService(BaseService):
                 self._plugins[plugin_name].on_config_update(new_config)
 
             Logger.info(f"Plugin {plugin_name} config updated", LoggerType.PLUGINS)
-            return self.refresh_plugin(plugin_name)
+            # return self.refresh_plugin(plugin_name)
+            return self.refresh_plugin_in_thread(plugin_name)
 
         except Exception as e:
             Logger.err(f"Error updating plugin config {plugin_name}: {str(e)}", LoggerType.PLUGINS)
@@ -559,10 +570,28 @@ class PluginsService(BaseService):
         return None
 
     def get_plugin_config_schema(self, plugin_name: str) -> Optional[Dict[str, Any]]:
-        """Получить детальную информацию о плагине"""
-        plugin = self._plugin_classes[plugin_name]
-        if plugin:
-            return plugin.config.get_ui_schema()
+        """Получить схему конфигурации плагина с текущими значениями"""
+
+        # 1. Если плагин запущен - берём его config (уже загружен и валидирован)
+        if plugin_name in self._plugins:
+            return self._plugins[plugin_name].config.get_ui_schema()
+
+        # 2. Если плагин не запущен, но есть в БД - создаём временный с данными из БД
+        plugin_class = self._plugin_classes.get(plugin_name)
+        if plugin_class:
+            with write_session() as session:
+                plugin_entity = session.exec(
+                    select(PluginEntity).where(PluginEntity.name == plugin_name)
+                ).first()
+                if plugin_entity and plugin_entity.config:
+                    # Создаём конфиг с данными из БД
+                    config_instance = plugin_class.config_class.model_validate(plugin_entity.config)
+                    return config_instance.get_ui_schema()
+
+        # 3. Ничего нет - возвращаем пустую схему
+        if plugin_class:
+            return plugin_class.config_class().get_ui_schema()
+
         return None
 
     def reload_all_plugins(self) -> Dict[str, bool]:

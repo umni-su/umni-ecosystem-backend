@@ -451,7 +451,6 @@ def save_plugin_schema(
         model: Dict[str, Any],
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
-    print(type(model), model.get('schema'))
     try:
         ecosystem = get_ecosystem()
         plugin_service: "PluginsService" = ecosystem.service_runner.get_service_by_name('plugins')
@@ -467,6 +466,7 @@ def save_plugin_schema(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Plugin not found"
             )
+        plugin_service.update_plugin_config(plugin.name, model.get('config').get('schema'))
 
         return plugin_service.get_plugin_config_schema(plugin.name)
     except HTTPException:

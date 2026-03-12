@@ -38,13 +38,6 @@ class TemplatePlugin(BasePlugin):
         super().__init__(plugin_model)
         self._config = {}
 
-    @classmethod
-    def set_configuration(cls):
-        """
-        Init config schema
-        """
-        cls.config = TemplatePluginConfig()
-
     def execute(self, data: Dict[str, Any] = None) -> Any:
         """Основная логика плагина"""
         if not self._is_running:
