@@ -51,9 +51,9 @@ async def stream_video(
         event_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
-    event: CameraEventsRepository.delete_event(event_id)
+    event = CameraEventsRepository.delete_event(event_id)
     return SuccessResponse(
-        success=True
+        success=event
     )
 
 

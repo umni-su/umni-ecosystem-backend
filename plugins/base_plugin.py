@@ -129,9 +129,18 @@ class BasePlugin(ABC):
         """Основной метод выполнения плагина"""
         pass
 
-    def on_start(self):
+    def on_start(self, data: Dict[str, Any] = None):
         """Вызывается при запуске плагина"""
+        started = self._is_running
         self._is_running = True
+        if not started:
+            from threading import Thread
+            thread = Thread(
+                target=self.execute,
+                args=(data,),
+                daemon=True
+            )
+            thread.start()
 
     def on_stop(self):
         """Вызывается при остановке плагина"""

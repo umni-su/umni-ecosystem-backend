@@ -129,6 +129,7 @@ class RuleEntity(TimeStampMixin, RuleEntityBase, IdColumnMixin, table=True):
             # lazy="selectin",
             cascade="all, delete-orphan"
         ),
+        back_populates="rule"
 
     )
     edges: List[RuleEdge] = Relationship(
@@ -136,4 +137,5 @@ class RuleEntity(TimeStampMixin, RuleEntityBase, IdColumnMixin, table=True):
             # lazy="selectin",
             cascade="all, delete-orphan"
         ),
+        back_populates="rule"
     )

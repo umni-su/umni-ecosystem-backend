@@ -15,6 +15,7 @@
 
 import uvicorn
 from fastapi import FastAPI
+from sqlalchemy.orm import configure_mappers
 
 from classes.app.lifespan_manager import lifespan_manager
 from routes.access import access
@@ -39,6 +40,7 @@ from config.settings import settings
 
 from services.cameras.classes.stream_registry import StreamRegistry
 
+configure_mappers()
 app = FastAPI(
     lifespan=lifespan_manager.lifespan,
     root_path=settings.API_ROOT

@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from sqlmodel import Field, Relationship, UniqueConstraint
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
@@ -138,10 +138,9 @@ class UserRoleEntity(
     user: "UserEntity" = Relationship(
         back_populates="roles"
     )
-    role: RoleEntity = Relationship(
+    role: "RoleEntity" = Relationship(
         back_populates="user_roles"
     )
 
 
-# UserRoleEntity использует UserEntity как forward reference
 from entities.user import UserEntity

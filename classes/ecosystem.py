@@ -46,6 +46,9 @@ class Ecosystem:
         self.config = EcosystemDatabaseConfiguration()
         self.installed = self.config.is_installed()
         self._crypto = None
+
+    def start_background_tasks(self):
+        """Метод для явного запуска логики"""
         thread_init = Thread(
             daemon=True,
             target=self.init_base_config

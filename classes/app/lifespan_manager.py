@@ -82,6 +82,7 @@ class LifespanManager:
         MigrationManager.run_migrations()
         ecosystem = Ecosystem()
         ecosystem.register_non_auto_subscribers()
+        ecosystem.start_background_tasks()
         Logger.info('Generator lifespan at start of app')
         self._shutting_down = False
         self._setup_signal_handlers()

@@ -37,7 +37,11 @@ class UploadValidator:
         return self
 
     def is_image(self):
-        res: bool = self.file.content_type in ImagesMimes
+        try:
+            ImagesMimes(self.file.content_type)
+            res = True
+        except ValueError:
+            res = False
         if not res:
             self.errors.append('Wrong mime type')
 

@@ -74,7 +74,7 @@ def update_device(
         Logger.err(str(e), LoggerType.APP)
 
 
-@devices.post('/{device_id}/cover', response_model=DeviceModelWithRelations)
+@devices.post('/{device_id}/cover')
 def update_device_cover(
         device_id: int,
         cover: UploadFile,

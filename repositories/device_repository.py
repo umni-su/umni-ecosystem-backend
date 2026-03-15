@@ -87,15 +87,15 @@ class DeviceRepository(BaseRepository):
     def upload_device_cover(cls, device_id: int, cover: UploadFile):
         with write_session() as sess:
             try:
+                validator = UploadValidator(cover)
+                validator.is_image().max_size(5).validate()
+
                 device = sess.get(DeviceEntity, device_id)
                 photo = device_storage.cover_upload(
                     device=device,
                     file=cover
                 )
                 device.photo = photo
-                sess.add(device)
-                validator = UploadValidator(cover)
-                validator.is_image().max_size(5).validate()
                 sess.add(device)
                 sess.commit()
                 sess.refresh(device)
