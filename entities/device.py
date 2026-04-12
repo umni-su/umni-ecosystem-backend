@@ -47,6 +47,10 @@ class DeviceBase:
         index=True,
         nullable=True
     )
+    feature: str | None = Field(
+        index=True,
+        nullable=True
+    )
     external_id: str | None = Field(
         index=True,
         nullable=True

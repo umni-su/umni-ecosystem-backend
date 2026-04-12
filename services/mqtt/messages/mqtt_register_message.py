@@ -17,12 +17,13 @@ import datetime
 
 from pydantic_core import ValidationError
 
+from classes.devices.device_registry import device_registry
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
-from models.enums.device_model_source import DeviceModelSource
+from classes.devices.device_source_enum import DeviceSource, DeviceFeature
 from models.enums.log_code import LogCode
 from models.log_model import LogEntityCode
 from services.mqtt.messages.base_message import BaseMessage
@@ -74,38 +75,11 @@ class MqttRegisterMessage(BaseMessage):
                 else:
                     device = DeviceEntity()
 
-                device.name = self.model.hostname
-                device.type = self.model.device_type
-                device.fw_ver = self.model.fw_ver
-                device.free_heap = self.model.heap.free
-                device.total_heap = self.model.heap.total
-                device.uptime = self.model.uptime
-                device.capabilities = self.model.capabilities
-                device.last_sync = datetime.datetime.now()
-                device.online = True
-                device.source = DeviceModelSource.SERVICE_MQTT.value
-                session.add(device)
-                session.commit()
-                session.refresh(device)
-
-                # Find network interfaces
-                for netif in self.model.networks:
-                    ni = DeviceNetworkInterface()
-                    for device_netif in device.network_interfaces:
-                        if device_netif.mac == netif.mac:
-                            ni = device_netif
-                            break
-                    ni.mac = netif.mac
-                    ni.name = netif.name
-                    ni.ip = netif.ip
-                    ni.mask = netif.mask
-                    ni.gw = netif.gw
-                    ni.device = device
-                    ni.last_sync = datetime.datetime.now()
-                    session.add(ni)
-                    # if founded is not None:
-                    #     ni = founded
-                session.commit()
+                device_registry.register_local_mqtt_device(
+                    new_or_existing_device=device,
+                    model=self.model,
+                    session=session
+                )
 
                 Logger.info(
                     f'📟💡 [Device ID{device.id} / {device.name}] - registration success',

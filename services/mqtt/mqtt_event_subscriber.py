@@ -17,10 +17,10 @@ import paho.mqtt.client as mqtt
 
 from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
-from models.enums.device_model_source import DeviceModelSource
+from classes.devices.device_source_enum import DeviceSource
 from models.sensor_model import SensorModelWithDevice
 from services.mqtt.payload.mqtt_payload_models import MqttSensorPayloadModel, MqttManageRelayPayloadModel
-from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
 
 
@@ -37,8 +37,8 @@ class MqttEventSubscriber:
     ):
         topic = None
         real_payload = payload
-        if sensor.device.source == DeviceModelSource.SERVICE_MQTT.value:
-            if sensor.type == MqttSensorTypeEnum.RELAY:
+        if sensor.device.source == DeviceSource.CORE.value:
+            if sensor.type == DeviceSensorTypeEnum.RELAY:
                 real_payload = MqttManageRelayPayloadModel(
                     index=sensor.options.get('index'),
                     level=payload.value

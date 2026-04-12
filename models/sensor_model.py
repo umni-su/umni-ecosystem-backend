@@ -17,7 +17,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from models.sensor_history_model import SensorHistoryModel
-from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from fastapi import UploadFile
 
 from models.device_model import DeviceModelMain
@@ -26,7 +26,7 @@ from models.device_model import DeviceModelMain
 class SensorModel(BaseModel):
     id: int | None = None
     device_id: int | None = None
-    type: MqttSensorTypeEnum | None = None
+    type: DeviceSensorTypeEnum | None = None
     capability: str
     identifier: str | None = Field(default=None)
     active: bool
@@ -36,12 +36,16 @@ class SensorModel(BaseModel):
     value: str | None = None
     photo: str | None = None
     last_sync: datetime | None = None
+    unit: str | None = None
+    icon: str | None = None
 
 
 class SensorUpdateModel(BaseModel):
     id: int
     name: str | None = None
     cover: UploadFile | None = None
+    unit: str | None = None
+    icon: str | None = None
 
 
 class SensorModelWithHistory(SensorModel):
@@ -50,3 +54,7 @@ class SensorModelWithHistory(SensorModel):
 
 class SensorModelWithDevice(SensorModel):
     device: DeviceModelMain = None
+
+
+class SensorPayload(BaseModel):
+    value: int | float

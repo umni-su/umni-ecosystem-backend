@@ -161,3 +161,18 @@ class BasePlugin(ABC):
             return True
         except Exception:
             return False
+
+    @abstractmethod
+    def set_sensor_value(
+            self,
+            external_id: str,
+            capability: str,
+            identifier: Optional[str],
+            value: Any
+    ) -> bool:
+        """
+        Установить значение сенсора.
+        Вызывается DeviceManager'ом.
+        Плагин сам решает, как отправить команду устройству.
+        """
+        pass

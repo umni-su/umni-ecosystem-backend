@@ -12,6 +12,7 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional, Union
 
 from sqlmodel import select, col, or_
 from sqlalchemy.orm import selectinload
@@ -44,6 +45,23 @@ class SensorRepository(BaseRepository):
                         )
                     )
                 return None
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def update_sensor_value(cls, sensor_id: int, value: Optional[Union[int | float | str]]):
+        with write_session() as sess:
+            try:
+                sensor = sess.get(SensorEntity, sensor_id)
+                if isinstance(sensor, SensorEntity):
+                    sensor.value = value
+                    sess.add(sensor)
+                    sess.commit()
+                    return SensorModelWithDevice.model_validate(
+                        sensor.to_dict(
+                            include_relationships=True
+                        )
+                    )
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 

@@ -35,7 +35,7 @@ class SensorBase:
     type: Optional[int] = Field(
         index=True,
         nullable=True,
-        description=" -> MqttSensorTypeEnum"
+        description="DeviceSensorTypeEnum"
     )
     capability: str = Field(
         index=True
@@ -58,6 +58,12 @@ class SensorBase:
         sa_column=Column(
             JSON, nullable=True
         )
+    )
+    unit: Optional[str] = Field(
+        nullable=True
+    )
+    icon: Optional[str] = Field(
+        nullable=True
     )
     value: str | None = Field(
         nullable=True

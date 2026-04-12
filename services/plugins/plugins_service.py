@@ -561,6 +561,12 @@ class PluginsService(BaseService):
         else:
             return plugin_instance.execute(data)
 
+    def get_plugin_by_name(self, plugin_name: str) -> Optional[BasePlugin]:
+        """Получить детальную информацию о плагине"""
+        if plugin_name in self._plugins:
+            return self._plugins[plugin_name]
+        return None
+
     def get_plugin_details(self, plugin_name: str) -> Optional[Dict[str, Any]]:
         """Получить детальную информацию о плагине"""
         plugins_list = self.get_plugins_list()

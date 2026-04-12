@@ -27,7 +27,7 @@ from models.sensors.config.sensor_ntc_config import SensorNtcConfig
 from models.sensors.config.sensor_onewire_config import SensorOneWireConfig
 from models.sensors.config.sensor_rf433_config import SensorRf433Config
 from services.mqtt.messages.base_message import BaseMessage
-from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 
 
 class MqttConfigMessageKey(StrEnum):
@@ -70,7 +70,7 @@ class MqttConfigMessage(BaseMessage):
                             sensor.capability = self.model.key
                             sensor.device_id = self.topic.device_model.id
                             sensor.name = _sensor.label
-                            sensor.type = MqttSensorTypeEnum.DS18B20.value
+                            sensor.type = DeviceSensorTypeEnum.DS18B20.value
                             sensor.last_sync = datetime.now()
                             session.add(sensor)
                         except Exception as e:
@@ -93,9 +93,9 @@ class MqttConfigMessage(BaseMessage):
                             sensor.identifier = identifier
                             sensor.device_id = self.topic.device_model.id
                             sensor.name = _sensor.label
-                            sensor.type = MqttSensorTypeEnum.NTC.value \
+                            sensor.type = DeviceSensorTypeEnum.NTC.value \
                                 if self.model.key == "ntc" \
-                                else MqttSensorTypeEnum.AI.value
+                                else DeviceSensorTypeEnum.AI.value
                             sensor.last_sync = datetime.now()
                             session.add(sensor)
                         except Exception as e:
@@ -111,7 +111,7 @@ class MqttConfigMessage(BaseMessage):
                             capability=self.model.key,
                             identifier=identifier
                         )
-                        sensor.type = MqttSensorTypeEnum.INPUT.value
+                        sensor.type = DeviceSensorTypeEnum.INPUT.value
                         sensor.active = _input.active
                         sensor.capability = self.model.key
                         sensor.identifier = identifier
@@ -128,7 +128,7 @@ class MqttConfigMessage(BaseMessage):
                             capability=self.model.key,
                             identifier=identifier
                         )
-                        sensor.type = MqttSensorTypeEnum.RELAY.value
+                        sensor.type = DeviceSensorTypeEnum.RELAY.value
                         sensor.active = _output.active
                         sensor.capability = self.model.key
                         sensor.identifier = identifier

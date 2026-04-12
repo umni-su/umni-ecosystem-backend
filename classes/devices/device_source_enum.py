@@ -15,5 +15,11 @@
 from enum import Enum
 
 
-class DeviceModelSource(str, Enum):
-    SERVICE_MQTT = "services.mqtt"
+class DeviceSource(str, Enum):
+    CORE = "core"
+    PLUGINS = "plugins"
+
+
+class DeviceFeature(str, Enum):
+    MQTT = "mqtt"
+    HTTP = "http"

@@ -31,7 +31,7 @@ from models.sensor_model import SensorModelWithDevice
 from models.sensors.sensor_capability_model import SensorCapabilityModel
 from repositories.sensor_history_repository import SensorHistoryRepository
 from services.mqtt.messages.base_message import BaseMessage
-from services.mqtt.topics.mqtt_sensor_type_enum import MqttSensorTypeEnum
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 
 
 class MqttSensorMessage(BaseMessage):
@@ -77,9 +77,9 @@ class MqttSensorMessage(BaseMessage):
                             last = SensorHistoryRepository.get_last_record(sensor)
                             if isinstance(last, SensorHistory):
                                 delta_types = [
-                                    MqttSensorTypeEnum.AI,
-                                    MqttSensorTypeEnum.NTC,
-                                    MqttSensorTypeEnum.DS18B20,
+                                    DeviceSensorTypeEnum.AI,
+                                    DeviceSensorTypeEnum.NTC,
+                                    DeviceSensorTypeEnum.DS18B20,
                                 ]
                                 delta = datetime.datetime.now() - last.created
                                 trigger = int(

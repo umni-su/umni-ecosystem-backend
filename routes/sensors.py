@@ -19,12 +19,13 @@ from fastapi import APIRouter, Depends, Body, Form, HTTPException
 
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
+from classes.devices.device_manager import DeviceManager, device_manager
 from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
 from classes.l10n.l10n import _
 from classes.storages.device_storage import device_storage
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
-from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
+from models.sensor_model import SensorModelWithHistory, SensorUpdateModel, SensorPayload
 from repositories.sensor_history_repository import SensorHistoryRepository
 from repositories.sensor_repository import SensorRepository
 from responses.user import UserResponseOut
@@ -108,3 +109,41 @@ def find_sensor_by_term(
             status_code=404,
             detail='Sensors not found'
         )
+
+
+@sensors.post("/{sensor_id}/set")
+async def set_sensor_value(
+        sensor_id: int,
+        payload: SensorPayload,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    """Установить значение сенсора"""
+    try:
+        success = device_manager.set_value(sensor_id, SensorPayload.value)
+        return {"success": success}
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@sensors.post("/{sensor_id}/turn_on")
+async def turn_on(
+        sensor_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    return {"success": device_manager.turn_on(sensor_id)}
+
+
+@sensors.post("/{sensor_id}/turn_off")
+async def turn_off(
+        sensor_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    return {"success": device_manager.turn_off(sensor_id)}
+
+
+@sensors.post("/{sensor_id}/toggle")
+async def toggle(
+        sensor_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    return {"success": device_manager.toggle(sensor_id)}

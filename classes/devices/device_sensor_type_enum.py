@@ -16,7 +16,7 @@
 from enum import Enum
 
 
-class MqttSensorTypeEnum(Enum):
+class DeviceSensorTypeEnum(Enum):
     RELAY = 1
     INPUT = 2
     NTC = 3
