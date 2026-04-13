@@ -94,7 +94,7 @@ class DeviceManager:
         return sensor.type == DeviceSensorTypeEnum.NTC
 
     def set_value_core(self, sensor: SensorModelWithDevice, value: Optional[Union[int | float | str]]):
-        if self.sensor_is_output(sensor):
+        if self.sensor_is_output(sensor):  # output
             ip = device_registry.get_device_ip(sensor.device_id)
             try:
                 if isinstance(sensor.options, dict):
@@ -102,7 +102,7 @@ class DeviceManager:
                     if value is not None:
                         uapi = UmniHttpDeviceCommands(ip)
                         res = uapi.switch_output(
-                            index=options.index,
+                            index=options.port,
                             level=1 if int(value) == 1 else 0
                         )
                         return res['success'] or False

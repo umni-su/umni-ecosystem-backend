@@ -29,7 +29,6 @@ from services.mqtt.messages.mqtt_lwt_message import MqttLwtMessage
 from services.mqtt.messages.mqtt_register_message import MqttRegisterMessage
 from services.mqtt.messages.mqtt_config_message import MqttConfigMessage
 from services.mqtt.messages.mqtt_sensor_message import MqttSensorMessage
-from services.mqtt.mqtt_event_subscriber import MqttEventSubscriber
 from services.mqtt.topics.mqtt_topic import MqttTopic
 from services.mqtt.topics.mqtt_topic_enum import MqttTopicEnum
 
@@ -39,7 +38,6 @@ class MqttService(BaseService):
     mqttc: mqtt.Client = None
     model: MqttBody
     connected: bool = False
-    subscriber: MqttEventSubscriber | None = None
 
     def run(self):
         host = self.config.get_setting(ConfigurationKeys.MQTT_HOST).value
@@ -57,7 +55,6 @@ class MqttService(BaseService):
         while not self.connected:
             try:
                 self.create_connection(self.model)
-                self.subscriber = MqttEventSubscriber(self.mqttc)
                 self.mqttc.loop_forever()
 
             except Exception as e:

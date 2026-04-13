@@ -14,6 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from fastapi import UploadFile
+from sqlalchemy.orm import contains_eager
 from sqlmodel import select, col
 
 from classes.logger.logger import Logger
@@ -22,6 +23,7 @@ from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
 from database.session import write_session
 from entities.device import DeviceEntity
+from entities.sensor_entity import SensorEntity
 from models.device_model import DeviceUpdateModel
 from models.device_model_relations import DeviceModelWithRelations
 from repositories.base_repository import BaseRepository
@@ -54,9 +56,14 @@ class DeviceRepository(BaseRepository):
     def get_device(cls, device_id: int):
         with write_session() as sess:
             try:
-                device_orm = sess.exec(
-                    select(DeviceEntity).where(DeviceEntity.id == device_id)
-                ).first()
+                q = (
+                    select(DeviceEntity)
+                    .join(col(DeviceEntity.sensors))
+                    .where(col(DeviceEntity.id) == device_id)
+                    .order_by(col(SensorEntity.name).asc())
+                    .options(contains_eager(DeviceEntity.sensors))  # type: ignore
+                )
+                device_orm = sess.exec(q).first()
                 return DeviceModelWithRelations.model_validate(
                     device_orm.to_dict(
                         include_relationships=True

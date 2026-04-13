@@ -95,7 +95,10 @@ class DeviceEntity(
 ):
     __tablename__ = 'devices'
     sensors: list["SensorEntity"] = Relationship(
-        back_populates="device"
+        back_populates="device",
+        sa_relationship_kwargs={
+            "order_by": "asc(SensorEntity.name)"
+        }
     )
     network_interfaces: list["DeviceNetworkInterface"] = Relationship(
         back_populates="device"
