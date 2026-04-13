@@ -47,15 +47,15 @@ def get_sensors_history(
     return sensor
 
 
-@sensors.post('/{sensor_id}/state')
-def get_sensors_history(
-        sensor_id: int,
-        payload: MqttSensorPayloadModel,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-):
-    sensor = SensorRepository.get_sensor(sensor_id)
-    event_bus.publish(EventType.SENSOR_SET_STATE, payload=payload, sensor=sensor)
-    return payload
+# @sensors.post('/{sensor_id}/state')
+# def get_sensors_history(
+#         sensor_id: int,
+#         payload: MqttSensorPayloadModel,
+#         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+# ):
+#     sensor = SensorRepository.get_sensor(sensor_id)
+#     event_bus.publish(EventType.SENSOR_SET_STATE, payload=payload, sensor=sensor)
+#     return payload
 
 
 @sensors.post('/{sensor_id}/history')

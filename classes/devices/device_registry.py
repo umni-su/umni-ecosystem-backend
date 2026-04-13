@@ -26,6 +26,7 @@ from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
+from repositories.sensor_repository import SensorRepository
 from services.mqtt.models.mqtt_register_model import MqttRegisterModel
 
 
@@ -338,13 +339,7 @@ class DeviceRegistry:
             value: Any
     ) -> SensorEntity:
         """Обновить значение сенсора (вызывается плагинами)"""
-        with write_session() as session:
-            sensor = session.get(SensorEntity, sensor_id)
-            if sensor:
-                sensor.value = str(value)
-                # Здесь можно добавить в историю
-                session.commit()
-            return sensor
+        return SensorRepository.update_sensor_value(sensor_id, value)
 
     def mark_device_ip_dead(self, device_id: int, ip: str):
         """

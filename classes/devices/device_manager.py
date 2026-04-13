@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional, Any, Dict, List, TYPE_CHECKING, Union
+from typing import Optional, Any, List, TYPE_CHECKING, Union
 
 from classes.devices.device_registry import device_registry
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
@@ -24,7 +24,6 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from database.session import write_session
-from entities.sensor_entity import SensorEntity
 from models.device_model import DeviceModel, DeviceModelMain
 from models.sensor_model import SensorModel, SensorModelWithDevice
 from repositories.device_repository import DeviceRepository
@@ -131,6 +130,7 @@ class DeviceManager:
         """
         sensor = self.get_sensor(sensor_id)
         device = sensor.device
+        success = False
 
         if not sensor:
             raise ValueError(f"Sensor {sensor_id} not found")
@@ -138,7 +138,7 @@ class DeviceManager:
         if isinstance(device, DeviceModelMain):
             if self.from_core(device):
                 # Device from UMNI core, use UMNI API
-                return self.set_value_core(sensor, value)
+                success = self.set_value_core(sensor, value)
             elif self.from_plugin(device):
                 # Получаем плагин и делегируем
                 plugin, device = self._get_plugin_for_device(sensor.device_id)
@@ -151,11 +151,11 @@ class DeviceManager:
                     value=value
                 )
 
-                if success:
-                    # Обновляем локальное значение
-                    self.registry.update_sensor_value(sensor_id, value)
+            if success:
+                # Обновляем локальное значение
+                self.registry.update_sensor_value(sensor_id, value)
 
-                return success
+            return success
 
         return False
 
