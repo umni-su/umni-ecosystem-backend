@@ -16,7 +16,12 @@
 from typing import Optional, Any, Dict, List, TYPE_CHECKING, Union
 
 from classes.devices.device_registry import device_registry
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from classes.devices.device_source_enum import DeviceSource, DeviceFeature
+from classes.devices.umni_device_options import UmniDeviceOutputOptions
+from classes.devices.umni_http_device_commands import UmniHttpDeviceCommands
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from database.session import write_session
 from entities.sensor_entity import SensorEntity
@@ -65,7 +70,7 @@ class DeviceManager:
         """Получить устройство"""
         return DeviceRepository.get_device(device_id)
 
-    def get_sensor(self, sensor_id: int) -> Optional[SensorModel]:
+    def get_sensor(self, sensor_id: int) -> Optional[SensorModelWithDevice]:
         """Получить сенсор"""
         return SensorRepository.get_sensor(sensor_id)
 
@@ -74,15 +79,36 @@ class DeviceManager:
         with write_session() as session:
             return session.query(SensorModel).filter_by(device_id=device_id).all()
 
-    def set_value_core(self, sensor_id: int, value: Optional[Union[int | float | str]]):
-        sensor_with_device = SensorRepository.update_sensor_value(sensor_id, value)
-        if isinstance(sensor_with_device, SensorModelWithDevice):
-            if self.from_core_http(sensor_with_device.device):
-                # http command to local umni core device
-                pass;
-            elif self.from_core_mqtt(sensor_with_device.device):
-                # mqtt command to local umni core device
-                pass;
+    def sensor_is_relay(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.RELAY
+
+    def sensor_is_output(self, sensor: SensorModelWithDevice):
+        return self.sensor_is_relay(sensor)
+
+    def sensor_is_input(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.INPUT
+
+    def sensor_is_ai(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.AI
+
+    def sensor_is_ntc(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.NTC
+
+    def set_value_core(self, sensor: SensorModelWithDevice, value: Optional[Union[int | float | str]]):
+        if self.sensor_is_output(sensor):
+            ip = device_registry.get_device_ip(sensor.device_id)
+            try:
+                if isinstance(sensor.options, dict):
+                    options = UmniDeviceOutputOptions.model_validate(sensor.options)
+                    if value is not None:
+                        uapi = UmniHttpDeviceCommands(ip)
+                        res = uapi.switch_output(
+                            index=options.index,
+                            level=1 if int(value) == 1 else 0
+                        )
+                        return res['success'] or False
+            except Exception as e:
+                Logger.err(str(e), LoggerType.DEVICES)
 
     # ========== COMMANDS (PLUGIN DELEGATED) ==========
 
@@ -104,34 +130,34 @@ class DeviceManager:
         Делегирует плагину.
         """
         sensor = self.get_sensor(sensor_id)
+        device = sensor.device
+
         if not sensor:
             raise ValueError(f"Sensor {sensor_id} not found")
 
-        if sensor.readonly:
-            raise ValueError(f"Sensor {sensor_id} is read-only")
+        if isinstance(device, DeviceModelMain):
+            if self.from_core(device):
+                # Device from UMNI core, use UMNI API
+                return self.set_value_core(sensor, value)
+            elif self.from_plugin(device):
+                # Получаем плагин и делегируем
+                plugin, device = self._get_plugin_for_device(sensor.device_id)
 
-        # Проверяем границы
-        # if sensor.min_value is not None and value < sensor.min_value:
-        #     value = sensor.min_value
-        # if sensor.max_value is not None and value > sensor.max_value:
-        #     value = sensor.max_value
+                # Вызываем метод плагина
+                success = plugin.set_sensor_value(
+                    external_id=device.external_id,
+                    capability=sensor.capability,
+                    identifier=sensor.identifier,
+                    value=value
+                )
 
-        # Получаем плагин и делегируем
-        plugin, device = self._get_plugin_for_device(sensor.device_id)
+                if success:
+                    # Обновляем локальное значение
+                    self.registry.update_sensor_value(sensor_id, value)
 
-        # Вызываем метод плагина
-        success = plugin.set_sensor_value(
-            external_id=device.external_id,
-            capability=sensor.capability,
-            identifier=sensor.identifier,
-            value=value
-        )
+                return success
 
-        if success:
-            # Обновляем локальное значение
-            self.registry.update_sensor_value(sensor_id, value)
-
-        return success
+        return False
 
     def turn_on(self, sensor_id: int) -> bool:
         """Включить (для switch)"""

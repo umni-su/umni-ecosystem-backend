@@ -14,6 +14,8 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from typing import Optional, Union
+
 from pydantic import BaseModel, Field
 
 from models.sensor_history_model import SensorHistoryModel
@@ -57,4 +59,4 @@ class SensorModelWithDevice(SensorModel):
 
 
 class SensorPayload(BaseModel):
-    value: int | float
+    value: Optional[Union[int | float | str]]

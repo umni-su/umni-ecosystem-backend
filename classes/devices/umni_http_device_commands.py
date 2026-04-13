@@ -132,17 +132,33 @@ class UmniHttpDeviceCommands:
         }
         return self._request('POST', '/api/settings', data)
 
-    def switch_output(self, index: int, state: int) -> Dict[str, Any]:
+    def switch_output(self, index: int, level: int) -> Dict[str, Any]:
         """
         Переключение выхода
-
+        https://docs.umni.su/books/prosivka-umni-uni/page/rest-api-v10#bkmrk-Переключение-цифровы
         :param index: Индекс выхода (начинается с 1)
-        :param state: Состояние (0 - выключить, 1 - включить)
+        :param level: Состояние (0 - выключить, 1 - включить)
         :return: Ответ от API
         """
         data = {
+            "mode": "outputs",
             "index": index,
-            "state": state
+            "level": level
+        }
+        return self._request('POST', '/api/switch', data)
+
+    def switch_opencollectors(self, index: int, level: int) -> Dict[str, Any]:
+        """
+        Переключение выхода
+        https://docs.umni.su/books/prosivka-umni-uni/page/rest-api-v10#bkmrk-Переключение-цифровы
+        :param index: Индекс выхода (начинается с 1)
+        :param level: Состояние (0 - выключить, 1 - включить)
+        :return: Ответ от API
+        """
+        data = {
+            "mode": "opencollectors",
+            "index": index,
+            "level": level
         }
         return self._request('POST', '/api/switch', data)
 

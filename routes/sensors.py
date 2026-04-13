@@ -97,20 +97,6 @@ def get_sensor_cover(
         )
 
 
-@sensors.get('/{term}', description="Find sensor with device data by term")
-def find_sensor_by_term(
-        term: str,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-):
-    try:
-        return SensorRepository.find_sensors(term)
-    except Exception as e:
-        raise HTTPException(
-            status_code=404,
-            detail='Sensors not found'
-        )
-
-
 @sensors.post("/{sensor_id}/set")
 async def set_sensor_value(
         sensor_id: int,
@@ -119,7 +105,7 @@ async def set_sensor_value(
 ):
     """Установить значение сенсора"""
     try:
-        success = device_manager.set_value(sensor_id, SensorPayload.value)
+        success = device_manager.set_value(sensor_id, payload.value)
         return {"success": success}
     except Exception as e:
         raise HTTPException(400, str(e))
@@ -147,3 +133,17 @@ async def toggle(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
     return {"success": device_manager.toggle(sensor_id)}
+
+
+@sensors.get('/{term}', description="Find sensor with device data by term")
+def find_sensor_by_term(
+        term: str,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    try:
+        return SensorRepository.find_sensors(term)
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail='Sensors not found'
+        )
