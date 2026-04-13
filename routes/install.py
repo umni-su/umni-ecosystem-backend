@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import datetime
+from datetime import datetime
 from fastapi import APIRouter, Response, status
 from sqlmodel import delete
 from classes.crypto.hasher import Hasher
@@ -95,7 +95,7 @@ def install_ecosystem(body: InstallBody, response: Response):
                 session.merge(installed_db)
 
                 install_date = ecosystem.config.get_setting(ConfigurationKeys.APP_INSTALL_DATE)
-                install_date.value = str(datetime.datetime.now())
+                install_date.value = str(datetime.now())
                 install_date_db = ConfigurationEntity.model_validate(install_date)
                 session.merge(install_date_db)
                 ecosystem.config.reread()

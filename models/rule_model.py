@@ -255,8 +255,10 @@ class EdgeCreate(BaseModel):
 
 
 class RuleGraphUpdate(BaseModel):
-    nodes: List[NodeVisualize] = Field(default=list[NodeVisualize])
-    edges: List[EdgeCreate] = Field(default=list[EdgeCreate])
+    # nodes: List[NodeVisualize] = Field(default=list[NodeVisualize])
+    # edges: List[EdgeCreate] = Field(default=list[EdgeCreate])
+    nodes: List[NodeVisualize] = Field(default_factory=list)  # ✅ правильно
+    edges: List[EdgeCreate] = Field(default_factory=list)  # ✅ правильно
 
 
 class RuleModel(RuleGraphUpdate, RuleCreate):

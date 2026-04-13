@@ -32,4 +32,4 @@ class CameraAreaModel(BaseModel):
 
 class CameraAreaBaseModel(CameraAreaModel):
     points: list[list[int]] | None = None
-    options: Optional[ROISettings] = Field(default=ROISettings)
+    options: Optional[ROISettings] = Field(default_factory=ROISettings)

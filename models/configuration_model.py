@@ -26,7 +26,8 @@ class ConfigurationModelWithTranslation(BaseModel):
 class ConfigurationGroup(BaseModel):
     key: str
     label: str
-    items: List[ConfigurationModelWithTranslation] = Field(default=list)
+    # items: List[ConfigurationModelWithTranslation] = Field(default=list)
+    items: List[ConfigurationModelWithTranslation] = Field(default_factory=list)
 
 
 class ConfigurationModelBase(BaseModel):

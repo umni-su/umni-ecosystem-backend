@@ -14,7 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-import datetime
+from datetime import datetime
 import os
 import queue
 import threading
@@ -231,7 +231,7 @@ class CameraStream:
         self.need_skip = False
 
     def date_filename(self):
-        return datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
+        return datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
 
     def take_screenshot(self, path: str, prefix: str | None = None, frame: np.ndarray | None = None):
         filename = '.'.join([self.date_filename(), 'jpg'])
