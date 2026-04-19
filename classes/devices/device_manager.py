@@ -135,7 +135,6 @@ class DeviceManager:
                 opentherm_params = {sensor.identifier: value}
                 res = uapi.configure_opentherm(**opentherm_params)
                 success = res['success']
-                print(res)
             return success or False
         except Exception as e:
             Logger.err(str(e), LoggerType.DEVICES)
