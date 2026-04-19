@@ -77,9 +77,8 @@ class MqttSensorMessage(BaseMessage):
                             last = SensorHistoryRepository.get_last_record(sensor)
                             if isinstance(last, SensorHistory):
                                 delta_types = [
-                                    DeviceSensorTypeEnum.AI,
-                                    DeviceSensorTypeEnum.NTC,
-                                    DeviceSensorTypeEnum.DS18B20,
+                                    DeviceSensorTypeEnum.NUMBER,
+                                    DeviceSensorTypeEnum.TEMPERATURE,
                                 ]
                                 delta = datetime.datetime.now() - last.created
                                 trigger = int(

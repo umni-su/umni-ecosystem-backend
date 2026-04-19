@@ -60,7 +60,8 @@ class DeviceRepository(BaseRepository):
                     select(DeviceEntity)
                     .join(col(DeviceEntity.sensors))
                     .where(col(DeviceEntity.id) == device_id)
-                    .order_by(col(SensorEntity.name).asc())
+                    .order_by(col(SensorEntity.capability).asc())
+                    .order_by(col(SensorEntity.identifier).asc())
                     .options(contains_eager(DeviceEntity.sensors))  # type: ignore
                 )
                 device_orm = sess.exec(q).first()

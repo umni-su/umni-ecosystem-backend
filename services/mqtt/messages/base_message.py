@@ -19,6 +19,7 @@ from sqlmodel import select
 
 from database.session import write_session
 from entities.sensor_entity import SensorEntity
+from models.sensors.sensor_utils import get_or_new_sensor
 from services.mqtt.topics.mqtt_topic import MqttTopic
 
 
@@ -57,14 +58,8 @@ class BaseMessage:
             identifier: str,
             capability: str | None
     ) -> SensorEntity:
-        with write_session() as session:
-            sensor = SensorEntity()
-            existing = session.exec(
-                select(SensorEntity)
-                .where(SensorEntity.device_id == device_id)
-                .where(SensorEntity.capability == capability)
-                .where(SensorEntity.identifier == identifier)
-            ).first()
-            if isinstance(existing, SensorEntity):
-                sensor = existing
-            return sensor
+        return get_or_new_sensor(
+            device_id=device_id,
+            identifier=identifier,
+            capability=capability,
+        )

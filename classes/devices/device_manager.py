@@ -79,7 +79,7 @@ class DeviceManager:
             return session.query(SensorModel).filter_by(device_id=device_id).all()
 
     def sensor_is_relay(self, sensor: SensorModelWithDevice):
-        return sensor.type == DeviceSensorTypeEnum.RELAY
+        return sensor.type == DeviceSensorTypeEnum.SWITCH
 
     def sensor_is_output(self, sensor: SensorModelWithDevice):
         return self.sensor_is_relay(sensor)
@@ -102,7 +102,7 @@ class DeviceManager:
                     if value is not None:
                         uapi = UmniHttpDeviceCommands(ip)
                         res = uapi.switch_output(
-                            index=options.port,
+                            index=options.index,
                             level=1 if int(value) == 1 else 0
                         )
                         return res['success'] or False
@@ -151,9 +151,9 @@ class DeviceManager:
                     value=value
                 )
 
-            if success:
-                # Обновляем локальное значение
-                self.registry.update_sensor_value(sensor_id, value)
+            # if success:
+            # Обновляем локальное значение
+            #    self.registry.update_sensor_value(sensor_id, value)
 
             return success
 

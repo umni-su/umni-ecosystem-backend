@@ -64,13 +64,12 @@ msgid "MQTT password"
 msgstr "MQTT пароль"
 
 #: classes/notifications/base_registered_notification.py:116
-#, fuzzy
 msgid "title"
-msgstr "Состояние"
+msgstr "Заголовок"
 
 #: classes/notifications/base_registered_notification.py:120
 msgid "description"
-msgstr ""
+msgstr "Описание"
 
 #: classes/notifications/via/email_notification.py:35
 msgid "SMTP Email Configuration"

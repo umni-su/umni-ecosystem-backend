@@ -25,7 +25,9 @@ from models.sensors.config.sensor_adc_config import SensorAdcConfig
 from models.sensors.config.sensor_dio_config import SensorInputsConfig, SensorOutputsConfig
 from models.sensors.config.sensor_ntc_config import SensorNtcConfig
 from models.sensors.config.sensor_onewire_config import SensorOneWireConfig
+from models.sensors.config.sensor_opentherm_config import OpenthermConfig
 from models.sensors.config.sensor_rf433_config import SensorRf433Config
+from models.sensors.opentherm_config_parser import OpenthermConfigParser
 from services.mqtt.messages.base_message import BaseMessage
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 
@@ -47,6 +49,7 @@ class MqttConfigMessageModel(BaseModel):
         SensorNtcConfig |
         SensorOutputsConfig |
         SensorInputsConfig |
+        OpenthermConfig |
         Dict[str, Any]
         ] = Field(...)
 
@@ -70,8 +73,9 @@ class MqttConfigMessage(BaseMessage):
                             sensor.capability = self.model.key
                             sensor.device_id = self.topic.device_model.id
                             sensor.name = _sensor.label
-                            sensor.type = DeviceSensorTypeEnum.DS18B20.value
+                            sensor.type = DeviceSensorTypeEnum.TEMPERATURE.value
                             sensor.last_sync = datetime.now()
+                            sensor.icon = DeviceSensorTypeEnum.TEMPERATURE.icon
                             session.add(sensor)
                         except Exception as e:
                             Logger.err(f'MqttCnfOwMessage->save() {str(e)}', LoggerType.DEVICES)
@@ -93,9 +97,12 @@ class MqttConfigMessage(BaseMessage):
                             sensor.identifier = identifier
                             sensor.device_id = self.topic.device_model.id
                             sensor.name = _sensor.label
-                            sensor.type = DeviceSensorTypeEnum.NTC.value \
+                            sensor.type = DeviceSensorTypeEnum.TEMPERATURE.value \
                                 if self.model.key == "ntc" \
-                                else DeviceSensorTypeEnum.AI.value
+                                else DeviceSensorTypeEnum.NUMBER.value
+                            sensor.icon = DeviceSensorTypeEnum.TEMPERATURE.icon \
+                                if self.model.key == "ntc" \
+                                else DeviceSensorTypeEnum.NUMBER.icon
                             sensor.last_sync = datetime.now()
                             session.add(sensor)
                         except Exception as e:
@@ -112,6 +119,7 @@ class MqttConfigMessage(BaseMessage):
                             identifier=identifier
                         )
                         sensor.type = DeviceSensorTypeEnum.INPUT.value
+                        sensor.icon = DeviceSensorTypeEnum.INPUT.icon
                         sensor.active = _input.active
                         sensor.capability = self.model.key
                         sensor.identifier = identifier
@@ -122,13 +130,14 @@ class MqttConfigMessage(BaseMessage):
                         session.add(sensor)
                 elif isinstance(self.model.config, SensorOutputsConfig):
                     for _output in self.model.config.outputs:
-                        identifier = f"out{_output.port}"
+                        identifier = f"out{_output.index}"
                         sensor = self.get_or_new_sensor(
                             device_id=self.topic.device_model.id,
                             capability=self.model.key,
                             identifier=identifier
                         )
-                        sensor.type = DeviceSensorTypeEnum.RELAY.value
+                        sensor.type = DeviceSensorTypeEnum.SWITCH.value
+                        sensor.icon = DeviceSensorTypeEnum.SWITCH.icon
                         sensor.active = _output.active
                         sensor.capability = self.model.key
                         sensor.identifier = identifier
@@ -137,6 +146,16 @@ class MqttConfigMessage(BaseMessage):
                         sensor.last_sync = datetime.now()
                         sensor.options = _output.model_dump()
                         session.add(sensor)
+
+                elif isinstance(self.model.config, OpenthermConfig):
+                    # Основные сенсоры состояния
+                    ot_parser = OpenthermConfigParser(
+                        config=self.model.config,
+                        device_id=self.topic.device_model.id,
+                    )
+                    ot_parser.save_sensors()
+                    Logger.info(f'📟⚙️ [{self.topic.original_topic}] {self.model.key} config saved successfully',
+                                LoggerType.DEVICES)
 
         except Exception as e:
             self.model = None

@@ -85,6 +85,9 @@ msgstr "Доступность"
 msgid "Back"
 msgstr "Назад"
 
+msgid "Boolean"
+msgstr "Истина/ложь"
+
 msgid "Backup and restore"
 msgstr "Резервное копирование"
 
@@ -350,6 +353,9 @@ msgstr "История"
 msgid "Host"
 msgstr "Хост"
 
+msgid "Humidity"
+msgstr "Влажность"
+
 msgid "IP address"
 msgstr "IP адрес"
 
@@ -406,6 +412,15 @@ msgstr "Ссылка"
 
 msgid "Link mode"
 msgstr "Режим ссылки"
+
+msgid "Light"
+msgstr "Освещение"
+
+msgid "Light RGB"
+msgstr "Освещение RGB"
+
+msgid "Light RGBA"
+msgstr "Освещение RGBA"
 
 msgid "Load more"
 msgstr "Загрузить больше"
@@ -500,6 +515,9 @@ msgstr "NTC термистор"
 msgid "NTC thermistors"
 msgstr "NTC термисторы"
 
+msgid "Number"
+msgstr "Число"
+
 msgid "Offline"
 msgstr "Вне сети"
 
@@ -562,6 +580,9 @@ msgstr "Простой. Доступный. Умный."
 
 msgid "Protocol"
 msgstr "Протокол"
+
+msgid "Pressure"
+msgstr "Давление"
 
 msgid "Ram"
 msgstr "Оперативная память"
@@ -638,6 +659,9 @@ msgstr "Чувствительность"
 msgid "Sensors"
 msgstr "Датчики"
 
+msgid "Setpoint"
+msgstr "Значение"
+
 msgid "SERVER"
 msgstr "СЕРВЕР"
 
@@ -692,11 +716,17 @@ msgstr "Хранить постоянно"
 msgid "Stream"
 msgstr "Поток"
 
+msgid "String"
+msgstr "Строка"
+
 msgid "Subject"
 msgstr "Тема"
 
 msgid "Swap"
 msgstr "Файл подкачки"
+
+msgid "Switch"
+msgstr "Выключатель"
 
 msgid "Switch to drawing mode"
 msgstr "Переключиться в режим рисования"
@@ -718,6 +748,12 @@ msgstr "Сделать скриншот"
 
 msgid "Telegram"
 msgstr "Телеграм"
+
+
+msgid "Temperature"
+msgstr "Температура"
+
+
 
 msgid "To"
 msgstr "Кому"
