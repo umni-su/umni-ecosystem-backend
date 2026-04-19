@@ -26,6 +26,7 @@ from config.dependencies import get_ecosystem
 from database.session import write_session
 from models.device_model import DeviceModel, DeviceModelMain
 from models.sensor_model import SensorModel, SensorModelWithDevice
+from models.sensors.config.sensor_opentherm_config import BoundItem
 from repositories.device_repository import DeviceRepository
 from repositories.sensor_repository import SensorRepository
 
@@ -78,11 +79,21 @@ class DeviceManager:
         with write_session() as session:
             return session.query(SensorModel).filter_by(device_id=device_id).all()
 
-    def sensor_is_relay(self, sensor: SensorModelWithDevice):
-        return sensor.type == DeviceSensorTypeEnum.SWITCH
+    def sensor_is_opentherm(self, sensor: SensorModelWithDevice):
+        return sensor.capability == "opentherm"
+
+    def sensor_get_bounds(self, sensor: SensorModelWithDevice) -> Optional[BoundItem]:
+        try:
+            return BoundItem.model_validate(sensor.options)
+        except Exception as e:
+            Logger.err(str(e), LoggerType.DEVICES)
+            return None
 
     def sensor_is_output(self, sensor: SensorModelWithDevice):
-        return self.sensor_is_relay(sensor)
+        return sensor.capability == "outputs" and self.sensor_is_relay(sensor)
+
+    def sensor_is_relay(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.SWITCH
 
     def sensor_is_input(self, sensor: SensorModelWithDevice):
         return sensor.type == DeviceSensorTypeEnum.INPUT
@@ -93,21 +104,41 @@ class DeviceManager:
     def sensor_is_ntc(self, sensor: SensorModelWithDevice):
         return sensor.type == DeviceSensorTypeEnum.NTC
 
-    def set_value_core(self, sensor: SensorModelWithDevice, value: Optional[Union[int | float | str]]):
-        if self.sensor_is_output(sensor):  # output
-            ip = device_registry.get_device_ip(sensor.device_id)
-            try:
+    def sensor_is_setpoint(self, sensor: SensorModelWithDevice):
+        return sensor.type == DeviceSensorTypeEnum.SETPOINT
+
+    def set_value_core(self, sensor: SensorModelWithDevice, value: Optional[Union[int | float | str | bool]]):
+        ip = device_registry.get_device_ip(sensor.device_id)
+        if ip is None:
+            return False
+        uapi = UmniHttpDeviceCommands(ip)
+        try:
+            success = False
+            # Bounds check
+            if self.sensor_is_setpoint(sensor):
+                bounds = self.sensor_get_bounds(sensor)
+                if isinstance(bounds, BoundItem):
+                    return value >= bounds.value >= value
+                return False
+            # Output check
+            if self.sensor_is_output(sensor):  # output
                 if isinstance(sensor.options, dict):
                     options = UmniDeviceOutputOptions.model_validate(sensor.options)
                     if value is not None:
-                        uapi = UmniHttpDeviceCommands(ip)
                         res = uapi.switch_output(
                             index=options.index,
                             level=1 if int(value) == 1 else 0
                         )
-                        return res['success'] or False
-            except Exception as e:
-                Logger.err(str(e), LoggerType.DEVICES)
+                        success = res['success']
+            # Opentherm
+            elif self.sensor_is_opentherm(sensor):  # opentherm
+                opentherm_params = {sensor.identifier: value}
+                res = uapi.configure_opentherm(**opentherm_params)
+                success = res['success']
+                print(res)
+            return success or False
+        except Exception as e:
+            Logger.err(str(e), LoggerType.DEVICES)
 
     # ========== COMMANDS (PLUGIN DELEGATED) ==========
 

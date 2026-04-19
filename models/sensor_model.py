@@ -59,4 +59,4 @@ class SensorModelWithDevice(SensorModel):
 
 
 class SensorPayload(BaseModel):
-    value: Optional[Union[int | float | str]]
+    value: Optional[Union[int | float | str | bool]]

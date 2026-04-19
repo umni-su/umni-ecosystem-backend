@@ -219,6 +219,17 @@ class UmniHttpDeviceCommands:
         }
         return self.update_settings('ntc', values)
 
+    def configure_opentherm(self, **kwargs) -> Dict[str, Any]:
+        """
+        Настройка OPENTHERM
+        :param kwargs: Параметры для настройки (en, ch_en, ch_sp, dhw_en, dhw_sp, ch2_en, cool_en, mod, otc_en)
+        :return: Ответ от API
+        """
+        allowed_params = {'en', 'ch_en', 'ch_sp', 'dhw_en', 'dhw_sp', 'ch2_en', 'cool_en', 'mod', 'otc_en'}
+        values = {k: v for k, v in kwargs.items() if k in allowed_params}
+        
+        return self.update_settings('opentherm', values)
+
     def check_connection(self) -> bool:
         """
         Проверка соединения с контроллером
