@@ -92,6 +92,9 @@ class DeviceManager:
     def sensor_is_output(self, sensor: SensorModelWithDevice):
         return sensor.capability == "outputs" and self.sensor_is_relay(sensor)
 
+    def sensor_is_opencollector(self, sensor: SensorModelWithDevice):
+        return sensor.capability == "opencollectors" and self.sensor_is_relay(sensor)
+
     def sensor_is_relay(self, sensor: SensorModelWithDevice):
         return sensor.type == DeviceSensorTypeEnum.SWITCH
 
@@ -127,7 +130,7 @@ class DeviceManager:
                     if value is not None:
                         res = uapi.switch_output(
                             index=options.index,
-                            level=1 if int(value) == 1 else 0
+                            level=value
                         )
                         success = res['success']
             # Opentherm

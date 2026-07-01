@@ -127,6 +127,7 @@ class MqttConfigMessage(BaseMessage):
                         sensor.name = _input.label
                         sensor.last_sync = datetime.now()
                         sensor.options = _input.model_dump()
+                        sensor.value = str(_input.state)
                         session.add(sensor)
                 elif isinstance(self.model.config, SensorOutputsConfig):
                     for _output in self.model.config.outputs:
@@ -145,6 +146,7 @@ class MqttConfigMessage(BaseMessage):
                         sensor.name = _output.label
                         sensor.last_sync = datetime.now()
                         sensor.options = _output.model_dump()
+                        sensor.value = str(_output.state)
                         session.add(sensor)
 
                 elif isinstance(self.model.config, OpenthermConfig):

@@ -17,6 +17,7 @@ import datetime
 
 from sqlmodel import select
 
+from classes.devices.device_manager import device_manager
 from classes.events.event_bus import event_bus
 from classes.events.event_types import EventType
 from classes.logger.logger_types import LoggerType
@@ -55,11 +56,17 @@ class MqttSensorMessage(BaseMessage):
                     """
                     Заносим только если переданная capability в сообщении есть в device
                     """
+                    value = self.model.value
+
                     if self.model.capability in device.capabilities:
                         try:
+                            model = SensorModelWithDevice.model_validate(founded.to_dict(include_relationships=True))
+                            if device_manager.sensor_is_output(model) or device_manager.sensor_is_input(model):
+                                value = 'True' if self.model.value else 'False'
+                                
                             sensor = founded
                             sensor.device_id = self.topic.device_model.id
-                            sensor.value = self.model.value
+                            sensor.value = value
                             session.add(sensor)
                             session.commit()
                             session.refresh(sensor)

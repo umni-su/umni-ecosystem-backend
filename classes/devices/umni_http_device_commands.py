@@ -132,12 +132,12 @@ class UmniHttpDeviceCommands:
         }
         return self._request('POST', '/api/settings', data)
 
-    def switch_output(self, index: int, level: int) -> Dict[str, Any]:
+    def switch_output(self, index: int, level: bool) -> Dict[str, Any]:
         """
         Переключение выхода
         https://docs.umni.su/books/prosivka-umni-uni/page/rest-api-v10#bkmrk-Переключение-цифровы
         :param index: Индекс выхода (начинается с 1)
-        :param level: Состояние (0 - выключить, 1 - включить)
+        :param level: Состояние (true - выключить, false - включить)
         :return: Ответ от API
         """
         data = {
@@ -147,12 +147,12 @@ class UmniHttpDeviceCommands:
         }
         return self._request('POST', '/api/switch', data)
 
-    def switch_opencollectors(self, index: int, level: int) -> Dict[str, Any]:
+    def switch_opencollectors(self, index: int, level: bool) -> Dict[str, Any]:
         """
         Переключение выхода
         https://docs.umni.su/books/prosivka-umni-uni/page/rest-api-v10#bkmrk-Переключение-цифровы
         :param index: Индекс выхода (начинается с 1)
-        :param level: Состояние (0 - выключить, 1 - включить)
+        :param level: Состояние (true - выключить, false - включить)
         :return: Ответ от API
         """
         data = {
@@ -227,7 +227,7 @@ class UmniHttpDeviceCommands:
         """
         allowed_params = {'en', 'ch_en', 'ch_sp', 'dhw_en', 'dhw_sp', 'ch2_en', 'cool_en', 'mod', 'otc_en'}
         values = {k: v for k, v in kwargs.items() if k in allowed_params}
-        
+
         return self.update_settings('opentherm', values)
 
     def check_connection(self) -> bool:

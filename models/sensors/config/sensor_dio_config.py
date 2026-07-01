@@ -22,6 +22,7 @@ class SensorDioPortModel(BaseModel):
     port: int
     label: Optional[str] = Field(default=None)
     active: bool
+    state: bool
 
 
 class SensorOutputPortModel(SensorDioPortModel):
