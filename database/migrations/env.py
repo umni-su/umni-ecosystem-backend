@@ -123,9 +123,9 @@ def run_migrations_offline() -> None:
 
     # url = config.get_main_option("sqlalchemy.url")
     naming_convention = {
-        "ix": "ix_%(table_name)s_%(column_0_label)s",  # Added table_name for more uniqueness
+        "ix": "ix_%(column_0_label)s",
         "uq": "uq_%(table_name)s_%(column_0_name)s",
-        "ck": "ck_%(table_name)s_%(constraint_name)s",  # Used constraint_name for check constraints
+        "ck": "ck_%(table_name)s_%(constraint_name)s",
         "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
         "pk": "pk_%(table_name)s"
     }
@@ -140,6 +140,7 @@ def run_migrations_offline() -> None:
         process_revision_directives=None,
         compare_type=True,
         compare_server_default=True,
+        naming_convention=naming_convention
     )
 
     with context.begin_transaction():

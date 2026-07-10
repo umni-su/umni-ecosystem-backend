@@ -16,6 +16,7 @@
 from pydantic import ConfigDict
 from models.device_model import DeviceModel
 from models.device_netif import DeviceNetif
+from models.plugin_model import PluginModelDevice
 from models.sensor_model import SensorModel
 
 
@@ -27,7 +28,11 @@ class DeviceModelWithNetif(DeviceModel):
     network_interfaces: list[DeviceNetif] | None = None
 
 
-class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif):
+class DeviceModelWithPlugin(DeviceModel):
+    plugin: list[PluginModelDevice] | None = None
+
+
+class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif, DeviceModelWithPlugin):
     model_config = ConfigDict(
         from_attributes=True
     )

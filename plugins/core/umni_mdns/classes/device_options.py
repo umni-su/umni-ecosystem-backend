@@ -17,11 +17,11 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class UmniDeviceOptions(BaseModel):
+class DeviceOptions(BaseModel):
     pass
 
 
-class UmniDeviceOutputOptions(UmniDeviceOptions):
+class DeviceOutputOptions(DeviceOptions):
     index: int = Field(...)
     port: int = Field(...)
     label: Optional[str] = Field(default=None)

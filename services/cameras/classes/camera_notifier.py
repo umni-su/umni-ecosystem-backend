@@ -266,7 +266,8 @@ class CameraNotifier:
         Args:
             event (ROIRecordEvent): Событие начала записи
         """
-        Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}")
+        Logger.debug(f"[{event.timestamp}] Начата запись с камеры {event.camera.name} в {event.timestamp}",
+                     LoggerType.CAMERAS)
 
     @staticmethod
     def _on_recording_end(event: "ROIRecordEvent", stream: "CameraStream"):

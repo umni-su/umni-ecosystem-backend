@@ -1,0 +1,8 @@
+{
+  "author": "Mikhail Sazanov",
+  "url": "https://umni.su",
+  "name": "umni_mdns",
+  "display_name": "Umni mDNS listener",
+  "version": "0.0.1",
+  "description": "Umni mDNS Core listener"
+}

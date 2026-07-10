@@ -17,6 +17,14 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 
+class PluginModelDevice(BaseModel):
+    id: Optional[int] = None
+    name: str
+    display_name: str
+    version: str
+    active: bool
+
+
 class PluginModel(BaseModel):
     id: Optional[int] = None
     name: str
@@ -29,6 +37,11 @@ class PluginModel(BaseModel):
     config: Optional[Dict[str, Any]] = None
     status: str
     error_message: Optional[str] = None
+    is_core: bool = False
+
+    @property
+    def directory(self):
+        return "core" if self.is_core else "custom"
 
     class Config:
         from_attributes = True

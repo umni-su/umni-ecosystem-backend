@@ -18,8 +18,8 @@ from typing import Optional, Any, List, TYPE_CHECKING, Union
 from classes.devices.device_registry import device_registry
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from classes.devices.device_source_enum import DeviceSource, DeviceFeature
-from classes.devices.umni_device_options import UmniDeviceOutputOptions
-from classes.devices.umni_http_device_commands import UmniHttpDeviceCommands
+from plugins.core.umni_mdns.classes.device_options import DeviceOutputOptions
+from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
@@ -114,7 +114,7 @@ class DeviceManager:
         ip = device_registry.get_device_ip(sensor.device_id)
         if ip is None:
             return False
-        uapi = UmniHttpDeviceCommands(ip)
+        uapi = DeviceRestCommands(ip)
         try:
             success = False
             # Bounds check
@@ -126,7 +126,7 @@ class DeviceManager:
             # Output check
             if self.sensor_is_output(sensor):  # output
                 if isinstance(sensor.options, dict):
-                    options = UmniDeviceOutputOptions.model_validate(sensor.options)
+                    options = DeviceOutputOptions.model_validate(sensor.options)
                     if value is not None:
                         res = uapi.switch_output(
                             index=options.index,

@@ -121,6 +121,7 @@ class PluginRepository(BaseRepository):
                 plugin_entity.config = model.config
                 plugin_entity.status = model.status
                 plugin_entity.error_message = model.error_message
+                plugin_entity.is_core = model.is_core
 
                 sess.add(plugin_entity)
                 sess.commit()

@@ -135,6 +135,14 @@ async def install_plugin(plugin_name: str, force: bool = False):
         if not plugin_service:
             raise HTTPException(status_code=503, detail="Plugin service not available")
 
+        plugin = PluginRepository.get_plugin_by_name(plugin_name)
+
+        if isinstance(plugin, PluginModel) and plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
+            )
+
         success = plugin_service.install_plugin(plugin_name, force=force)
         if not success:
             raise HTTPException(status_code=400, detail="Failed to install plugin")
@@ -155,6 +163,14 @@ async def reinstall_plugin(plugin_name: str):
         plugin_service: "PluginsService" = ecosystem.service_runner.get_service_by_name('plugins')
         if not plugin_service:
             raise HTTPException(status_code=503, detail="Plugin service not available")
+
+        plugin = PluginRepository.get_plugin_by_name(plugin_name)
+
+        if isinstance(plugin, PluginModel) and plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
+            )
 
         success = plugin_service.install_plugin(plugin_name, force=True)
         if not success:
@@ -189,6 +205,12 @@ async def update_plugin(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Plugin not found"
+            )
+
+        if current_plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
             )
 
         # Обновляем в БД
@@ -241,6 +263,12 @@ async def toggle_plugin(
                 detail="Plugin not found"
             )
 
+        if plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
+            )
+
         # Обновляем активность в БД
         updated_plugin = PluginRepository.patch_plugin(plugin_id, {"active": toggle_data.active})
         if not updated_plugin:
@@ -291,6 +319,12 @@ async def delete_plugin(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Plugin not found"
+            )
+
+        if plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
             )
 
         # Останавливаем плагин если запущен
@@ -375,7 +409,8 @@ async def get_plugin_logo(
             raise HTTPException(status_code=503, detail="Plugin service not available")
 
         # Путь к логотипу плагина
-        plugin_dir = plugin_service.plugins_dir / "custom" / plugin_name
+        plugin = PluginRepository.get_plugin_by_name(plugin_name)
+        plugin_dir = plugin_service.plugins_dir / plugin.directory / plugin_name
         logo_path = plugin_dir / "logo.png"
         default_logo_path = plugin_service.plugins_dir / "default.png"
 
@@ -501,6 +536,12 @@ def execute_plugin(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Plugin not found"
+            )
+
+        if plugin.is_core:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Core plugins do not support any actions"
             )
 
         if not plugin.active:

@@ -15,12 +15,16 @@
 import json
 import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, Optional, Type
 
+from repositories.device_repository import DeviceRepository
+from classes.devices.device_manager import DeviceManager, device_manager
 from classes.l10n.l10n import translator, plugin_translate
 from classes.thread.daemon import Daemon
 from classes.ui.ui_form_generator import UIEnhancedModel
 from models.plugin_model import PluginModel, PluginConfigModel
+from repositories.plugin_repository import PluginRepository
 
 
 class BasePluginConfig(UIEnhancedModel):
@@ -38,16 +42,26 @@ class BasePlugin(ABC):
     plugin_config_model: PluginConfigModel = PluginConfigModel()
     plugin_dir = "plugins"
     daemon: Daemon | None = None
+    is_core: bool = False
     _is_running: bool = False
     plugin_name = None
+    manager: DeviceManager
+    repository: DeviceRepository
 
     def __init__(self, plugin_model: PluginModel):
         self.plugin_model = plugin_model
         self._is_running = False
         self._config_instance: Optional[BasePluginConfig] = None
+        self.manager = device_manager
+        self.repository: DeviceRepository = DeviceRepository()
 
         # Автоматическая валидация конфигурации при создании
         self._load_config()
+
+    @property
+    def db_id(self):
+        db_plugin = PluginRepository.get_plugin_by_name(self.name)
+        return db_plugin.id or None
 
     def _load_config(self):
         """Загружает и валидирует конфигурацию"""
@@ -104,13 +118,14 @@ class BasePlugin(ABC):
         return translator.get_default_lang()
 
     @classmethod
-    def load_config(cls, name: str):
+    def load_config(cls, config_file: Path):
         """Загрузка мета-конфигурации из файла"""
-        config_file = os.path.join(cls.plugin_dir, "custom", name, f"{name}_config.json")
         if os.path.exists(os.path.abspath(config_file)):
             with open(config_file, 'r', encoding='utf-8') as f:
                 json_data = json.load(f)
                 cls.plugin_config_model = PluginConfigModel.model_validate(json_data)
+        else:
+            print('config file not found', config_file)
 
     @property
     def name(self) -> str:
@@ -123,6 +138,10 @@ class BasePlugin(ABC):
     @property
     def is_running(self) -> bool:
         return self._is_running
+
+    @property
+    def directory(self) -> str:
+        return "core" if self.is_core else "custom"
 
     @abstractmethod
     def execute(self, data: Dict[str, Any] = None) -> Any:

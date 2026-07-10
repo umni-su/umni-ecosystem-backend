@@ -22,6 +22,7 @@ from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
 from entities.device_network_interfaces import DeviceNetworkInterface
+from entities.plugin_entity import PluginEntity
 from entities.sensor_entity import SensorEntity
 
 
@@ -29,6 +30,11 @@ class DeviceBase:
     name: str = Field(
         index=True,
         unique=True
+    )
+    plugin_id: int = Field(
+        nullable=False,
+        foreign_key="plugins.id",
+        ondelete="CASCADE"
     )
     title: str | None = Field(
         nullable=True
@@ -43,17 +49,9 @@ class DeviceBase:
         index=True,
         nullable=True
     )
-    source: str | None = Field(
-        index=True,
-        nullable=True
-    )
-    feature: str | None = Field(
-        index=True,
-        nullable=True
-    )
     external_id: str | None = Field(
         index=True,
-        nullable=True
+        unique=True
     )
     online: bool = Field(
         index=True,
@@ -103,6 +101,7 @@ class DeviceEntity(
     network_interfaces: list["DeviceNetworkInterface"] = Relationship(
         back_populates="device"
     )
+    plugin: PluginEntity = Relationship()
 
     def __repr__(self):
         return f"<Device {self.name}>"

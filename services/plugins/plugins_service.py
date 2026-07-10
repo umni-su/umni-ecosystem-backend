@@ -77,23 +77,32 @@ class PluginsService(BaseService):
         self.run()
 
     def _load_all_plugins(self):
-        """Загрузка всех плагинов из папки custom"""
-        custom_plugins_dir = self.plugins_dir / "custom"
+        """Централизованный метод загрузки всех типов плагинов"""
+        core_dir = self.plugins_dir / "core"
+        custom_dir = self.plugins_dir / "custom"
 
-        if not custom_plugins_dir.exists():
-            Logger.warn("Custom plugins directory not found", LoggerType.PLUGINS)
-            return
+        # 1. Сначала загружаем системные плагины (они в приоритете)
+        if core_dir.exists():
+            self._load_plugins_from_directory(core_dir, is_core=True)
+        else:
+            print("Warning: Core plugins directory missing!")
 
-        self._load_plugins_from_directory(custom_plugins_dir)
+        # 2. Затем загружаем пользовательские плагины
+        if custom_dir.exists():
+            self._load_plugins_from_directory(custom_dir, is_core=False)
+        else:
+            # Создаем папку автоматически, если её нет в системе (т.к. она в .gitignore)
+            custom_dir.mkdir(parents=True, exist_ok=True)
+
         self._sync_with_database()
 
-    def _load_plugins_from_directory(self, directory: Path):
-        """Загрузка плагинов из указанной директории"""
+    def _load_plugins_from_directory(self, directory: Path, is_core: bool):
+        """Сканирование директории и загрузка плагинов"""
         for plugin_dir in directory.iterdir():
-            if plugin_dir.is_dir():
-                self.load_single_plugin(plugin_dir)
+            if plugin_dir.is_dir() and not plugin_dir.name.startswith("."):
+                self.load_single_plugin(plugin_dir, is_core=is_core)
 
-    def load_single_plugin(self, plugin_dir: Path):
+    def load_single_plugin(self, plugin_dir: Path, is_core: bool):
         """Загрузка одного плагина с изолированным venv"""
         plugin_name = plugin_dir.name
         plugin_file = plugin_dir / f"{plugin_name}_plugin.py"
@@ -103,16 +112,18 @@ class PluginsService(BaseService):
             return
 
         try:
-            # 1. Создаем/настраиваем виртуальное окружение для плагина
-            env_path = self._setup_plugin_environment(plugin_dir, plugin_name)
-            if not env_path:
-                Logger.err(f"Failed to setup environment for {plugin_name}", LoggerType.PLUGINS)
-                return
+            env_path = None
+            if not is_core:
+                # 1. Создаем/настраиваем виртуальное окружение для плагина
+                env_path = self._setup_plugin_environment(plugin_dir, plugin_name)
+                if not env_path:
+                    Logger.err(f"Failed to setup environment for {plugin_name}", LoggerType.PLUGINS)
+                    return
 
-            # 2. Добавляем site-packages из venv в sys.path для импорта
-            env_site_packages = self._get_env_site_packages(env_path)
-            if env_site_packages not in sys.path:
-                sys.path.insert(0, env_site_packages)
+                # 2. Добавляем site-packages из venv в sys.path для импорта
+                env_site_packages = self._get_env_site_packages(env_path)
+                if env_site_packages not in sys.path:
+                    sys.path.insert(0, env_site_packages)
 
             # 3. Динамическая загрузка модуля (теперь зависимости будут из venv)
             spec = importlib.util.spec_from_file_location(plugin_name, plugin_file)
@@ -133,14 +144,16 @@ class PluginsService(BaseService):
 
             if plugin_class and issubclass(plugin_class, BasePlugin):
                 plugin_class.plugin_name = plugin_name
+                plugin_class.is_core = is_core
 
                 # Загружаем конфиг если есть
                 config_file = plugin_dir / f"{plugin_name}_config.json"
                 if config_file.exists():
-                    plugin_class.load_config(plugin_name)
+                    plugin_class.load_config(config_file)
 
                 self._plugin_classes[plugin_name] = plugin_class
-                self._plugin_envs[plugin_name] = env_path
+                if not is_core:
+                    self._plugin_envs[plugin_name] = env_path
                 Logger.info(f"Plugin {plugin_name} loaded with isolated environment", LoggerType.PLUGINS)
             else:
                 Logger.err(f"Plugin class {plugin_class_name} not found for {plugin_name}", LoggerType.PLUGINS)
@@ -244,8 +257,8 @@ class PluginsService(BaseService):
 
             # Добавление новых плагинов в базу
             for plugin_name in self._plugin_classes.keys():
+                plugin_class = self._plugin_classes[plugin_name]
                 if plugin_name not in db_plugin_names:
-                    plugin_class = self._plugin_classes[plugin_name]
                     new_plugin = PluginEntity(
                         name=plugin_name,
                         display_name=plugin_class.plugin_config_model.display_name,
@@ -253,11 +266,19 @@ class PluginsService(BaseService):
                         version=plugin_class.plugin_config_model.version,
                         url=plugin_class.plugin_config_model.url,
                         author=plugin_class.plugin_config_model.author,
-                        active=False,
-                        status="stopped"
+                        active=plugin_class.is_core,
+                        is_core=plugin_class.is_core,
+                        status="running" if plugin_class.is_core else plugin_update.status
                     )
                     session.add(new_plugin)
                     Logger.info(f"Created database entry for plugin {plugin_name}", LoggerType.PLUGINS)
+                else:
+                    plugin_update = PluginRepository.get_plugin_by_name(plugin_name)
+                    plugin_update.is_core = plugin_class.is_core
+                    plugin_update.active = plugin_class.is_core
+                    plugin_update.status = "running" if plugin_class.is_core else plugin_update.status
+                    plugin_update.display_name = plugin_class.plugin_config_model.display_name
+                    PluginRepository.update_plugin(plugin_update.id, plugin_update)
 
             # Удаление плагинов, которых нет в файловой системе
             for db_plugin in db_plugins:
@@ -443,13 +464,14 @@ class PluginsService(BaseService):
     def refresh_plugin(self, plugin_name: str) -> bool:
         """Обновить плагин после изменений в БД"""
         try:
+            plugin = self.get_plugin_by_name(plugin_name)
             # Останавливаем если запущен
             was_running = plugin_name in self._plugins
             if was_running:
                 self._stop_single_plugin(plugin_name)
 
             # Перезагружаем плагин с новыми настройками
-            plugin_dir = self.plugins_dir / "custom" / plugin_name
+            plugin_dir = self.plugins_dir / plugin.directory / plugin_name
             if plugin_dir.exists():
                 # Перезагружаем класс плагина
                 if plugin_name in self._plugin_classes:
@@ -457,7 +479,7 @@ class PluginsService(BaseService):
                 if plugin_name in self._plugin_envs:
                     del self._plugin_envs[plugin_name]
 
-                self.load_single_plugin(plugin_dir)
+                self.load_single_plugin(plugin_dir, plugin.is_core)
 
                 # Запускаем если был активен
                 if was_running and plugin_name in self._plugin_classes:
@@ -641,7 +663,7 @@ class PluginsService(BaseService):
                 del self._plugin_envs[plugin_name]
 
             # 4. Загружаем плагин заново (создаст/обновит venv)
-            self.load_single_plugin(plugin_dir)
+            self.load_single_plugin(plugin_dir, False)
 
             # 5. Обновляем БД - ставим active=False
             dir_plugin = self._plugin_classes[plugin_name]
@@ -655,6 +677,7 @@ class PluginsService(BaseService):
                 current_plugin.url = dir_plugin.plugin_config_model.url,
                 current_plugin.version = dir_plugin.plugin_config_model.version,
                 current_plugin.status = "stopped"
+                current_plugin.is_core = dir_plugin.is_core
                 PluginRepository.update_plugin(current_plugin.id, current_plugin)
             else:
                 # Создаем новую запись если плагина нет в БД

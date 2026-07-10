@@ -13,13 +13,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import threading
-from datetime import datetime, time
+from datetime import datetime
 from time import sleep
 from typing import Any, Optional, List, Dict
 
-from sqlmodel import Session
-
-from classes.devices.device_source_enum import DeviceSource, DeviceFeature
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
@@ -27,7 +24,6 @@ from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
 from repositories.sensor_repository import SensorRepository
-from services.mqtt.models.mqtt_register_model import MqttRegisterModel
 
 
 class DeviceIPStore:
@@ -148,52 +144,6 @@ class DeviceRegistry:
         self._cleanup_thread.start()
         Logger.info('Device Registry cleanup thread started', LoggerType.DEVICES)
 
-    def register_local_mqtt_device(
-            self,
-            new_or_existing_device: DeviceEntity,
-            model: MqttRegisterModel,
-            session: Session
-    ):
-        try:
-            new_or_existing_device.name = model.hostname
-            new_or_existing_device.type = model.device_type
-            new_or_existing_device.fw_ver = model.fw_ver
-            new_or_existing_device.free_heap = model.heap.free
-            new_or_existing_device.total_heap = model.heap.total
-            new_or_existing_device.uptime = model.uptime
-            new_or_existing_device.capabilities = model.capabilities
-            new_or_existing_device.last_sync = datetime.now()
-            new_or_existing_device.online = True
-            new_or_existing_device.source = DeviceSource.CORE.value
-            new_or_existing_device.feature = DeviceFeature.MQTT.value
-            session.add(new_or_existing_device)
-            session.commit()
-            session.refresh(new_or_existing_device)
-
-            # Find network interfaces
-            for netif in model.networks:
-                ni = DeviceNetworkInterface()
-                for device_netif in new_or_existing_device.network_interfaces:
-                    if device_netif.mac == netif.mac:
-                        ni = device_netif
-                        break
-                ni.mac = netif.mac
-                ni.name = netif.name
-                ni.ip = netif.ip
-                ni.mask = netif.mask
-                ni.gw = netif.gw
-                ni.device = new_or_existing_device
-                ni.last_sync = datetime.now()
-                session.add(ni)
-
-                # Сохраняем IP в кэш
-                if netif.ip and netif.ip != "0.0.0.0":
-                    self.ip_store.set_ip(new_or_existing_device.id, netif.ip)
-
-            session.commit()
-        except Exception as e:
-            Logger.err(f'DeviceRegistry->register_local_mqtt_device() {str(e)}', LoggerType.DEVICES)
-
     def update_device_ip_from_db(self, device_id: int) -> Optional[str]:
         """Обновить IP из базы данных"""
         with write_session() as session:
@@ -255,34 +205,136 @@ class DeviceRegistry:
 
     def register_device(
             self,
-            feature: str,  # "http", "core"
-            source: str,  # "core", "tuya", "tasmota", "mqtt" ...etc
             external_id: str,  # Уникальный ID в исходной системе
+            plugin_id: int,
             name: str,
             device_type: str = "generic",
             **kwargs
     ) -> DeviceEntity:
         """Найти или создать устройство"""
         with write_session() as session:
-            device = session.query(DeviceEntity).filter_by(
-                source=source, external_id=external_id
-            ).first()
+            device = session.query(DeviceEntity).filter_by(external_id=external_id).first()
 
             if not device:
-                device = DeviceEntity(
-                    feature=feature,
-                    source=source,
-                    external_id=external_id,
-                    name=name,
-                    type=device_type,
-                    online=True,
-                    **kwargs
-                )
+                try:
+                    device = DeviceEntity(
+                        plugin_id=plugin_id,
+                        external_id=external_id,
+                        name=name,
+                        type=device_type,
+                        online=True,
+                        **kwargs
+                    )
+                    device.last_sync = datetime.now()
+                    session.add(device)
+                    session.commit()
+                    session.refresh(device)
+                except Exception as e:
+                    Logger.err(e, LoggerType.PLUGINS)
+
+            try:
+                device.name = name
+                device.type = device_type
+                device.online = True
+                device.last_sync = datetime.now()
+
+                for key, value in kwargs.items():
+                    if hasattr(device, key):
+                        setattr(device, key, value)
                 session.add(device)
                 session.commit()
                 session.refresh(device)
 
+            except Exception as e:
+                Logger.err(e, LoggerType.PLUGINS)
+
             return device
+
+    def unregister_device(self, name: str, external_id: Optional[str] = None) -> bool:
+        """
+        Удалить устройство по имени или external_id
+
+        :param name: Имя устройства
+        :param external_id: Внешний ID (опционально, для точного поиска)
+        :return: True если устройство найдено и удалено
+        """
+        with write_session() as session:
+            try:
+                # Строим запрос
+                query = session.query(DeviceEntity).filter_by(name=name)
+
+                # Если передан external_id - уточняем
+                if external_id:
+                    query = query.filter_by(external_id=external_id)
+
+                device = query.first()
+
+                if not device:
+                    Logger.warn(
+                        f"Device not found for unregistration: name={name}, external_id={external_id}",
+                        LoggerType.DEVICES
+                    )
+                    return False
+
+                device_id = device.id
+                session.query(SensorEntity).filter_by(device_id=device_id).delete()
+                session.query(DeviceNetworkInterface).filter_by(device_id=device_id).delete()
+                self.ip_store.remove_device(device_id)
+
+                # 4. Удаляем само устройство
+                session.delete(device)
+                session.commit()
+
+                Logger.info(
+                    f"Device unregistered: {name} (id={device_id}, external_id={device.external_id})",
+                    LoggerType.DEVICES
+                )
+                return True
+
+            except Exception as e:
+                Logger.err(
+                    f"Failed to unregister device {name}: {e}",
+                    LoggerType.DEVICES
+                )
+                return False
+
+    def set_offline(self, name: str, reason: Optional[str] = None) -> bool:
+        """
+        Установить устройство в офлайн режим по имени
+
+        :param name: Имя устройства
+        :param reason: Причина офлайн
+        :return: True если устройство найдено и обновлено
+        """
+        with write_session() as session:
+            try:
+                device = session.query(DeviceEntity).filter_by(name=name).first()
+
+                if not device:
+                    Logger.warn(
+                        f"Device not found for set_offline: name={name}",
+                        LoggerType.DEVICES
+                    )
+                    return False
+
+                device.online = False
+                device.last_sync = datetime.now()
+
+                session.commit()
+
+                Logger.info(
+                    f"Device set offline: {name} (id={device.id})",
+                    LoggerType.DEVICES
+                )
+                return True
+
+            except Exception as e:
+                Logger.err(
+                    f"Failed to set device offline by name {name}: {e}",
+                    LoggerType.DEVICES
+                )
+                session.rollback()
+                return False
 
     def add_sensor(
             self,

@@ -74,6 +74,20 @@ class DeviceRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
+    def get_device_by_name(cls, name: str):
+        with write_session() as sess:
+            try:
+                q = select(DeviceEntity).where(col(DeviceEntity.name) == name)
+                device_orm = sess.exec(q).first()
+                return DeviceModelWithRelations.model_validate(
+                    device_orm.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
     def update_device(cls, device_id: int, model: DeviceUpdateModel):
         with write_session() as sess:
             try:

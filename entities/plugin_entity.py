@@ -55,6 +55,12 @@ class PluginEntityBase:
         index=True
     )
 
+    is_core: bool = Field(
+        default=False,
+        nullable=False,
+        index=True
+    )
+
     status: str = Field(
         default="stopped",
         nullable=False  # stopped|running|error

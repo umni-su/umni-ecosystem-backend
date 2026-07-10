@@ -75,11 +75,11 @@ class MqttRegisterMessage(BaseMessage):
                 else:
                     device = DeviceEntity()
 
-                device_registry.register_local_mqtt_device(
-                    new_or_existing_device=device,
-                    model=self.model,
-                    session=session
-                )
+                # device_registry.register_local_mqtt_device(
+                #     new_or_existing_device=device,
+                #     model=self.model,
+                #     session=session
+                # )
 
                 Logger.info(
                     f'📟💡 [Device ID{device.id} / {device.name}] - registration success',
