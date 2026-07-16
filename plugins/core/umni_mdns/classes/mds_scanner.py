@@ -74,8 +74,8 @@ class MDNSScanner(ServiceListener):
                         self.on_device_updated(old_device, device_data)
                 else:
                     self.scan_result.add_device(device_data)
-                    self.logger.info(
-                        f"✅ Device ONLINE: {device_data.name} ({device_data.unique_id}) -> {device_data.ip}:{device_data.port}")
+                    self.logger.debug(
+                        f"Device ONLINE: {device_data.name} ({device_data.unique_id}) -> {device_data.ip}:{device_data.port}")
 
                     if self.on_device_added:
                         self.on_device_added(device_data)
@@ -158,12 +158,7 @@ class MDNSScanner(ServiceListener):
             result = client.get_system_info()
 
             # Проверяем, что ответ успешный
-            if result.success:
-                self.logger.debug(f"Device {device.name} ({device.ip}) is ONLINE")
-                return True
-            else:
-                self.logger.debug(f"Device {device.name} ({device.ip}) returned error: {result}")
-                return False
+            return result.success
 
         except Exception as e:
             self.logger.debug(f"Device {device.name} ({device.ip}) is OFFLINE: {e}")

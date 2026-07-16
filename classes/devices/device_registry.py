@@ -17,12 +17,16 @@ from datetime import datetime
 from time import sleep
 from typing import Any, Optional, List, Dict
 
+from sqlmodel import col
+
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
+from models.device_model_relations import DeviceModelWithRelations
+from models.device_scan_model import DeviceScanModel
 from repositories.sensor_repository import SensorRepository
 
 
@@ -129,8 +133,56 @@ class DeviceIPStore:
 class DeviceRegistry:
     def __init__(self, ip_ttl_seconds: int = 5):  # 5 минут TTL
         self.ip_store = DeviceIPStore(ttl_seconds=ip_ttl_seconds)
+
+        self._scanned_devices: Dict[int, List[DeviceScanModel]] = {}  # plugin_id -> list
+        self._scan_timestamps: Dict[int, datetime] = {}  # plugin_id -> timestamp
+        self._scan_ttl = 300  # 5 минут
+        self._scan_lock = threading.Lock()
+
         self._cleanup_thread = None
         self._start_cleanup()
+
+    # ========== Методы для работы со сканированными устройствами ==========
+
+    def store_scan_results(self, plugin_id: int, devices: List[DeviceScanModel]):
+        """Сохранить результаты сканирования"""
+        with self._scan_lock:
+            self._scanned_devices[plugin_id] = devices
+            self._scan_timestamps[plugin_id] = datetime.now()
+
+    def get_scanned_devices(self, plugin_id: int) -> List[DeviceScanModel]:
+        """Получить отсканированные устройства"""
+        with self._scan_lock:
+            # Проверяем актуальность
+            if plugin_id not in self._scan_timestamps:
+                return []
+
+            age = (datetime.now() - self._scan_timestamps[plugin_id]).total_seconds()
+            if age > self._scan_ttl:
+                # Устарело - удаляем
+                self._scanned_devices.pop(plugin_id, None)
+                self._scan_timestamps.pop(plugin_id, None)
+                return []
+
+            return self._scanned_devices.get(plugin_id, [])
+
+    def clear_scanned_devices(self, plugin_id: int):
+        """Очистить сканированные устройства"""
+        with self._scan_lock:
+            self._scanned_devices.pop(plugin_id, None)
+            self._scan_timestamps.pop(plugin_id, None)
+
+    def _cleanup_scan_cache(self):
+        """Очистка устаревших сканов"""
+        with self._scan_lock:
+            now = datetime.now()
+            expired = [
+                pid for pid, ts in self._scan_timestamps.items()
+                if (now - ts).total_seconds() > self._scan_ttl
+            ]
+            for pid in expired:
+                self._scanned_devices.pop(pid, None)
+                self._scan_timestamps.pop(pid, None)
 
     def _start_cleanup(self):
         """Фоновая очистка устаревших IP"""
@@ -139,6 +191,7 @@ class DeviceRegistry:
             while True:
                 sleep(60)  # Каждую минуту
                 self.ip_store.cleanup()
+                self._cleanup_scan_cache()
 
         self._cleanup_thread = threading.Thread(target=cleanup_loop, daemon=True)
         self._cleanup_thread.start()
@@ -200,9 +253,6 @@ class DeviceRegistry:
         """
         self.ip_store.remove_ip(device_id, ip)
 
-    def register_local_http_device(self):
-        pass
-
     def register_device(
             self,
             external_id: str,  # Уникальный ID в исходной системе
@@ -210,12 +260,12 @@ class DeviceRegistry:
             name: str,
             device_type: str = "generic",
             **kwargs
-    ) -> DeviceEntity:
+    ) -> DeviceModelWithRelations:
         """Найти или создать устройство"""
         with write_session() as session:
             device = session.query(DeviceEntity).filter_by(external_id=external_id).first()
 
-            if not device:
+            if device is None:
                 try:
                     device = DeviceEntity(
                         plugin_id=plugin_id,
@@ -232,23 +282,28 @@ class DeviceRegistry:
                 except Exception as e:
                     Logger.err(e, LoggerType.PLUGINS)
 
-            try:
-                device.name = name
-                device.type = device_type
-                device.online = True
-                device.last_sync = datetime.now()
+            else:
+                try:
+                    device.name = name
+                    device.type = device_type
+                    device.online = True
+                    device.last_sync = datetime.now()
 
-                for key, value in kwargs.items():
-                    if hasattr(device, key):
-                        setattr(device, key, value)
-                session.add(device)
-                session.commit()
-                session.refresh(device)
+                    for key, value in kwargs.items():
+                        if hasattr(device, key):
+                            setattr(device, key, value)
+                    session.add(device)
+                    session.commit()
+                    session.refresh(device)
 
-            except Exception as e:
-                Logger.err(e, LoggerType.PLUGINS)
+                except Exception as e:
+                    Logger.err(str(e), LoggerType.PLUGINS)
 
-            return device
+            return DeviceModelWithRelations.model_validate(
+                device.to_dict(
+                    include_relationships=True
+                )
+            )
 
     def unregister_device(self, name: str, external_id: Optional[str] = None) -> bool:
         """
@@ -298,17 +353,16 @@ class DeviceRegistry:
                 )
                 return False
 
-    def set_offline(self, name: str, reason: Optional[str] = None) -> bool:
+    def set_offline(self, name: str) -> bool:
         """
         Установить устройство в офлайн режим по имени
 
         :param name: Имя устройства
-        :param reason: Причина офлайн
         :return: True если устройство найдено и обновлено
         """
         with write_session() as session:
             try:
-                device = session.query(DeviceEntity).filter_by(name=name).first()
+                device = session.query(DeviceEntity).where(col(DeviceEntity.external_id) == name).first()
 
                 if not device:
                     Logger.warn(
@@ -318,11 +372,10 @@ class DeviceRegistry:
                     return False
 
                 device.online = False
-                device.last_sync = datetime.now()
 
                 session.commit()
 
-                Logger.info(
+                Logger.debug(
                     f"Device set offline: {name} (id={device.id})",
                     LoggerType.DEVICES
                 )
@@ -331,6 +384,43 @@ class DeviceRegistry:
             except Exception as e:
                 Logger.err(
                     f"Failed to set device offline by name {name}: {e}",
+                    LoggerType.DEVICES
+                )
+                session.rollback()
+                return False
+
+    def set_online(self, name: str) -> bool:
+        """
+        Установить устройство в онлайн режим по имени
+
+        :param name: Имя устройства
+        :return: True если устройство найдено и обновлено
+        """
+        with write_session() as session:
+            try:
+                device = session.query(DeviceEntity).where(col(DeviceEntity.external_id) == name).first()
+
+                if not device:
+                    Logger.warn(
+                        f"Device not found for set_online: name={name}",
+                        LoggerType.DEVICES
+                    )
+                    return False
+
+                device.online = True
+                device.last_sync = datetime.now()
+
+                session.commit()
+
+                Logger.debug(
+                    f"Device set online: {name} (id={device.id})",
+                    LoggerType.DEVICES
+                )
+                return True
+
+            except Exception as e:
+                Logger.err(
+                    f"Failed to set device online by name {name}: {e}",
                     LoggerType.DEVICES
                 )
                 session.rollback()

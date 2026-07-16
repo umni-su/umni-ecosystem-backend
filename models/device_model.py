@@ -29,6 +29,7 @@ class DeviceModelMain(BaseModel):
 
 class DeviceModel(DeviceModelMain):
     location_id: int | None = None
+    plugin_id: int | None = None
     photo: str | None = None
     type: str | None = None
     uptime: int | None = None

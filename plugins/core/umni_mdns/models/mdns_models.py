@@ -41,6 +41,10 @@ class MDNSDevice(BaseModel):
     first_seen: datetime = Field(default_factory=datetime.now)
     last_seen: datetime = Field(default_factory=datetime.now)
 
+    @property
+    def protocol(self):
+        return 'http' if self.port == 80 else 'https'
+
     def is_online(self, timeout_seconds: int = 60) -> bool:
         """Проверяет, онлайн ли устройство"""
         return (datetime.now() - self.last_seen).total_seconds() < timeout_seconds

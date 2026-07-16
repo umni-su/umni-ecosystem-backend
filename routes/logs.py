@@ -15,24 +15,12 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Body, Form, HTTPException
+from fastapi import APIRouter, Depends
 
 from classes.auth.auth import Auth
-from classes.charts.chart_sensor_history import SensorHistoryChart
-from classes.events.event_bus import event_bus
-from classes.events.event_types import EventType
-from classes.l10n.l10n import _
-from database.session import write_session
-from entities.log_entry import LogEntity
 from models.log_model import LogPageParams
-from models.pagination_model import PageParams
-from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
-from models.sensor_model import SensorModelWithHistory, SensorUpdateModel
 from repositories.log_repository import LogRepository
-from repositories.sensor_history_repository import SensorHistoryRepository
-from repositories.sensor_repository import SensorRepository
 from responses.user import UserResponseOut
-from services.mqtt.payload.mqtt_payload_models import MqttSensorPayloadModel
 
 logs = APIRouter(
     prefix='/logs',

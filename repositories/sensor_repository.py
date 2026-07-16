@@ -24,7 +24,7 @@ from classes.storages.device_storage import device_storage
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.sensor_entity import SensorEntity
-from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice
+from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice, SensorCreateModel
 from repositories.base_repository import BaseRepository
 from starlette.status import HTTP_404_NOT_FOUND
 
@@ -34,17 +34,36 @@ class SensorRepository(BaseRepository):
     model_class = SensorModelWithDevice
 
     @classmethod
-    def get_sensor(cls, sensor_id):
+    def _return_sensor_with_relations(cls, sensor_orm: Optional[SensorEntity]):
+        if sensor_orm is not None:
+            return SensorModelWithDevice.model_validate(
+                sensor_orm.to_dict(
+                    include_relationships=True
+                )
+            )
+        return None
+
+    @classmethod
+    def get_sensor(cls, sensor_id: int):
         with write_session() as sess:
             try:
-                sensor_orm = sess.exec(select(SensorEntity).where(SensorEntity.id == sensor_id)).first()
-                if sensor_orm is not None:
-                    return SensorModelWithDevice.model_validate(
-                        sensor_orm.to_dict(
-                            include_relationships=True
-                        )
-                    )
-                return None
+                q = select(SensorEntity).where(SensorEntity.id == sensor_id)
+                sensor_orm = sess.exec(q).first()
+                return cls._return_sensor_with_relations(sensor_orm)
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def get_sensor_by_device_and_identifier(cls, device_id: int, identifier: str):
+        with write_session() as sess:
+            try:
+                q = select(SensorEntity).where(
+                    SensorEntity.device_id == device_id
+                ).where(
+                    SensorEntity.identifier == identifier
+                )
+                sensor_orm = sess.exec(q).first()
+                return cls._return_sensor_with_relations(sensor_orm)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 
@@ -57,11 +76,21 @@ class SensorRepository(BaseRepository):
                     sensor.value = value
                     sess.add(sensor)
                     sess.commit()
-                    return SensorModelWithDevice.model_validate(
-                        sensor.to_dict(
-                            include_relationships=True
-                        )
-                    )
+                    return cls._return_sensor_with_relations(sensor)
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def create_sensor(cls, model: SensorCreateModel):
+        with write_session() as sess:
+            try:
+                sensor = SensorEntity.model_validate(
+                    model.model_dump()
+                )
+                sess.add(sensor)
+                sess.commit()
+                sess.refresh(sensor)
+                return cls._return_sensor_with_relations(sensor)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 
@@ -73,10 +102,10 @@ class SensorRepository(BaseRepository):
                 if isinstance(sensor, SensorEntity):
                     sensor.name = model.name
 
-                    if model.cover is not None:
+                    if model.photo is not None:
                         photo = device_storage.sensor_cover_upload(
                             sensor=sensor,
-                            file=model.cover
+                            file=model.photo
                         )
                         sensor.photo = photo
 

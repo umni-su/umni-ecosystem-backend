@@ -2,7 +2,7 @@
   "author": "Mikhail Sazanov",
   "url": "https://umni.su",
   "name": "umni_mdns",
-  "display_name": "Umni mDNS listener",
+  "display_name": "Umni devices",
   "version": "0.0.1",
   "description": "Umni mDNS Core listener"
 }

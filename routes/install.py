@@ -27,7 +27,6 @@ from responses.account import AccountBody
 from responses.install import InstallBody
 from responses.mqtt import MqttBody
 from responses.success import SuccessResponse
-from services.mqtt.mqtt_service import MqttService
 from cryptography.fernet import InvalidToken
 
 install = APIRouter(
@@ -63,32 +62,6 @@ def install_ecosystem(body: InstallBody, response: Response):
                 user.is_superuser = True
                 session.add(session.merge(user))
 
-                # Save mqtt info
-                if MqttService.check_connection(body.mqtt):
-
-                    host = ecosystem.config.get_setting(ConfigurationKeys.MQTT_HOST)
-                    host.value = mqtt.host
-                    host_db = ConfigurationEntity.model_validate(host)
-                    session.merge(host_db)
-
-                    port = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PORT)
-                    port.value = str(mqtt.port)
-                    port_db = ConfigurationEntity.model_validate(port)
-                    session.merge(port_db)
-
-                    if mqtt.password is not None and mqtt.user is not None:
-                        mqtt_password = ecosystem.crypto.encrypt(str(mqtt.password))
-
-                        user = ecosystem.config.get_setting(ConfigurationKeys.MQTT_USER)
-                        user.value = mqtt.user
-                        user_db = ConfigurationEntity.model_validate(user)
-                        session.merge(user_db)
-
-                        pwd = ecosystem.config.get_setting(ConfigurationKeys.MQTT_PASSWORD)
-                        pwd.value = mqtt_password
-                        pwd_db = ConfigurationEntity.model_validate(pwd)
-                        session.merge(pwd_db)
-
                 installed = ecosystem.config.get_setting(ConfigurationKeys.APP_INSTALLED)
                 installed.value = str(True)
                 installed_db = ConfigurationEntity.model_validate(installed)
@@ -111,16 +84,3 @@ def install_ecosystem(body: InstallBody, response: Response):
 
     response.status_code = 201
     return SuccessResponse(success=True)
-
-
-@install.post('/check/mqtt', response_model=SuccessResponse)
-def check_mqtt(mqtt: MqttBody, response: Response):
-    connection = MqttService.check_connection(mqtt)
-    state = connection.is_connected()
-    if state:
-        response.status_code = status.HTTP_200_OK
-    else:
-        response.status_code = status.HTTP_401_UNAUTHORIZED
-    connection.disconnect()
-
-    return SuccessResponse(success=state)

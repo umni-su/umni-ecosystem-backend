@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional
 
 from pydantic import ConfigDict
 from models.device_model import DeviceModel
@@ -29,7 +30,7 @@ class DeviceModelWithNetif(DeviceModel):
 
 
 class DeviceModelWithPlugin(DeviceModel):
-    plugin: list[PluginModelDevice] | None = None
+    plugin: Optional[PluginModelDevice]
 
 
 class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif, DeviceModelWithPlugin):

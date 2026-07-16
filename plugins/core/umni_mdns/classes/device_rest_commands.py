@@ -89,6 +89,11 @@ class ResponseBase(BaseModel):
         extra = 'allow'  # Разрешаем дополнительные поля
 
 
+class ConfigurationResponse(ResponseBase):
+    """Ответ конфигурации"""
+    data: Optional[dict[str, Any]] = None
+
+
 # ============ System Info Models ============
 
 class NetworkInfo(BaseModel):
@@ -148,6 +153,17 @@ class Capability(str, Enum):
     OUT8 = 'out8'
 
 
+class SettingCapability(str, Enum):
+    INPUTS = 'inputs'
+    OUTPUTS = 'outputs'
+    AI = 'ai'
+    NTC = 'ntc'
+    ONEWIRE = 'onewire'
+    RF433 = 'rf433'
+    OPENTHERM = 'opentherm'
+    OPENCOLLECTORS = 'opencollectors'
+
+
 class SystemInfoData(BaseModel):
     """Данные системной информации"""
     hostname: str
@@ -161,34 +177,68 @@ class SystemInfoResponse(ResponseBase):
     data: Optional[SystemInfoData] = None
 
 
-# ============ DIO Models ============
+# ============ DIO INPUTS Models ============
 
 class DIOInput(BaseModel):
     """Цифровой вход"""
-    config_index: int = Field(ge=1)
-    port_index: int = Field(ge=0)
+    index: int = Field(ge=1)
+    port: int = Field(ge=0)
     label: str
     active: bool
+    state: Literal[0, 1] = 0
 
+
+class DIOInputs(BaseModel):
+    """Цифровой вход"""
+    inputs: List[DIOInput]
+    count: int
+
+
+class InputsInfoResponse(ResponseBase):
+    """Данные DIO"""
+    data: Optional[DIOInputs] = None
+
+
+# ============ DIO OUTPUTS Models ============
 
 class DIOOutput(BaseModel):
     """Цифровой выход"""
-    config_index: int = Field(ge=1)
-    port_index: int = Field(ge=0)
+    index: int = Field(ge=1)
+    port: int = Field(ge=0)
     label: str
     active: bool
     default_state: Literal[0, 1] = 0
+    state: Literal[0, 1] = 0
 
 
-class DIOData(BaseModel):
-    """Данные DIO"""
-    inputs: List[DIOInput]
+class DIOOutputs(BaseModel):
+    """Цифровой вход"""
     outputs: List[DIOOutput]
+    count: int
 
 
-class DIOInfoResponse(ResponseBase):
-    """Ответ DIO информации"""
-    data: Optional[DIOData] = None
+class OutputsInfoResponse(ResponseBase):
+    """Данные DIO"""
+    data: Optional[DIOOutputs] = None
+
+
+class DIOOpencollector(BaseModel):
+    """Цифровой выход"""
+    index: int = Field(ge=0)
+    label: str
+    active: bool
+    state: Literal[0, 1] = 0
+
+
+class DIOOpencollectors(BaseModel):
+    """Цифровой вход"""
+    opencollectors: List[DIOOpencollector]
+    count: int
+
+
+class OpencollectorsInfoResponse(ResponseBase):
+    """Данные DIO"""
+    data: Optional[DIOOpencollectors] = None
 
 
 # ============ ADC Models ============
@@ -253,10 +303,12 @@ class OneWireInfoResponse(ResponseBase):
 class RF433Device(BaseModel):
     """RF433 устройство"""
     mode: Optional[Literal['delete']] = None
-    serial: int
+    serial: str
     label: str
-    alaram: bool
+    alarm: bool
     type: int
+    value: int
+    triggered: bool
 
 
 class RF433Data(BaseModel):
@@ -514,11 +566,6 @@ class SystemSettings(BaseModel):
     network_mode: Optional[NetworkMode] = None
 
 
-class FullConfiguration(SystemSettings, WiFiSTASettings, WiFiAPSettings, EthernetSettings):
-    """Полная конфигурация устройства"""
-    pass
-
-
 class ConfigurationData(BaseModel):
     """Данные конфигурации"""
     title: Optional[str] = None
@@ -543,11 +590,6 @@ class ConfigurationData(BaseModel):
     eth_netmask: Optional[str] = None
     eth_gateway: Optional[str] = None
     eth_dns: Optional[str] = None
-
-
-class ConfigurationResponse(ResponseBase):
-    """Ответ конфигурации"""
-    data: Optional[ConfigurationData] = None
 
 
 # ============ WiFi Scan Models ============
@@ -699,6 +741,7 @@ class DeviceRestCommands:
         self.ip = ip_address
         self.protocol = protocol
         self.timeout = timeout
+        # Todo - where to store token?
         self.token = token
         self.base_url = f"{protocol}://{ip_address}"
 
@@ -713,7 +756,10 @@ class DeviceRestCommands:
         if params:
             url += "?" + urllib.parse.urlencode(params)
 
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            'Content-Type': 'application/json',
+            'Connection': 'close'
+        }
         if self.token:
             headers['Authorization'] = f'Bearer {self.token}'
 
@@ -764,32 +810,42 @@ class DeviceRestCommands:
         """Получение системной информации"""
         return SystemInfoResponse(**self._request('GET', '/api/systeminfo'))
 
-    def get_dio_info(self) -> DIOInfoResponse:
+    def get_inputs_info(self) -> InputsInfoResponse:
         """Получение информации о цифровых входах/выходах"""
-        return DIOInfoResponse(**self._request('GET', '/api/dio'))
+        response = self.get_configuration(section=SettingCapability.INPUTS.value)
+        return InputsInfoResponse.model_validate(response.model_dump())
+
+    def get_outputs_info(self) -> OutputsInfoResponse:
+        """Получение информации о цифровых входах/выходах"""
+        response = self.get_configuration(section=SettingCapability.OUTPUTS.value)
+        return OutputsInfoResponse.model_validate(response.model_dump())
+
+    def get_opencollectors_info(self) -> OpencollectorsInfoResponse:
+        """Получение информации о цифровых входах/выходах"""
+        response = self.get_configuration(section=SettingCapability.OPENCOLLECTORS.value)
+        return OpencollectorsInfoResponse.model_validate(response.model_dump())
 
     def get_adc_info(self) -> ADCInfoResponse:
         """Получение информации об аналоговых входах"""
-        return ADCInfoResponse(**self._request('GET', '/api/adc'))
+        response = self.get_configuration(section=SettingCapability.AI.value)
+        return ADCInfoResponse.model_validate(response.model_dump())
 
     def get_ntc_info(self) -> NTCInfoResponse:
         """Получение информации о NTC датчиках"""
-        return NTCInfoResponse(**self._request('GET', '/api/ntc'))
+        response = self.get_configuration(section=SettingCapability.NTC.value)
+        return NTCInfoResponse.model_validate(response.model_dump())
 
     def get_onewire_info(self) -> OneWireInfoResponse:
         """Получение информации о OneWire датчиках"""
-        return OneWireInfoResponse(**self._request('GET', '/api/onewire'))
+        response = self.get_configuration(section=SettingCapability.ONEWIRE.value)
+        return OneWireInfoResponse.model_validate(response.model_dump())
 
     def get_rf433_info(self) -> RF433InfoResponse:
         """Получение информации об RF433 устройствах"""
-        return RF433InfoResponse(**self._request('GET', '/api/rf433'))
+        response = self.get_configuration(section=SettingCapability.RF433.value)
+        return RF433InfoResponse.model_validate(response.model_dump())
 
-    def get_opentherm_info(self) -> OpenthermInfoResponse:
-        """Получение информации о состоянии Opentherm"""
-        return OpenthermInfoResponse(**self._request('GET', '/api/opentherm'))
-
-    def get_configuration(self, section: Optional[
-        Literal['adc', 'ntc', 'dio', 'onewire', 'rf433']] = None) -> ConfigurationResponse:
+    def get_configuration(self, section: str) -> ConfigurationResponse:
         """
         Получение конфигурации устройства или секции
 
@@ -799,10 +855,6 @@ class DeviceRestCommands:
         if section:
             params['section'] = section
         return ConfigurationResponse(**self._request('GET', '/api/conf', params=params))
-
-    def get_full_configuration(self) -> ConfigurationResponse:
-        """Получение полной конфигурации устройства"""
-        return ConfigurationResponse(**self._request('GET', '/api/configuration'))
 
     def get_automations(self) -> AutomationResponse:
         """Получение списка автоматизаций"""
@@ -944,44 +996,3 @@ class DeviceRestCommands:
             return result.success
         except Exception:
             return False
-
-
-# ============ Example Usage ============
-
-if __name__ == "__main__":
-    controller = DeviceRestCommands("192.168.88.122")
-
-    if controller.check_connection():
-        print("Контроллер доступен")
-
-        # Получаем системную информацию с типизированным ответом
-        sys_info = controller.get_system_info()
-        if sys_info.success and sys_info.data:
-            print(f"Hostname: {sys_info.data.hostname}")
-            print(f"Capabilities: {[cap.value for cap in sys_info.data.capabilities]}")
-            print(f"Heap free: {sys_info.data.heap.free} bytes")
-
-        # Получаем DIO информацию
-        dio_info = controller.get_dio_info()
-        if dio_info.success and dio_info.data:
-            print(f"Inputs count: {len(dio_info.data.inputs)}")
-            print(f"Outputs count: {len(dio_info.data.outputs)}")
-
-        # Получаем конфигурацию
-        config = controller.get_configuration('ntc')
-        if config.success and config.data:
-            print(f"NTC конфигурация: {config.data.model_dump_json(indent=2)}")
-
-        # Сканируем WiFi
-        wifi_scan = controller.scan_wifi()
-        if wifi_scan.success and wifi_scan.data:
-            for network in wifi_scan.data:
-                print(f"SSID: {network.ssid}, RSSI: {network.rssi} dBm")
-
-        # Получаем состояние
-        state = controller.get_state('ntc1')
-        if state.success and state.data:
-            print(f"NTC1 значение: {state.data.state.value}")
-            print(f"История: {state.data.history.count} записей")
-    else:
-        print("Контроллер недоступен")

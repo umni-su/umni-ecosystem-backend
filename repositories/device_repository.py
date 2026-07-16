@@ -23,9 +23,11 @@ from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
 from database.session import write_session
 from entities.device import DeviceEntity
+from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
-from models.device_model import DeviceUpdateModel
+from models.device_model import DeviceUpdateModel, DeviceModel
 from models.device_model_relations import DeviceModelWithRelations
+from models.device_netif import DeviceNetifBase, DeviceNetif
 from repositories.base_repository import BaseRepository
 
 
@@ -58,7 +60,8 @@ class DeviceRepository(BaseRepository):
             try:
                 q = (
                     select(DeviceEntity)
-                    .join(col(DeviceEntity.sensors))
+                    # .join(col(DeviceEntity.sensors))
+                    .outerjoin(col(DeviceEntity.sensors))
                     .where(col(DeviceEntity.id) == device_id)
                     .order_by(col(SensorEntity.capability).asc())
                     .order_by(col(SensorEntity.identifier).asc())
@@ -79,11 +82,26 @@ class DeviceRepository(BaseRepository):
             try:
                 q = select(DeviceEntity).where(col(DeviceEntity.name) == name)
                 device_orm = sess.exec(q).first()
-                return DeviceModelWithRelations.model_validate(
-                    device_orm.to_dict(
+                if isinstance(device_orm, DeviceEntity):
+                    return DeviceModelWithRelations.model_validate(
+                        device_orm.to_dict(
+                            include_relationships=True
+                        )
+                    )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def get_device_by_plugin_id(cls, plugin_id: int):
+        with write_session() as sess:
+            try:
+                q = select(DeviceEntity).where(col(DeviceEntity.plugin_id) == plugin_id)
+                devices_orm = sess.exec(q).all()
+                return [DeviceModelWithRelations.model_validate(
+                    _d.to_dict(
                         include_relationships=True
                     )
-                )
+                ) for _d in devices_orm]
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 
@@ -124,6 +142,38 @@ class DeviceRepository(BaseRepository):
 
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
+                        include_relationships=True
+                    )
+                )
+
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def save_network_interface(self, ni: DeviceNetifBase):
+        with write_session() as sess:
+            try:
+                db_ni = sess.exec(select(DeviceNetworkInterface).where(
+                    col(DeviceNetworkInterface.device_id) == ni.device_id
+                ).where(
+                    col(DeviceNetworkInterface.mac) == ni.mac
+                )).first()
+                if not isinstance(db_ni, DeviceNetworkInterface):
+                    db_ni = DeviceNetworkInterface()
+
+                db_ni.device_id = ni.device_id
+                db_ni.mac = ni.mac
+                db_ni.name = ni.name
+                db_ni.ip = ni.ip
+                db_ni.mask = ni.mask
+                db_ni.gw = ni.gw
+
+                sess.add(db_ni)
+                sess.commit()
+                sess.refresh(db_ni)
+
+                return DeviceNetif.model_validate(
+                    db_ni.to_dict(
                         include_relationships=True
                     )
                 )

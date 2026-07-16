@@ -25,29 +25,31 @@ from fastapi import UploadFile
 from models.device_model import DeviceModelMain
 
 
-class SensorModel(BaseModel):
-    id: int | None = None
-    device_id: int | None = None
-    type: DeviceSensorTypeEnum | None = None
+class SensorCreateModel(BaseModel):
+    device_id: int
+    type: DeviceSensorTypeEnum
     capability: str
-    identifier: str | None = Field(default=None)
+    identifier: str
     active: bool
-    name: str | None = None
-    visible_name: str | None = None
-    options: dict | None = None
-    value: str | None = None
-    photo: str | None = None
-    last_sync: datetime | None = None
-    unit: str | None = None
-    icon: str | None = None
+    name: Optional[str] = None
+    visible_name: Optional[str] = None
+    options: Optional[dict] = None
+    value: Optional[str] = None
+    photo: Optional[str] = None
+    last_sync: Optional[datetime] = None
+    unit: Optional[str] = None
+    icon: Optional[str] = None
+
+    class Config:
+        extra = 'ignore'
 
 
-class SensorUpdateModel(BaseModel):
-    id: int
-    name: str | None = None
-    cover: UploadFile | None = None
-    unit: str | None = None
-    icon: str | None = None
+class SensorModel(SensorCreateModel):
+    id: int | None = None
+
+
+class SensorUpdateModel(SensorModel):
+    pass
 
 
 class SensorModelWithHistory(SensorModel):

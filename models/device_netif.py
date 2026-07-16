@@ -18,8 +18,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
-class DeviceNetif(BaseModel):
-    id: int
+class DeviceNetifBase(BaseModel):
     device_id: int | None = None
     name: str
     mac: str
@@ -27,3 +26,7 @@ class DeviceNetif(BaseModel):
     mask: str
     gw: str
     last_sync: datetime | None = None
+
+
+class DeviceNetif(DeviceNetifBase):
+    id: int

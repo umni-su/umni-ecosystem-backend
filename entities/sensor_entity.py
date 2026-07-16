@@ -51,8 +51,9 @@ class SensorBase:
     name: str = Field(
         nullable=True
     )
-    visible_name: str = Field(
-        nullable=True
+    visible_name: Optional[str] = Field(
+        nullable=True,
+        default=None
     )
     options: Optional[dict] = Field(
         sa_column=Column(
@@ -65,10 +66,10 @@ class SensorBase:
     icon: Optional[str] = Field(
         nullable=True
     )
-    value: str | None = Field(
+    value: Optional[str] | None = Field(
         nullable=True
     )
-    photo: str = Field(
+    photo: Optional[str] = Field(
         nullable=True
     )
     last_sync: datetime = Field(

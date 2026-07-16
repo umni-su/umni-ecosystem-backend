@@ -16,8 +16,11 @@ import json
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Optional, Type, List
 
+from classes.logger.logger import Logger
+from classes.logger.logger_types import LoggerType
+from models.device_scan_model import DeviceScanModel
 from repositories.device_repository import DeviceRepository
 from classes.devices.device_manager import DeviceManager, device_manager
 from classes.l10n.l10n import translator, plugin_translate
@@ -47,21 +50,24 @@ class BasePlugin(ABC):
     plugin_name = None
     manager: DeviceManager
     repository: DeviceRepository
+    db_plugin: PluginModel
+    db_id: int
 
     def __init__(self, plugin_model: PluginModel):
-        self.plugin_model = plugin_model
-        self._is_running = False
-        self._config_instance: Optional[BasePluginConfig] = None
-        self.manager = device_manager
-        self.repository: DeviceRepository = DeviceRepository()
+        try:
+            self.plugin_model = plugin_model
+            self._is_running = False
+            self._config_instance: Optional[BasePluginConfig] = None
+            self.manager = device_manager
+            self.repository: DeviceRepository = DeviceRepository()
+            self.db_plugin = PluginRepository.get_plugin_by_name(self.name)
+            self.db_id = self.db_plugin.id
+        except Exception as e:
+            Logger.err(f'Could not start plugin {str(e)}', LoggerType.PLUGINS)
+            self.on_stop()
 
         # Автоматическая валидация конфигурации при создании
         self._load_config()
-
-    @property
-    def db_id(self):
-        db_plugin = PluginRepository.get_plugin_by_name(self.name)
-        return db_plugin.id or None
 
     def _load_config(self):
         """Загружает и валидирует конфигурацию"""
@@ -148,6 +154,16 @@ class BasePlugin(ABC):
         """Основной метод выполнения плагина"""
         pass
 
+    def scan_devices(self) -> List[DeviceScanModel]:
+        """
+        Сканирование устройств.
+        Вызывается из API эндпойнта /plugins/{id}/scan
+
+        Returns:
+            List[DeviceScanModel]: список обнаруженных устройств
+        """
+        return []
+
     def on_start(self, data: Dict[str, Any] = None):
         """Вызывается при запуске плагина"""
         started = self._is_running
@@ -166,6 +182,11 @@ class BasePlugin(ABC):
         self._is_running = False
 
     def on_config_update(self, new_config: Dict[str, Any]):
+        """Вызывается при обновлении конфигурации"""
+        self.plugin_model.config = new_config
+        self._load_config()  # перезагружаем с валидацией
+
+    def on_device_scan(self, new_config: Dict[str, Any]):
         """Вызывается при обновлении конфигурации"""
         self.plugin_model.config = new_config
         self._load_config()  # перезагружаем с валидацией

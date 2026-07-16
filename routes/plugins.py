@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.responses import FileResponse
@@ -19,10 +20,14 @@ from typing import List, Dict, Any, Optional, TYPE_CHECKING, Annotated
 from pydantic import BaseModel
 
 from classes.auth.auth import Auth
+from classes.devices.device_registry import device_registry
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
+from models.device_netif import DeviceNetifBase
+from models.device_scan_model import DeviceScanModel
 from models.plugin_model import PluginModel
+from repositories.device_repository import DeviceRepository
 from repositories.plugin_repository import PluginRepository
 from responses.user import UserResponseOut
 
@@ -30,6 +35,11 @@ if TYPE_CHECKING:
     from services.plugins.plugins_service import PluginsService
 
 plugins = APIRouter(prefix="/plugins", tags=["plugins"])
+
+
+class RegisterDeviceRequest(BaseModel):
+    """Запрос на регистрацию устройства"""
+    external_id: str
 
 
 class PluginUpdateModel(BaseModel):
@@ -444,6 +454,133 @@ async def get_plugin_logo(
             status_code=500,
             detail="Failed to get plugin logo"
         )
+
+
+@plugins.post("/{plugin_id}/scan", response_model=List[DeviceScanModel])
+async def scan_plugin_devices(
+        plugin_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    """
+    Сканирование устройств плагином.
+    Результаты сохраняются в кэш на 5 минут.
+    """
+    try:
+        ecosystem = get_ecosystem()
+        plugin_service: "PluginsService" = ecosystem.service_runner.get_service_by_name('plugins')
+
+        plugin = PluginRepository.get_plugin(plugin_id)
+        if not plugin:
+            raise HTTPException(404, "Plugin not found")
+
+        plugin_instance = plugin_service.get_plugin_by_name(plugin.name)
+        if not plugin_instance:
+            raise HTTPException(400, "Plugin is not running")
+
+        if not hasattr(plugin_instance, 'scan_devices'):
+            raise HTTPException(400, "Plugin does not support scanning")
+
+        # Сканируем
+        devices = plugin_instance.scan_devices()
+
+        # Сохраняем в кэш
+        device_registry.store_scan_results(plugin_id, devices)
+
+        Logger.info(
+            f"Plugin {plugin.name} scanned {len(devices)} devices (cached for 5 min)",
+            LoggerType.PLUGINS
+        )
+
+        return devices
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        Logger.err(f"Scan error: {e}", LoggerType.PLUGINS)
+        raise HTTPException(500, f"Scan failed: {str(e)}")
+
+
+@plugins.post("/{plugin_id}/devices")
+async def register_scanned_device(
+        plugin_id: int,
+        request: RegisterDeviceRequest,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    """
+    Зарегистрировать устройство из кэша сканирования по external_id.
+    """
+    try:
+        # Проверяем плагин
+        plugin = PluginRepository.get_plugin(plugin_id)
+        if not plugin:
+            raise HTTPException(404, "Plugin not found")
+
+        # Получаем кэшированные устройства
+        cached_devices = device_registry.get_scanned_devices(plugin_id)
+        if not cached_devices:
+            raise HTTPException(400, "No scan results. Run /scan first.")
+
+        # Ищем устройство в кэше
+        device_data = None
+        for cached in cached_devices:
+            if cached.external_id == request.external_id:
+                device_data = cached
+                break
+
+        if not device_data:
+            raise HTTPException(404, f"Device '{request.external_id}' not found in scan results")
+
+        # Проверяем существует ли уже
+        existing = DeviceRepository.get_device_by_name(device_data.external_id)
+
+        if existing:
+            raise HTTPException(409, f"Device '{device_data.external_id}' already exists")
+
+        # Регистрируем
+        device = device_registry.register_device(
+            plugin_id=device_data.plugin_id,
+            external_id=device_data.external_id,
+            name=device_data.name,
+            device_type=plugin.name,
+            capabilities=device_data.capabilities or []
+        )
+
+        if not device:
+            raise HTTPException(500, "Failed to register device")
+
+        # Сохраняем IP
+        if device_data.ip:
+            device_registry.ip_store.set_ip(device.id, device_data.ip)
+
+        # Сохраняем сети
+        if device_data.networks:
+            for net in device_data.networks:
+                ni = DeviceNetifBase(
+                    device_id=device.id,
+                    name=net.name,
+                    mac=net.mac,
+                    ip=net.ip,
+                    mask=net.mask,
+                    gw=net.gw,
+                    last_sync=datetime.now()
+                )
+                DeviceRepository.save_network_interface(ni)
+
+        # Опционально: удаляем из кэша после регистрации
+        # device_registry.clear_scanned_devices(plugin_id)
+
+        return {
+            "message": "Device registered successfully",
+            "device_id": device.id,
+            "external_id": device.external_id,
+            "name": device.name
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        Logger.err(f"Registration error: {e}", LoggerType.PLUGINS)
+        raise HTTPException(500, str(e))
 
 
 @plugins.get("/{plugin_id}/schema")
