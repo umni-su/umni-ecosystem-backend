@@ -82,12 +82,11 @@ class SysteminfoService(BaseService):
             packets_received=net.packets_recv
         )
 
-    '''
-    Gets memory stat
-    '''
-
     @classmethod
     def get_memory_stat(cls):
+        """
+        Gets memory stat
+        """
         ram = psutil.virtual_memory()
         swap = psutil.swap_memory()
         cls.memory.swap.total = swap.total
