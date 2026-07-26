@@ -13,13 +13,15 @@ from classes.logger.logger_types import LoggerType
 from models.device_model_relations import DeviceModelWithRelations
 from models.device_scan_model import DeviceScanModelNetwork, DeviceScanModel
 from models.plugin_model import PluginModel
+from models.sensor_model import SensorModelWithDevice
 from plugins.base_plugin import BasePlugin, BasePluginConfig
-from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands
+from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands, Capability, PortOptionBase
 from plugins.core.umni_mdns.classes.device_synchronizer import DeviceSynchronizer
 from plugins.core.umni_mdns.classes.mds_scanner import MDNSScanner
 from plugins.core.umni_mdns.classes.syslog_listener import SyslogListener, SyslogMessage
 from plugins.core.umni_mdns.models.mdns_models import MDNSScanResult, MDNSDevice
 from repositories.device_repository import DeviceRepository
+from repositories.sensor_repository import SensorRepository
 
 
 class UmniMdnsConfig(BasePluginConfig):
@@ -59,8 +61,6 @@ class UmniMdnsPlugin(BasePlugin):
         self.scanner = MDNSScanner(self.config.service_type)
         self.scanner.start(self.zeroconf)
 
-        self.run_syslog()
-
     def run_syslog(self):
         self.syslog = SyslogListener(
             host=self.config.syslog_addr,
@@ -68,7 +68,15 @@ class UmniMdnsPlugin(BasePlugin):
         )
 
         def new_syslog_message(msg: SyslogMessage):
-            pass
+            device = self.get_device(msg.device_name)
+            identifier = msg.data.identifier
+            value = msg.data.value
+            self.manager.update_value_in_db(
+                device_name=device.unique_id,
+                sensor_identifier=identifier,
+                value=value
+            )
+
             # Logger.debug(f"SYSLOG [{msg.timestamp.strftime('%H:%M:%S')}] "
             #              f"{msg.source_host}:{msg.source_port} "
             #              f"{msg.device_name} [{msg.topic}] "
@@ -177,14 +185,43 @@ class UmniMdnsPlugin(BasePlugin):
 
     def set_sensor_value(
             self,
-            external_id: str,
-            capability: str,
-            identifier: Optional[str],
+            sensor: SensorModelWithDevice,
             value: Any
     ) -> bool:
         """Установка значения сенсора"""
-        Logger.debug(f"Set sensor: {external_id}, {capability}, {value}")
+        mdns_device = self.get_device(sensor.device.external_id)
+        try:
+            controller = DeviceRestCommands(mdns_device.ip)
+            # OUTPUTS
+            if sensor.capability == Capability.OUTPUTS.value:
+                port_options = PortOptionBase.model_validate(sensor.options)
+                controller.switch_output(
+                    index=port_options.index,
+                    level=bool(value)
+                )
+            # OPENCOLLECTORS
+            elif sensor.capability == Capability.OPENCOLLECTORS.value:
+                port_options = PortOptionBase.model_validate(sensor.options)
+                controller.switch_opencollectors(
+                    index=port_options.index,
+                    level=bool(value)
+                )
+            Logger.debug(f"Set sensor: {sensor.device.external_id}, {sensor.capability}, {value}")
+        except Exception as e:
+            Logger.err(str(e), LoggerType.PLUGINS)
+            return False
         return True
+
+    def locate(
+            self,
+            external_id: str,
+    ) -> bool:
+        mdns_device = self.get_device(external_id)
+        if isinstance(mdns_device, MDNSDevice):
+            controller = DeviceRestCommands(mdns_device.ip)
+            res = controller.beep(5, 100, 140)
+            return res.success
+        return False
 
     # ========== Внутренние методы ==========
 
@@ -336,6 +373,7 @@ class UmniMdnsPlugin(BasePlugin):
             return
 
         Logger.debug(f'[ID{device.id}, {device.external_id}] Successfully checked by telnet', LoggerType.PLUGINS)
+        # TODO event_bus.publish(EventType.DEVICE_PING_OK, device=device)
 
         # TODO other checks
 

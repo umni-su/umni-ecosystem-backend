@@ -107,6 +107,7 @@ class DeviceSynchronizer:
                 model.type = stype
                 model.active = active
                 model.last_sync = datetime.now()
+                model.options = options
                 if value is not None:
                     model.value = value
                 return SensorRepository.update_sensor(model)
@@ -152,7 +153,8 @@ class DeviceSynchronizer:
                                 capability=SettingCapability.OUTPUTS.value,
                                 stype=DeviceSensorTypeEnum.SWITCH,
                                 active=s.active,
-                                value=s.state
+                                value=s.state,
+                                options={'index': s.index, 'port': s.port}
                             )
 
                         time.sleep(1)
@@ -168,7 +170,8 @@ class DeviceSynchronizer:
                                 capability=SettingCapability.INPUTS.value,
                                 stype=DeviceSensorTypeEnum.INPUT,
                                 active=s.active,
-                                value=s.state
+                                value=s.state,
+                                options={'index': s.index, 'port': s.port}
                             )
                         time.sleep(1)
                     case SettingCapability.AI:
@@ -182,7 +185,8 @@ class DeviceSynchronizer:
                                 name=s.label,
                                 capability=SettingCapability.AI.value,
                                 stype=DeviceSensorTypeEnum.NUMBER,
-                                active=s.active
+                                active=s.active,
+                                options={'id': s.id}
                             )
                         time.sleep(1)
                     case SettingCapability.NTC:
@@ -196,7 +200,8 @@ class DeviceSynchronizer:
                                 name=s.label,
                                 capability=SettingCapability.NTC.value,
                                 stype=DeviceSensorTypeEnum.FLOAT,
-                                active=s.active
+                                active=s.active,
+                                options={'id': s.id}
                             )
                         time.sleep(1)
                     case SettingCapability.OPENCOLLECTORS:
@@ -210,7 +215,8 @@ class DeviceSynchronizer:
                                 name=s.label,
                                 capability=SettingCapability.OPENCOLLECTORS.value,
                                 stype=DeviceSensorTypeEnum.SWITCH,
-                                active=s.active
+                                active=s.active,
+                                options={'index': s.index}
                             )
                         time.sleep(1)
                     case SettingCapability.RF433:

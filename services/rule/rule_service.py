@@ -42,7 +42,12 @@ class RuleService(BaseService):
     task_manager: TaskManager | None = None
     execution_tracker = RuleExecutionTracker()
 
-    def run_execution_trigger(self, entity_id: int, trigger: RuleNodeTypeKeys):
+    def run_execution_trigger(
+            self,
+            entity_id: int,
+            trigger: RuleNodeTypeKeys,
+            **kwargs
+    ):
         trigger_entity_id: int = entity_id
 
         exists = rules_triggers_store.find(key=trigger).exists(entity_id=trigger_entity_id)
@@ -63,7 +68,11 @@ class RuleService(BaseService):
                     continue
 
                 rule = RulesRepository.get_rule(model.rule_id)
-                self._execute_rule_with_tracking(rule, trigger_entity_id)
+                self._execute_rule_with_tracking(
+                    rule,
+                    trigger_entity_id,
+                    **kwargs
+                )
                 break
 
     def run_execution_motion_start(self, event: CameraEventModel):
@@ -76,9 +85,16 @@ class RuleService(BaseService):
         self.run_execution_trigger(device.id, RuleNodeTypeKeys.DEVICES_CHANGES)
 
     def run_sensor_change_state(self, sensor: SensorModelWithDevice):
-        self.run_execution_trigger(sensor.id, RuleNodeTypeKeys.SENSORS_CHANGES)
+        self.run_execution_trigger(
+            sensor.id,
+            RuleNodeTypeKeys.SENSORS_CHANGES,
+            sensor=sensor
+        )
 
-    def _execute_rule_with_tracking(self, rule, entity_id: int | None = None):
+    def _execute_rule_with_tracking(
+            self, rule,
+            entity_id: int | None = None,
+            **kwargs):
         """Запускает выполнение правила с отслеживанием статуса"""
         # Пытаемся пометить правило как выполняющееся
         if not self.execution_tracker.mark_executing(rule.id):
@@ -92,19 +108,24 @@ class RuleService(BaseService):
                 RuleService.task_manager.submit(
                     self._execute_rule,
                     rule=rule,
-                    entity_id=entity_id
+                    entity_id=entity_id,
+                    **kwargs
                 )
             else:
-                self._execute_rule(rule, entity_id)
+                self._execute_rule(rule, entity_id, **kwargs)
         except Exception as e:
             # В случае ошибки при запуске снимаем блокировку
             self.execution_tracker.mark_completed(rule.id)
             raise e
 
-    def _execute_rule(self, rule, entity_id: int | None = None):
+    def _execute_rule(
+            self,
+            rule,
+            entity_id: int | None = None,
+            **kwargs):
         """Внутренний метод выполнения правила"""
         try:
-            RuleExecutor(rule).execute(entity_id)
+            RuleExecutor(rule).execute(entity_id, **kwargs)
         finally:
             # Всегда снимаем блокировку после выполнения
             self.execution_tracker.mark_completed(rule.id)

@@ -616,6 +616,9 @@ msgstr "System services"
 msgid "System settings"
 msgstr "System settings"
 
+msgid "Success"
+msgstr "Success"
+
 msgid "Take screenshot"
 msgstr "Take screenshot"
 

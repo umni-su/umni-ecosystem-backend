@@ -8,6 +8,16 @@ import time
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from plugins.core.umni_mdns.classes.device_rest_commands import Capability, SettingCapability
+
+
+@dataclass
+class SyslogMessageData:
+    timestamp: datetime
+    capability: str
+    identifier: str
+    serial: Optional[str]
+    value: Optional[str | float | int]
 
 
 @dataclass
@@ -20,7 +30,7 @@ class SyslogMessage:
     message_type: str  # USER.INFO, USER.ERR и т.д.
     device_name: str  # umni-8389b4
     topic: str  # onewire, ntc, ai, outputs
-    data: Dict[str, Any]  # распарсенный JSON
+    data: SyslogMessageData
 
 
 class SyslogListener:
@@ -92,6 +102,11 @@ class SyslogListener:
             device, topic, json_str = validated
             data_dict = json.loads(json_str)
 
+            try:
+                identifier = Capability(data_dict['identifier']).value
+            except ValueError:
+                identifier = data_dict['identifier']
+
             return SyslogMessage(
                 timestamp=datetime.now(),
                 source_host=addr[0],
@@ -100,7 +115,13 @@ class SyslogListener:
                 message_type="USER.INFO",
                 device_name=device,
                 topic=topic,
-                data=data_dict
+                data=SyslogMessageData(
+                    timestamp=data_dict['timestamp'],
+                    capability=SettingCapability(data_dict['capability']).value,
+                    identifier=identifier,
+                    serial=data_dict['serial'] or None,
+                    value=data_dict['value']
+                )
             )
 
         except Exception:

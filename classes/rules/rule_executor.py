@@ -52,6 +52,7 @@ class RuleExecutor:
     trigger_entity_id: int | None = None
 
     def __init__(self, rule: RuleModel, test: bool = False):
+        self.trigger_kwargs = None
         self.rule: RuleModel = rule
         self.start_node = None
         self.test = test
@@ -60,8 +61,9 @@ class RuleExecutor:
         self.trigger_entity_id = trigger_id
         return self
 
-    def execute(self, trigger_id: int | None = None):
+    def execute(self, trigger_id: int | None = None, **kwargs):
         self.trigger_entity_id = trigger_id
+        self.trigger_kwargs = kwargs
         self.nodes = self.rule.nodes
         self.edges = self.rule.edges
         # Logger.debug(f"Parsing rule, loads {len(self.nodes)} nodes and {len(self.edges)} edges", LoggerType.RULES)
@@ -159,7 +161,7 @@ class RuleExecutor:
 
     def execute_condition(self, node: NodeVisualize):
         # print(node.model_dump_json(indent=2))
-        return RuleConditionExecutor(node).execute()
+        return RuleConditionExecutor(node, **self.trigger_kwargs).execute()
 
     def execute_trigger(self, node: NodeVisualize):
         # Skip checking trigger when testing request

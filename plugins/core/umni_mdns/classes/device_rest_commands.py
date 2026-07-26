@@ -78,6 +78,11 @@ class ParseError(APIError):
     pass
 
 
+class PortOptionBase(BaseModel):
+    index: int
+    port: int
+
+
 # ============ Base Response ============
 
 class ResponseBase(BaseModel):

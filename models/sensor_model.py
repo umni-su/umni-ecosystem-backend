@@ -52,6 +52,12 @@ class SensorUpdateModel(SensorModel):
     pass
 
 
+class SensorUpdateModelUi(BaseModel):
+    id: int | None = None
+    visible_name: Optional[str] = None
+    photo: Optional[str] = None
+
+
 class SensorModelWithHistory(SensorModel):
     history: list[SensorHistoryModel]
 

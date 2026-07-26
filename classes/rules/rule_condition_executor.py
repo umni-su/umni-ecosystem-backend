@@ -39,6 +39,10 @@ operators = {
 
 
 class RuleConditionExecutor(RuleBaseExecutor):
+    def __init__(self, node, **kwargs):
+        super().__init__(node)
+        self.kwargs = kwargs
+
     def execute(self):
         if isinstance(self.node.data.options, NodeConditionOptions):
             condition_result = False
@@ -174,7 +178,9 @@ class RuleConditionExecutor(RuleBaseExecutor):
         if operand == RuleOperand.AND.value:
             success = False
             for item in items:
-                sensor = SensorRepository.get_sensor(item.id)
+                sensor = SensorRepository.get_sensor(
+                    sensor_id=item.id
+                )
                 success = sensor.device.online == (state == RuleAvailability.ONLINE.value)
                 if not success:
                     return False

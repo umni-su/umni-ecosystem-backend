@@ -20,7 +20,9 @@ from typing import Any, Dict, Optional, Type, List
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from models.device_model import DeviceModelMain
 from models.device_scan_model import DeviceScanModel
+from models.sensor_model import SensorModelWithDevice
 from repositories.device_repository import DeviceRepository
 from classes.devices.device_manager import DeviceManager, device_manager
 from classes.l10n.l10n import translator, plugin_translate
@@ -205,13 +207,22 @@ class BasePlugin(ABC):
     @abstractmethod
     def set_sensor_value(
             self,
-            external_id: str,
-            capability: str,
-            identifier: Optional[str],
+            sensor: SensorModelWithDevice,
             value: Any
     ) -> bool:
         """
         Установить значение сенсора.
+        Вызывается DeviceManager'ом.
+        Плагин сам решает, как отправить команду устройству.
+        """
+        pass
+
+    def locate(
+            self,
+            external_id: str,
+    ) -> bool:
+        """
+        Обнаружить устройство.
         Вызывается DeviceManager'ом.
         Плагин сам решает, как отправить команду устройству.
         """

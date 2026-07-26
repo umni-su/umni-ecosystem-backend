@@ -24,9 +24,11 @@ from classes.devices.device_manager import device_manager
 from classes.l10n.l10n import _
 from classes.storages.device_storage import device_storage
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
-from models.sensor_model import SensorModelWithHistory, SensorUpdateModel, SensorPayload
+from models.sensor_model import SensorModelWithHistory, SensorUpdateModel, SensorPayload, SensorModel, \
+    SensorModelWithDevice, SensorUpdateModelUi
 from repositories.sensor_history_repository import SensorHistoryRepository
 from repositories.sensor_repository import SensorRepository
+from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 
 sensors = APIRouter(
@@ -38,7 +40,7 @@ sensors = APIRouter(
 @sensors.patch('/{id}')
 def get_sensors_history(
         id: int,
-        model: Annotated[SensorUpdateModel, Form()],
+        model: Annotated[SensorUpdateModelUi, Form()],
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
     sensor = SensorRepository.update_sensor(model)
@@ -92,8 +94,13 @@ async def set_sensor_value(
 ):
     """Установить значение сенсора"""
     try:
-        success = device_manager.set_value(sensor_id, payload.value)
-        return {"success": success}
+        sensor = SensorRepository.get_sensor(sensor_id)
+        if isinstance(sensor, SensorModelWithDevice):
+            success = device_manager.set_value(
+                device_name=sensor.device.external_id,
+                sensor_identifier=sensor.identifier,
+                value=payload.value)
+            return SuccessResponse(success=success)
     except Exception as e:
         raise HTTPException(400, str(e))
 

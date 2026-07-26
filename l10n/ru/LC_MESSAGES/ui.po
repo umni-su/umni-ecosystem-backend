@@ -175,6 +175,9 @@ msgstr "Продолжительное видео"
 msgid "Cpu"
 msgstr "Процессор"
 
+msgid "Create"
+msgstr "Создать"
+
 msgid "Dashboard"
 msgstr "Панель"
 
@@ -497,6 +500,9 @@ msgstr "Блок со связями будет удален"
 msgid "Normal"
 msgstr "Нормальный"
 
+msgid "No automations"
+msgstr "Нет автоматизаций"
+
 msgid "Not"
 msgstr "Не"
 
@@ -743,17 +749,17 @@ msgstr "Системные службы"
 msgid "System settings"
 msgstr "Системные настройки"
 
+msgid "Success"
+msgstr "Успех"
+
 msgid "Take screenshot"
 msgstr "Сделать скриншот"
 
 msgid "Telegram"
 msgstr "Телеграм"
 
-
 msgid "Temperature"
 msgstr "Температура"
-
-
 
 msgid "To"
 msgstr "Кому"
@@ -832,6 +838,9 @@ msgstr "Беспроводной датчик"
 
 msgid "You should add at least one storage"
 msgstr "Вы должны добавить как минимум одно хранилище"
+
+msgid "You haven't created any automation yet"
+msgstr "Вы еще не создали ни одной автоматизации"
 
 msgid "adc"
 msgstr "Аналоговые датчики"

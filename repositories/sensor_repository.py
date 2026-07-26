@@ -18,15 +18,21 @@ from sqlmodel import select, col, or_
 from sqlalchemy.orm import selectinload
 from starlette.exceptions import HTTPException
 
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.device import DeviceEntity
 from entities.sensor_entity import SensorEntity
-from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice, SensorCreateModel
+from entities.sensor_history import SensorHistory
+from models.sensor_model import SensorUpdateModel, SensorModel, SensorModelWithDevice, SensorCreateModel, \
+    SensorUpdateModelUi
 from repositories.base_repository import BaseRepository
 from starlette.status import HTTP_404_NOT_FOUND
+
+from repositories.sensor_history_repository import SensorHistoryRepository
 
 
 class SensorRepository(BaseRepository):
@@ -45,10 +51,12 @@ class SensorRepository(BaseRepository):
 
     @classmethod
     def get_sensor(cls, sensor_id: int):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 q = select(SensorEntity).where(SensorEntity.id == sensor_id)
                 sensor_orm = sess.exec(q).first()
+                if sensor_orm:
+                    sess.refresh(sensor_orm)
                 return cls._return_sensor_with_relations(sensor_orm)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
@@ -75,8 +83,25 @@ class SensorRepository(BaseRepository):
                 if isinstance(sensor, SensorEntity):
                     sensor.value = value
                     sess.add(sensor)
+
+                    last_record = SensorHistoryRepository.get_last_record(sensor)
+                    if last_record is None or last_record.value != str(
+                            value):  # Todo map_type last_record.value in model by type
+                        history = SensorHistory()
+                        history.sensor_id = sensor_id
+                        history.value = value
+                        sess.add(history)
+
                     sess.commit()
-                    return cls._return_sensor_with_relations(sensor)
+
+                    sensor_model = cls._return_sensor_with_relations(sensor)
+                    if sensor_model is not None:
+                        event_bus.publish(
+                            event_type=EventType.SENSOR_CHANGE_STATE,
+                            sensor=sensor_model
+                        )
+
+                    return sensor_model
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 
@@ -95,12 +120,12 @@ class SensorRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
-    def update_sensor(cls, model: SensorUpdateModel):
+    def update_sensor(cls, model: SensorUpdateModelUi):
         with write_session() as sess:
             try:
                 sensor = sess.get(SensorEntity, model.id)
                 if isinstance(sensor, SensorEntity):
-                    sensor.name = model.name
+                    sensor.visible_name = model.visible_name
 
                     if model.photo is not None:
                         photo = device_storage.sensor_cover_upload(

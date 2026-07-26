@@ -27,6 +27,18 @@ from database.engine import engine
 
 
 @contextmanager
+def read_session():
+    """Сессия только для чтения с отключенным кэшем"""
+    session = Session(engine, expire_on_commit=False, autoflush=False)
+    try:
+        # Отключаем кэш уровня сессии
+        session.expire_on_commit = False
+        yield session
+    finally:
+        session.close()
+
+
+@contextmanager
 def write_session(expire_on_commit: bool = True) -> AbstractContextManager[Session]:
     session = None
     for attempt in range(MAX_RETRIES):

@@ -15,9 +15,12 @@
 
 from typing import Optional, Any, List, TYPE_CHECKING, Union
 
+from attr.validators import is_callable
+
 from classes.devices.device_registry import device_registry
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from classes.devices.device_source_enum import DeviceSource, DeviceFeature
+from models.device_model_relations import DeviceModelWithRelations
 from plugins.core.umni_mdns.classes.device_options import DeviceOutputOptions
 from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands
 from classes.logger.logger import Logger
@@ -66,7 +69,7 @@ class DeviceManager:
 
     # ========== GETTERS ==========
 
-    def get_device(self, device_id: int) -> Optional[DeviceModel]:
+    def get_device(self, device_id: int) -> Optional[DeviceModelWithRelations]:
         """Получить устройство"""
         return DeviceRepository.get_device(device_id)
 
@@ -110,38 +113,6 @@ class DeviceManager:
     def sensor_is_setpoint(self, sensor: SensorModelWithDevice):
         return sensor.type == DeviceSensorTypeEnum.SETPOINT
 
-    def set_value_core(self, sensor: SensorModelWithDevice, value: Optional[Union[int | float | str | bool]]):
-        ip = device_registry.get_device_ip(sensor.device_id)
-        if ip is None:
-            return False
-        uapi = DeviceRestCommands(ip)
-        try:
-            success = False
-            # Bounds check
-            if self.sensor_is_setpoint(sensor):
-                bounds = self.sensor_get_bounds(sensor)
-                if isinstance(bounds, BoundItem):
-                    return value >= bounds.value >= value
-                return False
-            # Output check
-            if self.sensor_is_output(sensor):  # output
-                if isinstance(sensor.options, dict):
-                    options = DeviceOutputOptions.model_validate(sensor.options)
-                    if value is not None:
-                        res = uapi.switch_output(
-                            index=options.index,
-                            level=value
-                        )
-                        success = res['success']
-            # Opentherm
-            elif self.sensor_is_opentherm(sensor):  # opentherm
-                opentherm_params = {sensor.identifier: value}
-                res = uapi.configure_opentherm(**opentherm_params)
-                success = res['success']
-            return success or False
-        except Exception as e:
-            Logger.err(str(e), LoggerType.DEVICES)
-
     # ========== COMMANDS (PLUGIN DELEGATED) ==========
 
     def _get_plugin_for_device(self, device_id: int):
@@ -150,72 +121,77 @@ class DeviceManager:
         if not device:
             raise ValueError(f"Device {device_id} not found")
 
-        plugin: "BasePlugin" = self.plugins.get_plugin_by_name(device.type)
+        plugin: "BasePlugin" = self.plugins.get_plugin_by_name(device.plugin.name)
         if not plugin:
             raise ValueError(f"Plugin for source '{device.type}' not running")
 
         return plugin, device
 
-    def set_value(self, sensor_id: int, value: Any) -> bool:
+    def set_value(
+            self,
+            device_name: str,
+            sensor_identifier: str,
+            value: Any) -> bool:
         """
         Установить значение сенсора (включить, изменить яркость и т.д.)
         Делегирует плагину.
         """
-        sensor = self.get_sensor(sensor_id)
-        device = sensor.device
-        success = False
 
-        if not sensor:
-            raise ValueError(f"Sensor {sensor_id} not found")
+        device_model = DeviceRepository.get_device_by_name(
+            name=device_name
+        )
+        if device_model is None:
+            return False
+
+        sensor = SensorRepository.get_sensor_by_device_and_identifier(
+            device_id=device_model.id,
+            identifier=sensor_identifier
+        )
+
+        if sensor is None:
+            return False
+
+        device = sensor.device
 
         if isinstance(device, DeviceModelMain):
-            if self.from_core(device):
-                # Device from UMNI core, use UMNI API
-                success = self.set_value_core(sensor, value)
-            elif self.from_plugin(device):
-                # Получаем плагин и делегируем
-                plugin, device = self._get_plugin_for_device(sensor.device_id)
+            plugin, device = self._get_plugin_for_device(sensor.device_id)
 
-                # Вызываем метод плагина
-                success = plugin.set_sensor_value(
-                    external_id=device.external_id,
-                    capability=sensor.capability,
-                    identifier=sensor.identifier,
-                    value=value
-                )
-
-            # if success:
-            # Обновляем локальное значение
-            #    self.registry.update_sensor_value(sensor_id, value)
-
+            # Вызываем метод плагина
+            success = plugin.set_sensor_value(
+                sensor=sensor,
+                value=value
+            )
             return success
 
         return False
 
-    def turn_on(self, sensor_id: int) -> bool:
-        """Включить (для switch)"""
-        return self.set_value(sensor_id, 1)
+    def update_value_in_db(self, device_name: str,
+                           sensor_identifier: str,
+                           value: Any) -> bool:
+        """
+        Обновление значения сенсора в базе данных
+        """
+        device_model = DeviceRepository.get_device_by_name(
+            name=device_name
+        )
+        if device_model is None:
+            return False
 
-    def turn_off(self, sensor_id: int) -> bool:
-        """Выключить (для switch)"""
-        return self.set_value(sensor_id, 0)
+        sensor = SensorRepository.get_sensor_by_device_and_identifier(
+            device_id=device_model.id,
+            identifier=sensor_identifier
+        )
 
-    def toggle(self, sensor_id: int) -> bool:
-        """Переключить состояние"""
-        sensor = self.get_sensor(sensor_id)
-        if not sensor:
-            raise ValueError(f"Sensor {sensor_id} not found")
+        if sensor is None:
+            return False
+        return self.registry.update_sensor_value(sensor.id, value)
 
-        current = 1 if sensor.value == "1" else 0
-        return self.set_value(sensor_id, 1 - current)
+    def locate_device(self, device_id: int) -> bool:
+        plugin, device = self._get_plugin_for_device(device_id)
 
-    def set_brightness(self, sensor_id: int, brightness: int) -> bool:
-        """Установить яркость (0-255)"""
-        return self.set_value(sensor_id, brightness)
-
-    def set_color(self, sensor_id: int, r: int, g: int, b: int) -> bool:
-        """Установить цвет RGB"""
-        return self.set_value(sensor_id, {"r": r, "g": g, "b": b})
+        if callable(plugin.locate) and device.external_id is not None:
+            return plugin.locate(device.external_id)
+        return False
 
 
 device_manager = DeviceManager()

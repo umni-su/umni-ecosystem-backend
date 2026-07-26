@@ -42,7 +42,7 @@ from models.rule_model import (
     NodeDataWithList, NodeVisualize
 )
 from models.sensor_model import SensorModelWithDevice
-from models.ui_models import UiListItem
+from models.ui_models import UiListItem, UiListItemParent
 from repositories.area_repository import CameraAreaRepository
 from repositories.base_repository import BaseRepository
 from sqlmodel import select, delete, col
@@ -295,7 +295,8 @@ class RulesRepository(BaseRepository):
                             SensorEntity.name,
                             SensorEntity.visible_name,
                             SensorEntity.identifier
-                        ]
+                        ],
+                        include_relationships=True
                     )
                     ar: list[SensorModelWithDevice] = res.items
                     for sensor in ar:
@@ -303,8 +304,13 @@ class RulesRepository(BaseRepository):
                             UiListItem(
                                 id=sensor.id,
                                 name=sensor.identifier,
-                                description=sensor.name,
-                                icon='mdi-chip',
+                                description=sensor.visible_name or sensor.name,
+                                icon=sensor.icon or 'mdi-chip',
+                                parent=UiListItemParent(
+                                    id=sensor.device.id,
+                                    name=sensor.device.name,
+                                    title=sensor.device.title
+                                )
                             )
                         )
 

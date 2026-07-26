@@ -18,9 +18,17 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class UiListItemParent(BaseModel):
+    id: int
+    name: str
+    title: Optional[str]
+
+
 class UiListItem(BaseModel):
     id: int | None = None
     name: Optional[str] | None = None
     description: Optional[str] | None = None
     icon: Optional[str] | None = None
-    color: Optional[str] | None = None
+    color: Optional[str] = None
+    cover: Optional[str] = None
+    parent: Optional[UiListItemParent] = None

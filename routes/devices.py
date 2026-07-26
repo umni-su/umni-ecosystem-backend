@@ -16,12 +16,14 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile
 from classes.auth.auth import Auth
+from classes.devices.device_manager import device_manager
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
 from models.device_model import DeviceUpdateModel
 from models.device_model_relations import DeviceModelWithRelations
 from repositories.device_repository import DeviceRepository
+from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 
 devices = APIRouter(
@@ -50,6 +52,19 @@ def get_device(
     try:
         device: DeviceModelWithRelations = DeviceRepository.get_device(device_id)
         return device
+
+    except Exception as e:
+        Logger.err(str(e), LoggerType.APP)
+
+
+@devices.get('/{device_id}/locate', response_model=SuccessResponse)
+def get_device(
+        device_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    try:
+        success = device_manager.locate_device(device_id)
+        return SuccessResponse(success=success)
 
     except Exception as e:
         Logger.err(str(e), LoggerType.APP)
