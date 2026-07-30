@@ -38,7 +38,7 @@ from models.rule_model import (
 )
 from models.sensor_model import SensorModelWithDevice
 from models.storage_model import StorageModel
-from models.ui_models import UiListItem
+from models.ui_models import UiListItem, UiListItemParent
 from repositories.camera_repository import CameraRepository
 from repositories.device_repository import DeviceRepository
 from repositories.rules_repository import RulesRepository
@@ -191,7 +191,7 @@ def get_rules_condition_entities(
                     id=item.id,
                     name=item.name,
                     description=item.title,
-                    icon='mdi-chip'
+                    icon=item.icon or 'mdi-chip',
                 ) for item in res]
         elif params.condition == RuleConditionKey.AVAILABILITY_CAMERA:
             items = CameraRepository.find_paginated(
@@ -223,15 +223,21 @@ def get_rules_condition_entities(
                     SensorEntity.name,
                     SensorEntity.identifier,
                     SensorEntity.visible_name
-                ]
+                ],
+                include_relationships=True
             )
             res: list[SensorModelWithDevice] = items.items
             final_items = [
                 UiListItem(
                     id=item.id,
-                    name=item.identifier,
-                    description=item.name,
-                    icon='mdi-thermometer'
+                    name=item.visible_name or item.name,
+                    description=item.identifier,
+                    icon=item.icon or 'mdi-thermometer',
+                    parent=UiListItemParent(
+                        id=item.device.id or None,
+                        name=item.device.name or None,
+                        title=item.device.title,
+                    ) if item.device is not None else None
                 ) for item in
                 res]
         elif params.condition in [

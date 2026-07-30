@@ -32,7 +32,6 @@ class EventBus:
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialize(max_workers)
-                Logger.debug(f"⚠️ INIT called, instance id: {id(cls)}")
             return cls._instance
 
     def _initialize(self, max_workers: int):

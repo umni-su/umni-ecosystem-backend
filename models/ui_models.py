@@ -21,7 +21,7 @@ from pydantic import BaseModel
 class UiListItemParent(BaseModel):
     id: int
     name: str
-    title: Optional[str]
+    title: Optional[str] = None
 
 
 class UiListItem(BaseModel):

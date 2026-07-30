@@ -126,16 +126,17 @@ def update_notification(
         notification: NotificationModel,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
-    """Обновить уведомление"""
-    # Валидируем конфигурацию
-    if not NotificationService.validate_notification_config(
-            notification.type,
-            notification.options if notification.options else {}
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_("Invalid notification configuration")
-        )
+    if notification.active:
+        """Обновить уведомление"""
+        # Валидируем конфигурацию
+        if not NotificationService.validate_notification_config(
+                notification.type,
+                notification.options if notification.options else {}
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=_("Invalid notification configuration")
+            )
 
     result = NotificationRepository.update_notification(notification_id, notification)
     if not result:
