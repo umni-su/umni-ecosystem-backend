@@ -71,3 +71,11 @@ class CustomNotification(BaseRegisteredNotification):
 # Регистрация при загрузке плагина
 NotificationFactory.register_notification(CustomNotification)
 ```
+
+# Касательно интеграции Matrix
+
+0) создать бота в synapse admin
+1) pip install synadm выполнить на сервере
+2) synadm user login @user:domain.matrix.example - получить секрет
+3) Добавить его в чат.
+4) Сконфигурировать форму
