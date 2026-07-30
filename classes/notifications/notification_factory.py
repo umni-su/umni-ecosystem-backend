@@ -72,6 +72,63 @@ class NotificationFactory:
             raise
 
     @classmethod
+    def unregister_notification(cls, type_id: int) -> bool:
+        """
+        Удаляет регистрацию уведомления (для плагинов при выгрузке)
+
+        Args:
+            type_id: ID типа уведомления
+
+        Returns:
+            bool: True если успешно удалено
+        """
+        if type_id in cls._notifications:
+            notification = cls._notifications[type_id]
+            # Удаляем по имени
+            if notification.name in cls._notifications_by_name:
+                del cls._notifications_by_name[notification.name]
+            # Удаляем по ID
+            del cls._notifications[type_id]
+
+            Logger.info(
+                f"📝 Unregistered notification: {notification.name} (ID: {type_id})",
+                LoggerType.NOTIFICATIONS
+            )
+            return True
+        return False
+
+    @classmethod
+    def unregister_notification_by_name(cls, name: str) -> bool:
+        """
+        Удаляет регистрацию уведомления по имени
+
+        Args:
+            name: Имя уведомления
+
+        Returns:
+            bool: True если успешно удалено
+        """
+        if name in cls._notifications_by_name:
+            notification = cls._notifications_by_name[name]
+            return cls.unregister_notification(notification.type_id)
+        return False
+
+    @classmethod
+    def is_registered(cls, type_id: int) -> bool:
+        """Проверяет, зарегистрирован ли тип уведомления"""
+        return type_id in cls._notifications
+
+    @classmethod
+    def is_registered_by_name(cls, name: str) -> bool:
+        """Проверяет, зарегистрирован ли тип уведомления по имени"""
+        return name in cls._notifications_by_name
+
+    @classmethod
+    def get_registered_count(cls) -> int:
+        """Возвращает количество зарегистрированных типов уведомлений"""
+        return len(cls._notifications)
+
+    @classmethod
     def register_from_enum(cls, enum_value: NotificationTypeEnum,
                            notification_class: Type[BaseRegisteredNotification]) -> None:
         """
