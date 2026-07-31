@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-01 18:21+0300\n"
+"POT-Creation-Date: 2026-07-31 20:15+0300\n"
 "PO-Revision-Date: 2025-08-29 13:24+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -92,6 +92,30 @@ msgstr ""
 
 #: classes/notifications/via/email_notification.py:84
 msgid "Send notifications via SMTP email"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:34
+msgid "Matrix configuration"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:38
+msgid "Matrix homeserver URL (e.g., https://matrix-client.matrix.org)"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:42
+msgid "Room ID to send messages to (e.g., !abc123:matrix.org)"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:47
+msgid "Matrix access token for authentication"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:51
+msgid "Enable HTML formatting in messages"
+msgstr ""
+
+#: classes/notifications/via/matrix_notification.py:69
+msgid "Send notifications via Matrix chat protocol"
 msgstr ""
 
 #: classes/notifications/via/telegram_notification.py:30
@@ -188,20 +212,16 @@ msgstr ""
 msgid "Password is required when changing password"
 msgstr ""
 
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:38
+#: plugins/core/umni_mdns/umni_mdns_plugin.py:37
 msgid "Service type"
 msgstr ""
 
+#: plugins/core/umni_mdns/umni_mdns_plugin.py:38
+msgid "Health check interval"
+msgstr ""
+
 #: plugins/core/umni_mdns/umni_mdns_plugin.py:39
-msgid "Scan interval"
-msgstr ""
-
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:40
-msgid "Scan duration"
-msgstr ""
-
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:41
-msgid "Continuous scan"
+msgid "Offline timeout (seconds)"
 msgstr ""
 
 #: repositories/rules_repository.py:96
@@ -292,7 +312,7 @@ msgstr ""
 msgid "Failed to save configuration"
 msgstr ""
 
-#: routes/notifications.py:80 routes/notifications.py:144
+#: routes/notifications.py:80 routes/notifications.py:145
 msgid "Notification not found"
 msgstr ""
 
@@ -300,15 +320,15 @@ msgstr ""
 msgid "Notification type not found"
 msgstr ""
 
-#: routes/notifications.py:111 routes/notifications.py:137
+#: routes/notifications.py:111 routes/notifications.py:138
 msgid "Invalid notification configuration"
 msgstr ""
 
-#: routes/notifications.py:183 routes/notifications.py:199
+#: routes/notifications.py:184 routes/notifications.py:200
 msgid "Failed to send notification"
 msgstr ""
 
-#: routes/notifications.py:185 routes/notifications.py:201
+#: routes/notifications.py:186 routes/notifications.py:202
 msgid "Notification sent successfully"
 msgstr ""
 
@@ -336,7 +356,7 @@ msgstr ""
 msgid "Rule deleted"
 msgstr ""
 
-#: routes/sensors.py:66
+#: routes/sensors.py:68
 msgid "Error getting sensors history"
 msgstr ""
 
@@ -444,5 +464,14 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "description"
+#~ msgstr ""
+
+#~ msgid "Scan interval"
+#~ msgstr ""
+
+#~ msgid "Scan duration"
+#~ msgstr ""
+
+#~ msgid "Continuous scan"
 #~ msgstr ""
 

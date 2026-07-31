@@ -18,6 +18,7 @@ from fastapi import FastAPI
 from sqlalchemy.orm import configure_mappers
 
 from classes.app.lifespan_manager import lifespan_manager
+from config.settings import settings
 from routes.access import access
 from routes.cameras import cameras
 from routes.events import events
@@ -36,7 +37,7 @@ from routes.systeminfo import systeminfo
 from routes.users import users
 from routes.websockets import websockets
 from routes.notifications import notifications
-from config.settings import settings
+from routes.settings import settings as router_settings
 
 from services.cameras.classes.stream_registry import StreamRegistry
 
@@ -78,6 +79,7 @@ app.include_router(permissions)
 app.include_router(plugins)
 app.include_router(sensors)
 app.include_router(storages)
+app.include_router(router_settings)
 app.include_router(systeminfo)
 app.include_router(users)
 app.include_router(websockets)

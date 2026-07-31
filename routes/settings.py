@@ -12,7 +12,28 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+import os
+import sys
+from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-settings = APIRouter()
+from classes.auth.auth import Auth
+from responses.success import SuccessResponse
+from responses.user import UserResponseOut
+
+settings = APIRouter(
+    prefix="/settings",
+    tags=["settings"]
+)
+
+
+@settings.post("/restart")
+async def restart():
+    async def shutdown():
+        await asyncio.sleep(1)
+        os._exit(0)  # Служба закроется, а Windows (благодаря настройке sc failure) сразу её поднимет
+
+    asyncio.create_task(shutdown())
+    return {"success": True}

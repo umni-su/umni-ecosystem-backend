@@ -22,3 +22,18 @@
 
 https://umni.su
 https://docs.umni.su
+
+# Сборка через Nuitka для Windows
+
+```bash
+python -m nuitka --standalone --onefile \
+--output-dir=out \
+--windows-console-mode=disable \
+--follow-imports \
+--include-package=uvicorn \
+--include-package=anyio \
+--include-package=fastapi \
+--include-module=numpy._core._exceptions \
+--include-module=cv2 \
+--jobs=4
+```

@@ -31,7 +31,7 @@ from models.notification_queue_model import NotificationQueueModel
 
 class MatrixOptionsModel(NotificationOptionsBaseModel):
     """Модель опций для Matrix уведомлений"""
-    model_description = _("Matrix Configuration")
+    model_description = _("Matrix configuration")
 
     homeserver_url: str = Field(
         ...,
