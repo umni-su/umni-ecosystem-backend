@@ -76,6 +76,12 @@ NotificationFactory.register_notification(CustomNotification)
 
 0) создать бота в synapse admin
 1) pip install synadm выполнить на сервере
-2) synadm user login @user:domain.matrix.example - получить секрет
+2) synadm user login @user:domain.matrix.example - получить секрет (не забыть указать время жизни) или
+   curl -X POST "https://domain.matrix.example/_synapse/admin/v1/users/@bot:domain.matrix.example/login" \
+   -H "Authorization: Bearer ADMIN_TOKEN" \
+   -H "Content-Type: application/json" \
+   -d '{
+   "valid_until_ms": 1893456000000 // 5 years
+   }'
 3) Добавить его в чат.
 4) Сконфигурировать форму
