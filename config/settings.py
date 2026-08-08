@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     LOG_FLUSH_INTERVAL: int = 5
     LOG_DB_DELETE_AFTER_DAYS: int = 90
     DEBUG_MODE: str = ''
-    ENCRYPTION_KEY_FILE: str = '.ecosystem.key'
+    ENCRYPTION_KEY: str = ''
 
     # Автоматически создаем DSN строку
     @property
