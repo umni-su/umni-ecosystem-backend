@@ -13,9 +13,10 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Body, Form, HTTPException
+from fastapi.params import Query
 
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
@@ -23,6 +24,7 @@ from classes.devices.device_manager import device_manager
 
 from classes.l10n.l10n import _
 from classes.storages.device_storage import device_storage
+from models.pagination_model import PageParams
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from models.sensor_model import SensorModelWithHistory, SensorUpdateModel, SensorPayload, SensorModel, \
     SensorModelWithDevice, SensorUpdateModelUi
@@ -37,9 +39,34 @@ sensors = APIRouter(
 )
 
 
+@sensors.get('/{id}')
+def get_sensor(
+        sensor_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    sensor = SensorRepository.get_sensor(sensor_id)
+    return sensor
+
+
+@sensors.post('', description="Find sensor with device data by term")
+def find_sensors_by_term(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+        params: PageParams,
+):
+    try:
+        return SensorRepository.find_sensors(
+            params=params
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=404,
+            detail='Sensors not found'
+        )
+
+
 @sensors.patch('/{id}')
-def get_sensors_history(
-        id: int,
+def update_sensor(
+        sensor_id: int,
         model: Annotated[SensorUpdateModelUi, Form()],
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
@@ -127,17 +154,3 @@ async def toggle(
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
 ):
     return {"success": device_manager.toggle(sensor_id)}
-
-
-@sensors.get('/{term}', description="Find sensor with device data by term")
-def find_sensor_by_term(
-        term: str,
-        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
-):
-    try:
-        return SensorRepository.find_sensors(term)
-    except Exception as e:
-        raise HTTPException(
-            status_code=404,
-            detail='Sensors not found'
-        )

@@ -14,6 +14,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TypeVar, List, Any
+
+from sqlalchemy.orm import Relationship, selectinload
 from sqlmodel import select, func, SQLModel
 
 from models.pagination_model import PaginatedResponse
@@ -32,7 +34,8 @@ class PaginationMixin:
             size: int = 10,
             where_conditions: List[Any] = None,
             order_by: Any = None,
-            include_relationships: bool = False
+            include_relationships: bool = False,
+            joins: List[Any] = None,
     ) -> "PaginatedResponse[dict]":
         """
         Пагинирует результаты запроса
@@ -44,12 +47,18 @@ class PaginationMixin:
             where_conditions: Список условий WHERE
             order_by: Поле для сортировки
             include_relationships: Включать ли связанные объекты
+            joins: Включать отношения сущностей для поиска по полям этих отношений (передаются в where_conditions)
         """
         # Базовый запрос для данных
         query = select(cls)
 
         # Базовый запрос для подсчета
         count_query = select(func.count(cls.id))
+
+        if isinstance(joins, list):
+            for item in joins:
+                query = query.join(item)
+                count_query = count_query.join(item)
 
         # Применяем условия WHERE если есть
         if where_conditions:
@@ -87,7 +96,8 @@ class PaginationMixin:
             size: int = 10,
             where_conditions: List[Any] = None,
             order_by: Any = None,
-            include_relationships: bool = False
+            include_relationships: bool = False,
+            joins: List[Any] = None
     ) -> "PaginatedResponse[Any]":
         """
         Пагинирует и преобразует в Pydantic модель
@@ -98,7 +108,8 @@ class PaginationMixin:
             size=size,
             where_conditions=where_conditions,
             order_by=order_by,
-            include_relationships=include_relationships
+            include_relationships=include_relationships,
+            joins=joins
         )
         # Преобразуем словари в модели
         model_items = [model_class.model_validate(item) for item in dict_response.items]

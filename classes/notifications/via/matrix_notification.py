@@ -13,10 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import os
-import uuid
-from urllib.parse import quote
 
-import httpx
 from nio import RoomSendResponse, JoinResponse, RoomSendError, AsyncClient, AsyncClientConfig
 from pydantic import Field
 
@@ -36,10 +33,6 @@ class MatrixOptionsModel(NotificationOptionsBaseModel):
     homeserver_url: str = Field(
         ...,
         description=_("Matrix homeserver URL (e.g., https://matrix-client.matrix.org)")
-    )
-    room_id: str = Field(
-        ...,
-        description=_("Room ID to send messages to (e.g., !abc123:matrix.org)")
     )
     access_token: str = Field(
         ...,
@@ -81,7 +74,7 @@ class MatrixNotification(BaseRegisteredNotification):
             options = self.options_model(**notification.options)
 
             homeserver = options.homeserver_url.strip().rstrip("/")
-            room_id = options.room_id.strip()
+            room_id = notification_queue.to
 
             # Для E2EE боту нужен ID (например, @bot:domain.ru). Извлекаем его из токена или опций.
             # Если в options.bot_user_id нет точного ID, matrix-nio может выдать ошибку.

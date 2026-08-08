@@ -24,9 +24,9 @@ class Settings(BaseSettings):
     APP_MODE: str = "development"
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "postgres"
-    DB_SERVER: str = "localhost"
+    DB_HOST: str = "localhost"
     DB_PORT: int = 5432
-    DB_DB: str = "app_db"
+    DB_NAME: str = "app_db"
     APP_NAME: str = "UMNI Ecosystem"
     API_ROOT: str = "/api"
     LOG_LEVEL: str = 'DEBUG'
@@ -45,9 +45,9 @@ class Settings(BaseSettings):
             scheme="postgresql",
             username=self.DB_USER,
             password=encoded_password,
-            host=self.DB_SERVER,
+            host=self.DB_HOST,
             port=self.DB_PORT,
-            path=self.DB_DB,
+            path=self.DB_NAME,
         )
 
     class Config:

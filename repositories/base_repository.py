@@ -83,20 +83,23 @@ class BaseRepository:
             page_params: PageParams,
             search_term: str,
             search_fields: List[Any],
-            include_relationships: bool = False
+            include_relationships: bool = False,
+            joins: List[Any] = None
     ) -> PaginatedResponse[M]:
         """Универсальный поиск с пагинацией"""
         if not search_term:
             return cls.get_all_paginated(session, page_params, include_relationships=include_relationships)
 
         search_conditions = [field.ilike(f"%{search_term}%") for field in search_fields]
+
         where_conditions = [or_(*search_conditions)] if search_conditions else []
 
         return cls.paginate(
             session=session,
             page_params=page_params,
             where_conditions=where_conditions,
-            include_relationships=include_relationships
+            include_relationships=include_relationships,
+            joins=joins
         )
 
     @classmethod
@@ -106,7 +109,8 @@ class BaseRepository:
             page_params: PageParams,
             where_conditions: List[Any] = None,
             order_by: Any = None,
-            include_relationships: bool = False
+            include_relationships: bool = False,
+            joins: List[Any] = None
     ) -> PaginatedResponse[M]:
         """Базовый метод пагинации для всех репозиториев"""
         return cls.entity_class.paginate_to_model(
@@ -116,5 +120,6 @@ class BaseRepository:
             size=page_params.size,
             where_conditions=where_conditions,
             order_by=order_by,
-            include_relationships=include_relationships
+            include_relationships=include_relationships,
+            joins=joins
         )
