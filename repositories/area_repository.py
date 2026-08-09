@@ -21,7 +21,7 @@ from sqlmodel import select, col
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.camera_area import CameraAreaEntity
 from repositories.base_repository import BaseRepository
 
@@ -77,8 +77,6 @@ class CameraAreaRepository(BaseRepository):
                     )
                     result_areas.append(area_model)
 
-                session.commit()
-
             area_ids = [a.id for a in result_areas]
 
             # ✅ ВНЕ СЕССИИ обновляем трекер
@@ -101,7 +99,7 @@ class CameraAreaRepository(BaseRepository):
 
     @classmethod
     def get_camera_areas(cls, camera_id: int) -> list[CameraAreaBaseModel]:
-        with write_session() as session:
+        with read_session() as session:
             areas = session.exec(
                 select(CameraAreaEntity)
                 .where(CameraAreaEntity.camera_id == camera_id)
@@ -110,7 +108,7 @@ class CameraAreaRepository(BaseRepository):
 
     @classmethod
     def get_area(cls, area_id: int) -> CameraAreaEntity:
-        with write_session() as session:
+        with read_session() as session:
             return session.exec(
                 select(CameraAreaEntity)
                 .where(CameraAreaEntity.id == area_id)
@@ -118,7 +116,7 @@ class CameraAreaRepository(BaseRepository):
 
     @classmethod
     def get_areas(cls) -> list[CameraAreaEntity]:
-        with write_session() as session:
+        with read_session() as session:
             return session.exec(
                 select(CameraAreaEntity)
             ).all()

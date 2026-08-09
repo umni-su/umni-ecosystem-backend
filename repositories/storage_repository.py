@@ -16,7 +16,7 @@
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.storage import StorageEntity
 from models.storage_model import StorageModel, StorageModelBase
 from repositories.base_repository import BaseRepository
@@ -41,7 +41,7 @@ class StorageRepository(BaseRepository):
 
     @classmethod
     def get_storages(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 storages_orm = sess.exec(
                     select(StorageEntity)
@@ -57,7 +57,7 @@ class StorageRepository(BaseRepository):
 
     @classmethod
     def get_storage(cls, storage_id: int):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 storage = sess.get(StorageEntity, storage_id)
                 return StorageModel.model_validate(
@@ -76,8 +76,7 @@ class StorageRepository(BaseRepository):
                 storage.path = model.path
                 storage.active = model.active
                 sess.add(storage)
-                sess.commit()
-                sess.refresh(storage)
+                sess.flush()
                 return StorageModel.model_validate(
                     storage.to_dict()
                 )
@@ -96,8 +95,7 @@ class StorageRepository(BaseRepository):
                 storage.path = model.path
                 storage.active = model.active
                 sess.add(storage)
-                sess.commit()
-                sess.refresh(storage)
+                sess.flush()
                 return StorageModel.model_validate(
                     storage.to_dict()
                 )
@@ -111,7 +109,6 @@ class StorageRepository(BaseRepository):
                 storage = sess.get(StorageEntity, storage_id)
                 if storage is not None:
                     sess.delete(storage)
-                    sess.commit()
                 return SuccessResponse(success=True)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)

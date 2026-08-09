@@ -24,7 +24,7 @@ from fastapi import HTTPException
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.camera_storage import CameraStorage
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.camera_event import CameraEventEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -84,8 +84,7 @@ class CameraEventsRepository(BaseRepository):
                     event.recording = record
 
                 session.add(event)
-                session.commit()
-                session.refresh(event)
+                session.flush()
 
                 return CameraEventModel.model_validate(
                     event.to_dict()
@@ -104,7 +103,6 @@ class CameraEventsRepository(BaseRepository):
                 if event.recording is not None:
                     event.recording.end = event.end
                     event.recording.duration = event.duration
-                session.commit()
                 return CameraEventModel.model_validate(
                     event.to_dict()
                 )
@@ -118,8 +116,7 @@ class CameraEventsRepository(BaseRepository):
             try:
                 event.end = datetime.now()
                 sess.add(event)
-                sess.commit()
-                sess.refresh(event)
+                sess.flush()
 
                 return event
             except Exception as e:
@@ -127,7 +124,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_event(cls, event_id: int, relations: bool = False):
-        with (write_session() as sess):
+        with (read_session() as sess):
             event = sess.get(CameraEventEntity, event_id)
             if not event:
                 raise HTTPException(status_code=404)
@@ -161,7 +158,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_old_events(cls, camera: "CameraModelWithRelations") -> list["CameraEventModel"]:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
                 res = sess.exec(
@@ -184,7 +181,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_timeline(cls, params: TimelineParams, camera: "CameraModelWithRelations"):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 query = (
                     select(CameraEventEntity)
@@ -209,7 +206,7 @@ class CameraEventsRepository(BaseRepository):
 
     @classmethod
     def get_events(cls, params: EventsPageParams, camera: "CameraModelWithRelations"):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 # Подготавливаем базовый запрос
                 where_conditions = [

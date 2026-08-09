@@ -15,7 +15,7 @@
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
 from classes.logger.logger import Logger
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.camera import CameraEntity
 from entities.enums.camera_protocol_enum import CameraProtocolEnum
 from models.camera_model import CameraBaseModel, CameraModelWithRelations
@@ -29,7 +29,7 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def get_cameras(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 cameras = sess.exec(
                     select(CameraEntity).order_by(col(CameraEntity.name).asc())
@@ -48,7 +48,7 @@ class CameraRepository(BaseRepository):
 
     @classmethod
     def get_camera(cls, camera_id: int) -> CameraModelWithRelations | None:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 camera = sess.exec(
                     select(CameraEntity).where(CameraEntity.id == camera_id)
@@ -68,8 +68,7 @@ class CameraRepository(BaseRepository):
             try:
                 camera = cls.prepare_camera(model, CameraEntity())
                 sess.add(camera)
-                sess.commit()
-                sess.refresh(camera)
+                sess.flush()
 
                 return CameraModelWithRelations.model_validate(
                     camera.to_dict(
@@ -83,8 +82,7 @@ class CameraRepository(BaseRepository):
     def update_camera(cls, model: CameraBaseModel):
         with write_session() as sess:
             try:
-                cam = cls.get_camera(model.id)
-                camera_orm = sess.get(CameraEntity, cam.id)
+                camera_orm = sess.get(CameraEntity, model.id)
                 camera = cls.prepare_camera(model, camera_orm)
                 sess.add(camera)
 

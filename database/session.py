@@ -13,14 +13,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
 from contextlib import contextmanager, AbstractContextManager
 from sqlmodel import Session
-from psycopg2 import OperationalError
-from classes.logger.logger import Logger
-
-MAX_RETRIES = 3
-RETRY_DELAY = 0.3
 
 # Импортируем engine из engine.py (без циклических зависимостей)
 from database.engine import engine
@@ -31,8 +25,6 @@ def read_session():
     """Сессия только для чтения с отключенным кэшем"""
     session = Session(engine, expire_on_commit=False, autoflush=False)
     try:
-        # Отключаем кэш уровня сессии
-        session.expire_on_commit = False
         yield session
     finally:
         session.close()
@@ -40,21 +32,16 @@ def read_session():
 
 @contextmanager
 def write_session(expire_on_commit: bool = True) -> AbstractContextManager[Session]:
-    session = None
-    for attempt in range(MAX_RETRIES):
-        try:
-            session = Session(engine, expire_on_commit=expire_on_commit)
-            yield session
-            session.commit()
-            break
-        except OperationalError as e:
-            Logger.warn(f"Ошибка PostgreSQL (попытка {attempt + 1}/{MAX_RETRIES}): {e}")
-            if session:
-                session.rollback()
-            if attempt < MAX_RETRIES - 1:
-                time.sleep(RETRY_DELAY * (attempt + 1))
-                continue
-            raise
-        finally:
-            if session:
-                session.close()
+    """
+    Пишущая сессия: единственная точка фиксации — commit после успешного
+    выполнения тела. При исключении — rollback и проброс ошибки наверх.
+    """
+    session = Session(engine, expire_on_commit=expire_on_commit)
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()

@@ -19,8 +19,7 @@ from sqlmodel import select, col, asc
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
-from entities.sensor_entity import SensorEntity
+from database.session import write_session, read_session
 from entities.sensor_history import SensorHistory
 from models.sensor_history_model import SearchHistoryModel, SensorHistoryModel
 from repositories.base_repository import BaseRepository
@@ -28,12 +27,12 @@ from repositories.base_repository import BaseRepository
 
 class SensorHistoryRepository(BaseRepository):
     @classmethod
-    def get_last_record(cls, sensor: SensorEntity) -> None | SensorHistoryModel:
-        with write_session() as sess:
+    def get_last_record(cls, sensor_id: int) -> None | SensorHistoryModel:
+        with read_session() as sess:
             try:
                 last = sess.exec(
                     select(SensorHistory)
-                    .where(SensorHistory.sensor == sensor)
+                    .where(SensorHistory.sensor_id == sensor_id)
                     .order_by(
                         col(SensorHistory.created).desc()
                     )
@@ -47,7 +46,7 @@ class SensorHistoryRepository(BaseRepository):
 
     @classmethod
     def get_sensor_history(cls, sensor_id: int, body: SearchHistoryModel):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 start: datetime = body.range[0]
                 end: datetime = body.range[1]

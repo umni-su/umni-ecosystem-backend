@@ -15,7 +15,7 @@
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.user import UserEntity
 from models.pagination_model import PageParams
 from repositories.base_repository import BaseRepository
@@ -32,7 +32,7 @@ class UserRepository(BaseRepository):
             cls,
             superusers_only: bool = False
     ) -> int:
-        with write_session() as session:
+        with read_session() as session:
             try:
                 query = select(func.count(UserEntity.id)).select_from(cls.entity_class)
                 if superusers_only:
@@ -45,7 +45,7 @@ class UserRepository(BaseRepository):
 
     @classmethod
     def get_users(cls, params: PageParams):
-        with write_session() as session:
+        with read_session() as session:
             return cls.paginate(
                 session=session,
                 page_params=params,
@@ -53,7 +53,7 @@ class UserRepository(BaseRepository):
 
     @classmethod
     def get_user(cls, user_id: int):
-        with write_session() as session:
+        with read_session() as session:
             user = session.get(cls.entity_class, user_id)
             return cls.model_class.model_validate(
                 user.to_dict(
@@ -70,8 +70,7 @@ class UserRepository(BaseRepository):
                 )
 
                 session.add(user_db)
-                session.commit()
-                session.refresh(user_db)
+                session.flush()
                 return UserResponseOut.model_validate(
                     user_db.to_dict(
                         include_relationships=True
@@ -95,8 +94,7 @@ class UserRepository(BaseRepository):
                         # TODO смена пароля пользователя
                         pass
                     session.add(user_db)
-                    session.commit()
-                    session.refresh(user_db)
+                    session.flush()
                     return UserResponseOut.model_validate(
                         user_db.to_dict(
                             include_relationships=True

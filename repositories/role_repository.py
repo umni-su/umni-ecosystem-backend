@@ -15,7 +15,7 @@
 from typing import Optional
 
 from classes.permissions.permission_manager import permission_manager
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.permission import RoleEntity
 from models.pagination_model import PageParams
 from models.permission_model import RoleModelWithPermissions, RoleModel, RoleCreate, RoleUpdate
@@ -29,7 +29,7 @@ class RoleRepository(BaseRepository):
 
     @classmethod
     def get_roles(cls, params: PageParams):
-        with write_session() as session:
+        with read_session() as session:
             return cls.paginate(
                 session=session,
                 page_params=params,
@@ -37,7 +37,7 @@ class RoleRepository(BaseRepository):
 
     @classmethod
     def get_role(cls, role_id: int) -> RoleModelWithPermissions | None:
-        with write_session() as session:
+        with read_session() as session:
             role = session.get(RoleEntity, role_id)
             if isinstance(role, RoleEntity):
                 return RoleModelWithPermissions.model_validate(

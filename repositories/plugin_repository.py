@@ -17,7 +17,7 @@
 from sqlmodel import select, col
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.plugin_entity import PluginEntity
 from models.plugin_model import PluginModel
 from repositories.base_repository import BaseRepository
@@ -29,7 +29,7 @@ class PluginRepository(BaseRepository):
 
     @classmethod
     def get_plugins(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 plugins_orm = sess.exec(
                     select(PluginEntity).order_by(
@@ -48,7 +48,7 @@ class PluginRepository(BaseRepository):
 
     @classmethod
     def get_plugin(cls, plugin_id: int) -> PluginModel | None:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 plugin_orm = sess.get(PluginEntity, plugin_id)
                 if not plugin_orm:
@@ -62,7 +62,7 @@ class PluginRepository(BaseRepository):
 
     @classmethod
     def get_plugin_by_name(cls, plugin_name: str) -> PluginModel | None:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 plugin_orm = sess.exec(
                     select(PluginEntity).where(PluginEntity.name == plugin_name)
@@ -93,8 +93,7 @@ class PluginRepository(BaseRepository):
                 plugin_entity.error_message = model.error_message
 
                 sess.add(plugin_entity)
-                sess.commit()
-                sess.refresh(plugin_entity)
+                sess.flush()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
@@ -124,8 +123,7 @@ class PluginRepository(BaseRepository):
                 plugin_entity.is_core = model.is_core
 
                 sess.add(plugin_entity)
-                sess.commit()
-                sess.refresh(plugin_entity)
+                sess.flush()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
@@ -149,8 +147,7 @@ class PluginRepository(BaseRepository):
                         setattr(plugin_entity, field, value)
 
                 sess.add(plugin_entity)
-                sess.commit()
-                sess.refresh(plugin_entity)
+                sess.flush()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
@@ -168,7 +165,6 @@ class PluginRepository(BaseRepository):
                     return False
 
                 sess.delete(plugin_entity)
-                sess.commit()
                 return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
@@ -176,7 +172,7 @@ class PluginRepository(BaseRepository):
 
     @classmethod
     def get_active_plugins(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 plugins_orm = sess.exec(
                     select(PluginEntity).where(

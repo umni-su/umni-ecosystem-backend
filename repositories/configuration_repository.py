@@ -16,7 +16,7 @@ from classes.configuration.config_consts import BLANK_PASSWORD
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem, get_crypto
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.configuration import ConfigurationEntity, ConfigurationKeys
 from models.configuration_model import ConfigurationModel, ConfigurationModelBase
 from repositories.base_repository import BaseRepository
@@ -59,7 +59,7 @@ class ConfigurationRepository(BaseRepository):
 
     @classmethod
     def get_configuration(cls):
-        with write_session() as session:
+        with read_session() as session:
             try:
                 excluded_keys = [
                     ConfigurationKeys.APP_INSTALLED,

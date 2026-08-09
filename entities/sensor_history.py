@@ -27,7 +27,8 @@ class SensorHistoryBase:
     sensor_id: int | None = Field(
         index=True,
         default=None,
-        foreign_key="device_sensors.id"
+        foreign_key="device_sensors.id",
+        ondelete="CASCADE"
     )
     value: str = Field(
         nullable=True

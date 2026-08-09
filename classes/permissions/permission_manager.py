@@ -17,7 +17,7 @@ from sqlmodel import select, delete, col, update
 from typing import Set, List, Optional
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.user import UserEntity
 from entities.permission import (
     PermissionEntity,
@@ -43,7 +43,7 @@ class PermissionManager:
         Получить ВСЕ разрешения пользователя.
         Возвращает set с кодами разрешений.
         """
-        with write_session() as session:
+        with read_session() as session:
             try:
                 # 1. Проверяем, супер-админ ли пользователь
                 user = session.exec(
@@ -110,7 +110,6 @@ class PermissionManager:
                     role_id=role_id
                 )
                 session.add(user_role)
-                session.commit()
                 return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.USERS)
@@ -129,7 +128,6 @@ class PermissionManager:
 
                 if user_role:
                     session.delete(user_role)
-                    session.commit()
                     return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.USERS)
@@ -137,7 +135,7 @@ class PermissionManager:
 
     def get_user_roles(self, user_id: int) -> List[RoleModelWithPermissions]:
         """Получить все роли пользователя"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 user_roles: List[UserRoleEntity] = session.exec(
                     select(UserRoleEntity).where(UserRoleEntity.user_id == user_id)
@@ -182,7 +180,6 @@ class PermissionManager:
                     permission_id=permission.id
                 )
                 session.add(role_perm)
-                session.commit()
                 return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.USERS)
@@ -209,7 +206,7 @@ class PermissionManager:
 
     def get_users_with_permission(self, permission_code: str) -> List[UserEntity]:
         """Получить всех пользователей, у которых есть разрешение"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 # Находим разрешение
                 permission: PermissionEntity | None = session.exec(
@@ -264,8 +261,7 @@ class PermissionManager:
                 )
 
                 session.add(role)
-                session.commit()
-                session.refresh(role)
+                session.flush()
 
                 # Добавляем разрешения если указаны
                 if role_data.permission_codes:
@@ -301,8 +297,7 @@ class PermissionManager:
                     role.is_default = role_data.is_default
 
                 session.add(role)
-                session.commit()
-                session.refresh(role)
+                session.flush()
 
                 # Обновляем разрешения если указаны
                 if role_data.permission_codes is not None:
@@ -355,7 +350,6 @@ class PermissionManager:
 
                 # Удаляем саму роль
                 session.delete(role)
-                session.commit()
 
                 Logger.info(f"Role deleted: {role.code}", LoggerType.USERS)
                 return True
@@ -367,7 +361,7 @@ class PermissionManager:
 
     def get_role_by_code(self, role_code: str) -> Optional[RoleEntity]:
         """Получить роль по коду"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 role = session.exec(
                     select(RoleEntity).where(RoleEntity.code == role_code)
@@ -379,7 +373,7 @@ class PermissionManager:
 
     def get_role_by_id(self, role_id: int) -> Optional[RoleEntity]:
         """Получить роль по ID"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 role = session.get(RoleEntity, role_id)
                 return role
@@ -389,7 +383,7 @@ class PermissionManager:
 
     def get_all_roles(self) -> List[RoleModel]:
         """Получить все роли с разрешениями"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 roles = session.exec(
                     select(RoleEntity).order_by(RoleEntity.code)
@@ -408,7 +402,7 @@ class PermissionManager:
 
     def assign_role_to_user_by_code(self, user_id: int, role_code: str) -> bool:
         """Назначить роль пользователю по коду роли"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 role = session.exec(
                     select(RoleEntity).where(RoleEntity.code == role_code)
@@ -426,7 +420,7 @@ class PermissionManager:
 
     def remove_role_from_user_by_code(self, user_id: int, role_code: str) -> bool:
         """Удалить роль у пользователя по коду роли"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 role = session.exec(
                     select(RoleEntity).where(RoleEntity.code == role_code)
@@ -460,8 +454,7 @@ class PermissionManager:
                 permission = PermissionEntity.model_validate(perm.model_dump())
 
                 session.add(permission)
-                session.commit()
-                session.refresh(permission)
+                session.flush()
 
                 Logger.info(f"Permission created: {perm.code}", LoggerType.USERS)
                 return permission
@@ -491,7 +484,11 @@ class PermissionManager:
     def delete_permission(self, permission_id: int) -> bool:
         with write_session() as session:
             try:
-                self.remove_permission_from_role(permission_id)
+                session.exec(
+                    delete(RolePermissionEntity).where(
+                        col(RolePermissionEntity.permission_id) == permission_id
+                    )
+                )
                 session.exec(
                     delete(PermissionEntity).where(
                         col(PermissionEntity.id) == permission_id
@@ -504,7 +501,7 @@ class PermissionManager:
 
     def get_all_permissions(self) -> List[PermissionModel]:
         """Получить все разрешения"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 permissions = session.exec(
                     select(PermissionEntity).order_by(PermissionEntity.category, PermissionEntity.code)
@@ -524,7 +521,7 @@ class PermissionManager:
 
     def get_permissions_by_category(self, category: str) -> List[PermissionModel]:
         """Получить разрешения по категории"""
-        with write_session() as session:
+        with read_session() as session:
             try:
                 permissions = session.exec(
                     select(PermissionEntity)

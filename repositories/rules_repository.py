@@ -20,7 +20,7 @@ from classes.l10n.l10n import _
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.rules.rules_store import rules_triggers_store
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.camera_area import CameraAreaEntity
 from entities.device import DeviceEntity
 from entities.rule_entity import RuleEntity, RuleNode, RuleEdge
@@ -54,7 +54,7 @@ from repositories.sensor_repository import SensorRepository
 class RulesRepository(BaseRepository):
     @classmethod
     def get_rules(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 rules = sess.exec(
                     select(RuleEntity)
@@ -72,7 +72,7 @@ class RulesRepository(BaseRepository):
 
     @classmethod
     def get_rule(cls, rule_id: int):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 rule = sess.get(RuleEntity, rule_id)
                 if not rule:
@@ -106,8 +106,7 @@ class RulesRepository(BaseRepository):
             try:
                 db_rule = RuleEntity.model_validate(rule_data)
                 sess.add(db_rule)
-                sess.commit()
-                sess.refresh(db_rule)
+                sess.flush()
                 # Добавляем стартовый узел
                 start_node = RuleNode(
                     id=time.time(),
@@ -128,8 +127,7 @@ class RulesRepository(BaseRepository):
                     ).model_dump()
                 )
                 sess.add(start_node)
-                sess.commit()
-                sess.refresh(db_rule)
+                sess.flush()
 
                 return RuleModel.model_validate(
                     db_rule.to_dict(
@@ -183,7 +181,7 @@ class RulesRepository(BaseRepository):
                         entity_type=entity_type
                     )
                     session.add(db_node)
-                session.commit()
+                session.flush()
 
                 # Добавляем новые связи
                 for edge in graph_data.edges:
@@ -196,7 +194,6 @@ class RulesRepository(BaseRepository):
                         rule_id=rule_id
                     )
                     session.add(db_edge)
-                session.commit()
                 rule = session.get(RuleEntity, rule_id)
 
                 orm_triggers: list[RuleNode] = session.exec(
@@ -219,7 +216,7 @@ class RulesRepository(BaseRepository):
 
     @classmethod
     def get_node(cls, node_id: str):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 node = sess.get(RuleNode, node_id)
                 if not node:
@@ -232,7 +229,7 @@ class RulesRepository(BaseRepository):
 
     @classmethod
     def get_node_entities_by_trigger(cls, trigger: str | None, params: PageParams):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 if trigger is None:
                     return []
@@ -331,7 +328,7 @@ class RulesRepository(BaseRepository):
                 ids = node.data.options.get("ids")
                 res = []
                 if ids is not None:
-                    with write_session() as sess:
+                    with read_session() as sess:
                         try:
                             if trigger in (
                                     RuleNodeTypeKeys.MOTION_START,

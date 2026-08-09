@@ -17,7 +17,7 @@
 from sqlmodel import select, col
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.notification import NotificationEntity
 from models.notification_model import NotificationModel, NotificationCreateModel
 from repositories.base_repository import BaseRepository
@@ -30,7 +30,7 @@ class NotificationRepository(BaseRepository):
 
     @classmethod
     def get_notifications(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 notifications_orm = sess.exec(
                     select(NotificationEntity).order_by(
@@ -49,7 +49,7 @@ class NotificationRepository(BaseRepository):
 
     @classmethod
     def get_notification(cls, notification_id: int) -> NotificationModel | None:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 notification_orm = sess.get(NotificationEntity, notification_id)
                 if not notification_orm:
@@ -72,8 +72,7 @@ class NotificationRepository(BaseRepository):
                 notification_entity.options = model.options if model.options else None
 
                 sess.add(notification_entity)
-                sess.commit()
-                sess.refresh(notification_entity)
+                sess.flush()
 
                 return NotificationModel.model_validate(
                     notification_entity.to_dict()
@@ -105,8 +104,7 @@ class NotificationRepository(BaseRepository):
                 notification_entity.options = processed_options
 
                 sess.add(notification_entity)
-                sess.commit()
-                sess.refresh(notification_entity)
+                sess.flush()
 
                 # Обновляем приоритет для уведомлений при смене статуса активности. -1 - уведомления не попадут в выборку в сервисе
                 NotificationQueueRepository.update_notifications_priority_batch(
@@ -150,7 +148,6 @@ class NotificationRepository(BaseRepository):
                     return False
 
                 sess.delete(notification_entity)
-                sess.commit()
                 return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
@@ -158,7 +155,7 @@ class NotificationRepository(BaseRepository):
 
     @classmethod
     def get_active_notifications(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 notifications_orm = sess.exec(
                     select(NotificationEntity).where(

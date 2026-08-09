@@ -19,7 +19,7 @@ from sqlmodel import select
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.camera_recording import CameraRecordingEntity
 from models.camera_recording import CameraRecordingModel
 from repositories.base_repository import BaseRepository
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class CameraRecordingRepository(BaseRepository):
     @classmethod
     def get_old_recordings(cls, camera: "CameraEntity") -> list[CameraRecordingModel]:
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 cutoff_time = datetime.now() - timedelta(minutes=camera.delete_after)
                 old_recordings = sess.exec(

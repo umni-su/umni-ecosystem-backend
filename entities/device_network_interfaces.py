@@ -28,7 +28,8 @@ class DeviceNetworkInterfaceBase:
     device_id: int | None = Field(
         index=True,
         default=None,
-        foreign_key="devices.id"
+        foreign_key="devices.id",
+        ondelete="CASCADE"
     )
     name: str = Field(
         nullable=False

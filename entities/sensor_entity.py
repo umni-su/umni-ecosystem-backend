@@ -30,7 +30,8 @@ class SensorBase:
     device_id: int | None = Field(
         index=True,
         default=None,
-        foreign_key="devices.id"
+        foreign_key="devices.id",
+        ondelete="CASCADE"
     )
     type: Optional[int] = Field(
         index=True,
@@ -94,5 +95,6 @@ class SensorEntity(
         back_populates="sensors"
     )
     history: list["SensorHistory"] = Relationship(
-        back_populates="sensor"
+        back_populates="sensor",
+        passive_deletes=True
     )

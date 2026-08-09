@@ -64,7 +64,7 @@ class SensorRepository(BaseRepository):
 
     @classmethod
     def get_sensor_by_device_and_identifier(cls, device_id: int, identifier: str):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 q = select(SensorEntity).where(
                     SensorEntity.device_id == device_id
@@ -85,7 +85,7 @@ class SensorRepository(BaseRepository):
                     sensor.value = value
                     sess.add(sensor)
 
-                    last_record = SensorHistoryRepository.get_last_record(sensor)
+                    last_record = SensorHistoryRepository.get_last_record(sensor.id)
                     if last_record is None or last_record.value != str(
                             value):  # Todo map_type last_record.value in model by type
                         history = SensorHistory()
@@ -114,8 +114,7 @@ class SensorRepository(BaseRepository):
                     model.model_dump()
                 )
                 sess.add(sensor)
-                sess.commit()
-                sess.refresh(sensor)
+                sess.flush()
                 return cls._return_sensor_with_relations(sensor)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
@@ -136,8 +135,7 @@ class SensorRepository(BaseRepository):
                         sensor.photo = photo
 
                     sess.add(sensor)
-                    sess.commit()
-                    sess.refresh(sensor)
+                    sess.flush()
 
                     return SensorModel.model_validate(
                         sensor.to_dict()
@@ -151,7 +149,7 @@ class SensorRepository(BaseRepository):
 
     @classmethod
     def find_sensors(cls, params: PageParams):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 return cls.find_paginated(
                     session=sess,

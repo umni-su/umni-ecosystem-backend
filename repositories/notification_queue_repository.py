@@ -16,11 +16,11 @@
 
 from datetime import datetime
 from typing import Optional, List
-from sqlmodel import select, col, desc
+from sqlmodel import select, col, desc, func
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.notification_queue import NotificationQueueEntity
 from models.notification_queue_model import (
     NotificationQueueModel,
@@ -59,7 +59,6 @@ class NotificationQueueRepository(BaseRepository):
                     sess.add(item)
                     updated_count += 1
 
-                sess.commit()
                 Logger.info(f"Updated priority for {updated_count} queue items for notification {notification_id}",
                             LoggerType.NOTIFICATIONS)
                 return updated_count
@@ -76,7 +75,7 @@ class NotificationQueueRepository(BaseRepository):
             limit: Optional[int] = None
     ) -> List[NotificationQueueModel]:
         """Получить элементы очереди с фильтрацией"""
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 statement = select(NotificationQueueEntity)
 
@@ -115,7 +114,7 @@ class NotificationQueueRepository(BaseRepository):
     @classmethod
     def get_queue_item(cls, queue_id: int) -> Optional[NotificationQueueModel]:
         """Получить элемент очереди по ID"""
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 queue_item = sess.get(NotificationQueueEntity, queue_id)
                 return NotificationQueueModel.model_validate(queue_item.to_dict()) if queue_item else None
@@ -139,8 +138,7 @@ class NotificationQueueRepository(BaseRepository):
                 )
 
                 sess.add(queue_item)
-                sess.commit()
-                sess.refresh(queue_item)
+                sess.flush()
                 return NotificationQueueModel.model_validate(queue_item.to_dict())
 
             except Exception as e:
@@ -178,8 +176,7 @@ class NotificationQueueRepository(BaseRepository):
                     queue_item.options = model.options
 
                 sess.add(queue_item)
-                sess.commit()
-                sess.refresh(queue_item)
+                sess.flush()
                 return NotificationQueueModel.model_validate(queue_item.to_dict())
 
             except Exception as e:
@@ -210,7 +207,6 @@ class NotificationQueueRepository(BaseRepository):
                     return False
 
                 sess.delete(queue_item)
-                sess.commit()
                 return True
 
             except Exception as e:
@@ -242,7 +238,6 @@ class NotificationQueueRepository(BaseRepository):
                     item.last_attempt = None
                     sess.add(item)
 
-                sess.commit()
                 return len(failed_items)
 
             except Exception as e:
@@ -252,33 +247,41 @@ class NotificationQueueRepository(BaseRepository):
     @classmethod
     def get_queue_stats(cls) -> dict:
         """Получить статистику очереди"""
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 # Общее количество
-                total_stmt = select(NotificationQueueEntity)
-                total_count = len(sess.exec(total_stmt).all())
+                total_count = sess.exec(
+                    select(func.count(NotificationQueueEntity.id))
+                ).first() or 0
 
                 # Ожидающие обработки
-                pending_stmt = select(NotificationQueueEntity).where(
-                    NotificationQueueEntity.retry_count < NotificationQueueEntity.max_retries
-                )
-                pending_count = len(sess.exec(pending_stmt).all())
+                pending_count = sess.exec(
+                    select(func.count(NotificationQueueEntity.id)).where(
+                        NotificationQueueEntity.retry_count < NotificationQueueEntity.max_retries
+                    )
+                ).first() or 0
 
                 # Неудачные
                 failed_count = total_count - pending_count
 
                 # По приоритетам
-                high_count = len(sess.exec(
-                    select(NotificationQueueEntity).where(NotificationQueueEntity.priority == 2)
-                ).all())
+                high_count = sess.exec(
+                    select(func.count(NotificationQueueEntity.id)).where(
+                        NotificationQueueEntity.priority == 2
+                    )
+                ).first() or 0
 
-                medium_count = len(sess.exec(
-                    select(NotificationQueueEntity).where(NotificationQueueEntity.priority == 1)
-                ).all())
+                medium_count = sess.exec(
+                    select(func.count(NotificationQueueEntity.id)).where(
+                        NotificationQueueEntity.priority == 1
+                    )
+                ).first() or 0
 
-                low_count = len(sess.exec(
-                    select(NotificationQueueEntity).where(NotificationQueueEntity.priority == 0)
-                ).all())
+                low_count = sess.exec(
+                    select(func.count(NotificationQueueEntity.id)).where(
+                        NotificationQueueEntity.priority == 0
+                    )
+                ).first() or 0
 
                 return {
                     "total": total_count,
@@ -312,7 +315,6 @@ class NotificationQueueRepository(BaseRepository):
                 for item in old_items:
                     sess.delete(item)
 
-                sess.commit()
                 return deleted_count
 
             except Exception as e:

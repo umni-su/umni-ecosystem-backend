@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from sqlmodel import delete, col
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.log_entry import LogEntity
 from models.log_model import LogModel, LogPageParams
 from repositories.base_repository import BaseRepository
@@ -31,7 +31,7 @@ class LogRepository(BaseRepository):
 
     @classmethod
     def get_logs(cls, params: LogPageParams):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 search_fields = [
                     col(LogEntity.message)
@@ -98,7 +98,6 @@ class LogRepository(BaseRepository):
                     return False
 
                 sess.delete(log_entity)
-                sess.commit()
                 return True
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)

@@ -21,7 +21,7 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.device_storage import device_storage
 from classes.storages.upload_validator import UploadValidator
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
@@ -37,7 +37,7 @@ class DeviceRepository(BaseRepository):
 
     @classmethod
     def get_devices(cls):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 devices_orm = sess.exec(
                     select(DeviceEntity).order_by(
@@ -56,7 +56,7 @@ class DeviceRepository(BaseRepository):
 
     @classmethod
     def get_device(cls, device_id: int):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 q = (
                     select(DeviceEntity)
@@ -78,7 +78,7 @@ class DeviceRepository(BaseRepository):
 
     @classmethod
     def get_device_by_name(cls, name: str):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 q = select(DeviceEntity).where(col(DeviceEntity.name) == name)
                 device_orm = sess.exec(q).first()
@@ -93,7 +93,7 @@ class DeviceRepository(BaseRepository):
 
     @classmethod
     def get_device_by_plugin_id(cls, plugin_id: int):
-        with write_session() as sess:
+        with read_session() as sess:
             try:
                 q = select(DeviceEntity).where(col(DeviceEntity.plugin_id) == plugin_id)
                 devices_orm = sess.exec(q).all()
@@ -112,8 +112,7 @@ class DeviceRepository(BaseRepository):
                 device = sess.get(DeviceEntity, device_id)
                 device.title = model.title
                 sess.add(device)
-                sess.commit()
-                sess.refresh(device)
+                sess.flush()
 
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
@@ -137,8 +136,7 @@ class DeviceRepository(BaseRepository):
                 )
                 device.photo = photo
                 sess.add(device)
-                sess.commit()
-                sess.refresh(device)
+                sess.flush()
 
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
@@ -169,8 +167,7 @@ class DeviceRepository(BaseRepository):
                 db_ni.gw = ni.gw
 
                 sess.add(db_ni)
-                sess.commit()
-                sess.refresh(db_ni)
+                sess.flush()
 
                 return DeviceNetif.model_validate(
                     db_ni.to_dict(

@@ -95,11 +95,13 @@ class DeviceEntity(
     sensors: list["SensorEntity"] = Relationship(
         back_populates="device",
         sa_relationship_kwargs={
-            "order_by": "asc(SensorEntity.name)"
+            "order_by": "asc(SensorEntity.name)",
+            "passive_deletes": True
         }
     )
     network_interfaces: list["DeviceNetworkInterface"] = Relationship(
-        back_populates="device"
+        back_populates="device",
+        passive_deletes=True
     )
     plugin: PluginEntity = Relationship()
 

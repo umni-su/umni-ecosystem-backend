@@ -17,7 +17,7 @@ from typing import Optional, List
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.permissions.permission_decorators import get_permission_categories
-from database.session import write_session
+from database.session import write_session, read_session
 from entities.permission import PermissionEntity
 from entities.user import UserEntity
 from models.pagination_model import PageParams
@@ -33,7 +33,7 @@ class PermissionRepository(BaseRepository):
 
     @classmethod
     def get_permissions(cls, params: PageParams):
-        with write_session() as session:
+        with read_session() as session:
             return cls.paginate(
                 session=session,
                 page_params=params,
@@ -41,7 +41,7 @@ class PermissionRepository(BaseRepository):
 
     @classmethod
     def get_all_permissions(cls):
-        with write_session() as session:
+        with read_session() as session:
             try:
                 permissions = session.exec(
                     select(PermissionEntity).order_by(
@@ -75,7 +75,7 @@ class PermissionRepository(BaseRepository):
 
     @classmethod
     def get_permission_by_id(cls, permission_id: int) -> Optional[PermissionModel]:
-        with write_session() as session:
+        with read_session() as session:
             try:
                 return PermissionModel.model_validate(
                     session.get(PermissionEntity, permission_id).to_dict(
