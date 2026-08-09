@@ -15,13 +15,12 @@ from models.device_scan_model import DeviceScanModelNetwork, DeviceScanModel
 from models.plugin_model import PluginModel
 from models.sensor_model import SensorModelWithDevice
 from plugins.base_plugin import BasePlugin, BasePluginConfig
-from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands, Capability, PortOptionBase
-from plugins.core.umni_mdns.classes.device_synchronizer import DeviceSynchronizer
-from plugins.core.umni_mdns.classes.mds_scanner import MDNSScanner
-from plugins.core.umni_mdns.classes.syslog_listener import SyslogListener, SyslogMessage
-from plugins.core.umni_mdns.models.mdns_models import MDNSScanResult, MDNSDevice
+from plugins.core.umni_devices.classes.device_rest_commands import DeviceRestCommands, Capability, PortOptionBase
+from plugins.core.umni_devices.classes.device_synchronizer import DeviceSynchronizer
+from plugins.core.umni_devices.classes.mds_scanner import MDNSScanner
+from plugins.core.umni_devices.classes.syslog_listener import SyslogListener, SyslogMessage
+from plugins.core.umni_devices.models.mdns_models import MDNSScanResult, MDNSDevice
 from repositories.device_repository import DeviceRepository
-from repositories.sensor_repository import SensorRepository
 
 
 class UmniMdnsConfig(BasePluginConfig):
@@ -29,17 +28,19 @@ class UmniMdnsConfig(BasePluginConfig):
     service_type: str = "_umni_api._tcp.local."
     health_check_interval: int = 30  # Интервал проверки статуса (сек)
     offline_timeout: int = 300  # Через сколько секунд считать устройство оффлайн
-    syslog_port: int = 514
     syslog_addr: str = "0.0.0.0"
+    syslog_port: int = 514
 
     def __init__(self, **data):
         super().__init__(**data)
         self.model_fields['service_type'].description = _('Service type')
         self.model_fields['health_check_interval'].description = _('Health check interval')
         self.model_fields['offline_timeout'].description = _('Offline timeout (seconds)')
+        self.model_fields['syslog_port'].description = _('Syslog port')
+        self.model_fields['syslog_addr'].description = _('Syslog address')
 
 
-class UmniMdnsPlugin(BasePlugin):
+class UmniDevicesPlugin(BasePlugin):
     """Плагин для мониторинга mDNS устройств UMNI"""
 
     config_class = UmniMdnsConfig

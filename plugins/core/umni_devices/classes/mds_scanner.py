@@ -5,8 +5,8 @@ from datetime import datetime
 from zeroconf import ServiceBrowser, ServiceListener, Zeroconf
 
 from classes.logger.logger import logger
-from plugins.core.umni_mdns.models.mdns_models import MDNSScanResult, MDNSDevice
-from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands
+from plugins.core.umni_devices.models.mdns_models import MDNSScanResult, MDNSDevice
+from plugins.core.umni_devices.classes.device_rest_commands import DeviceRestCommands
 
 
 class MDNSScanner(ServiceListener):

@@ -2,13 +2,13 @@ import socket
 import threading
 import json
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional
 from dataclasses import dataclass
 import time
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
-from plugins.core.umni_mdns.classes.device_rest_commands import Capability, SettingCapability
+from plugins.core.umni_devices.classes.device_rest_commands import Capability, SettingCapability
 
 
 @dataclass
