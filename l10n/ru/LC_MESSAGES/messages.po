@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-09 13:59+0300\n"
+"POT-Creation-Date: 2026-08-09 18:15+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -119,21 +119,74 @@ msgstr "Форматировать сообщений как HTML"
 msgid "Send notifications via Matrix chat protocol"
 msgstr "Отправка уведомлений через протокол Matrix"
 
-#: classes/notifications/via/telegram_notification.py:30
+#: classes/notifications/via/telegram_notification.py:44
 msgid "Telegram Configuration"
 msgstr "Конфигурация Telegram"
 
-#: classes/notifications/via/telegram_notification.py:32
+#: classes/notifications/via/telegram_notification.py:46
 msgid "Bot name"
 msgstr "Имя бота"
 
-#: classes/notifications/via/telegram_notification.py:39
+#: classes/notifications/via/telegram_notification.py:53
 msgid "Bot token"
 msgstr "Токен бота"
 
 #: classes/notifications/via/telegram_notification.py:57
+msgid "Telegram API ID (https://my.telegram.org -> API development tools)"
+msgstr "Telegram API ID (https://my.telegram.org -> Инструменты разработчика API)"
+
+#: classes/notifications/via/telegram_notification.py:65
+msgid "Telegram API hash (https://my.telegram.org -> API development tools)"
+msgstr "Telegram API hash (https://my.telegram.org -> Инструменты разработчика API)"
+
+#: classes/notifications/via/telegram_notification.py:69
+msgid "Proxy type used to reach Telegram (MTProxy or SOCKS5)"
+msgstr "Тип прокси для доступа к Telegram (MTProxy или SOCKS5)"
+
+#: classes/notifications/via/telegram_notification.py:73
+msgid "Proxy host"
+msgstr "Хост прокси"
+
+#: classes/notifications/via/telegram_notification.py:77
+msgid "Proxy port"
+msgstr "Порт прокси"
+
+#: classes/notifications/via/telegram_notification.py:85
+msgid "MTProxy secret (32 hex chars, or 32 zeros if the proxy has no secret)"
+msgstr "Секрет MTProxy (32 hex-символа; 32 нуля, если у прокси нет секрета)"
+
+#: classes/notifications/via/telegram_notification.py:93
+msgid "Proxy username (SOCKS5 auth)"
+msgstr "Логин прокси (авторизация SOCKS5)"
+
+#: classes/notifications/via/telegram_notification.py:101
+msgid "Proxy password (SOCKS5 auth)"
+msgstr "Пароль прокси (авторизация SOCKS5)"
+
+#: classes/notifications/via/telegram_notification.py:105
+msgid "MTProxy connection protocol (RandomizedIntermediate is preferred)"
+msgstr "Протокол соединения MTProxy (рекомендуется RandomizedIntermediate)"
+
+#: classes/notifications/via/telegram_notification.py:140
 msgid "Send notifications via Telegram bot"
 msgstr "Отправка уведомлений через Telegram"
+
+#: classes/notifications/via/telegram_notification.py:175
+msgid "Proxy host and port are required when proxy is enabled"
+msgstr "Хост и порт прокси обязательны, если прокси включен"
+
+#: classes/notifications/via/telegram_notification.py:201
+msgid "Telegram API ID and API hash are required"
+msgstr "Требуются Telegram API ID и API hash"
+
+#: classes/notifications/via/telegram_notification.py:258
+#: classes/notifications/via/telegram_notification.py:328
+msgid "Bot token is required"
+msgstr "Требуется токен бота"
+
+#: classes/notifications/via/telegram_notification.py:332
+msgid "Recipient (to) is required"
+msgstr "Требуется получатель (to)"
 
 #: classes/rules/rule_conditions.py:80
 msgid "Availability"

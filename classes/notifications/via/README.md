@@ -72,6 +72,41 @@ class CustomNotification(BaseRegisteredNotification):
 NotificationFactory.register_notification(CustomNotification)
 ```
 
+# Касательно интеграции Telegram (MTProto + MTProxy)
+
+Уведомления через Telegram отправляются через **Telethon** (MTProto), поэтому поддерживается работа через **MTProxy** и **SOCKS5** прокси. `pyTelegramBotAPI` (Bot API) больше не используется.
+
+## Настройка формы уведомления (options)
+
+- `bot_name` — имя бота (любое).
+- `bot_token` — токен бота от @BotFather (хранится зашифрованным).
+- `api_id` / `api_hash` — получить на https://my.telegram.org -> "API development tools".
+  Они не секретны, но привязаны к вашему аккаунту разработчика и нужны для MTProto.
+- `proxy_type` — `off` / `mtproxy` / `socks5`.
+- `proxy_host` / `proxy_port` — адрес и порт прокси.
+- `proxy_secret` — секрет MTProxy (32 hex-символа). Если у прокси нет секрета —
+  вводить не нужно (используются 32 нуля).
+- `proxy_username` / `proxy_password` — авторизация на SOCKS5 (если требуется).
+- `connection_type` — протокол MTProxy:
+  - `randomized_intermediate` (по умолчанию, рекомендуется),
+  - `intermediate`,
+  - `abridged`.
+
+## Пример строки для MTProxy
+
+```
+mtproxy.example.com:2002  secret=0123456789abcdef0123456789abcdef
+```
+
+В форме: `proxy_type=mtproxy`, `proxy_host=mtproxy.example.com`, `proxy_port=2002`,
+`proxy_secret=0123456789abcdef0123456789abcdef`.
+
+## Session-файлы
+
+Telethon сохраняет авторизацию в `storage/sessions/telegram_<hash>.session`
+(по одному файлу на бота). Каталог игнорируется git. При смене прокси/секрета
+для того же бота можно удалить соответствующий `.session`, чтобы пересоздать.
+
 # Касательно интеграции Matrix
 
 0) создать бота в synapse admin
