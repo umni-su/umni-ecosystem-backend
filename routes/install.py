@@ -40,7 +40,6 @@ def install_ecosystem(body: InstallBody, response: Response):
     try:
         ecosystem = get_ecosystem()
         account: AccountBody = body.account
-        mqtt: MqttBody = body.mqtt
         a_password = Hasher.hash(account.password)
         a_password_confirm = account.passwordConfirm
         if len(a_password_confirm) >= 6 \

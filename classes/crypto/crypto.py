@@ -33,7 +33,7 @@ class Crypto:
         key = settings.ENCRYPTION_KEY
 
         if key:
-            Logger.info(f"Encryption key loaded from environment variable {cls._key_env_var}", LoggerType.APP)
+            # Logger.info(f"Encryption key loaded from environment variable {cls._key_env_var}", LoggerType.APP)
             return key
 
         # Проверяем файл (обратная совместимость)

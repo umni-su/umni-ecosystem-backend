@@ -80,7 +80,7 @@ class LifespanManager:
     async def lifespan(self, app: FastAPI) -> AsyncIterator[None]:
         """Lifespan handler для FastAPI"""
         # Startup
-        MigrationManager.run_migrations()
+
         ecosystem = Ecosystem()
         ecosystem.register_non_auto_subscribers()
         ecosystem.start_background_tasks()

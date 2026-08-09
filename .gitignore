@@ -27,3 +27,5 @@ plugins/custom/**/
 logs
 
 .ecosystem.key
+
+opencode.json

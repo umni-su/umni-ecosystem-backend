@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import time
 from datetime import datetime
-from typing import Union, Optional, Any
+from typing import Union, Any
 
 from classes.devices.device_registry import device_registry
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
@@ -23,8 +23,8 @@ from classes.logger.logger_types import LoggerType
 from models.device_model_relations import DeviceModelWithRelations
 from models.device_netif import DeviceNetifBase
 from models.sensor_model import SensorModelWithDevice, SensorUpdateModel, SensorCreateModel
-from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands, SettingCapability
-from plugins.core.umni_mdns.models.mdns_models import MDNSDevice
+from plugins.core.umni_devices.classes.device_rest_commands import DeviceRestCommands, SettingCapability
+from plugins.core.umni_devices.models.mdns_models import MDNSDevice
 from repositories.device_repository import DeviceRepository
 from repositories.sensor_repository import SensorRepository
 

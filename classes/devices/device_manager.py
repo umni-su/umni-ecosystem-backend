@@ -21,8 +21,6 @@ from classes.devices.device_registry import device_registry
 from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 from classes.devices.device_source_enum import DeviceSource, DeviceFeature
 from models.device_model_relations import DeviceModelWithRelations
-from plugins.core.umni_mdns.classes.device_options import DeviceOutputOptions
-from plugins.core.umni_mdns.classes.device_rest_commands import DeviceRestCommands
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem

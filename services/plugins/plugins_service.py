@@ -268,7 +268,7 @@ class PluginsService(BaseService):
                         author=plugin_class.plugin_config_model.author,
                         active=plugin_class.is_core,
                         is_core=plugin_class.is_core,
-                        status="running" if plugin_class.is_core else plugin_update.status
+                        status="running" if plugin_class.is_core else "stopped"
                     )
                     session.add(new_plugin)
                     Logger.info(f"Created database entry for plugin {plugin_name}", LoggerType.PLUGINS)

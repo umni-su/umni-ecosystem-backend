@@ -15,7 +15,16 @@
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import configure_mappers
+from starlette.responses import PlainTextResponse
+
+from classes.app.validation_error_handler import ValidationErrorHandler
+from database.migrations import MigrationManager
+
+configure_mappers()
+
+MigrationManager.run_migrations()
 
 from classes.app.lifespan_manager import lifespan_manager
 from config.settings import settings
@@ -41,7 +50,6 @@ from routes.settings import settings as router_settings
 
 from services.cameras.classes.stream_registry import StreamRegistry
 
-configure_mappers()
 app = FastAPI(
     lifespan=lifespan_manager.lifespan,
     root_path=settings.API_ROOT
@@ -83,6 +91,8 @@ app.include_router(router_settings)
 app.include_router(systeminfo)
 app.include_router(users)
 app.include_router(websockets)
+
+app.add_exception_handler(RequestValidationError, ValidationErrorHandler.handle)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, lifespan='on')

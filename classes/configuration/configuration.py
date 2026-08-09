@@ -110,13 +110,10 @@ class EcosystemDatabaseConfiguration:
         self.groups.append(mqtt_group)
 
     def reread(self):
-        with write_session() as sess:
-            all_config = sess.exec(
-                select(ConfigurationEntity)
-            ).all()
-            self.db_config = [ConfigurationModel.model_validate(conf.to_dict()) for conf in all_config]
-            self.check_and_create_configuration_values()
-            self.is_installed()
+        self._refresh_db_config()
+        self.check_and_create_configuration_values()
+        self._refresh_db_config()  # Обновляем после создания
+        self.is_installed()
         self._after_reread()
         self.prepare_groups()
 
@@ -130,13 +127,24 @@ class EcosystemDatabaseConfiguration:
         conf = self.get_setting(ConfigurationKeys.APP_INSTALLED)
         if conf is None:
             return False
-        return conf.value.lower() == 'true'
+        return conf.value.lower() == 'true' if conf.value is not None else False
+
+    def _refresh_db_config(self):
+        with write_session() as sess:
+            all_config = sess.exec(
+                select(ConfigurationEntity)
+            ).all()
+            self.db_config = [ConfigurationModel.model_validate(conf.to_dict()) for conf in all_config]
 
     def check_and_create_configuration_values(self):
         created: [str] = []
         with write_session() as session:
             for _key in ConfigurationKeys:
-                if not self.exists(_key):
+                # Используем прямой запрос к БД, а не self.exists()
+                existing = session.exec(
+                    select(ConfigurationEntity).where(ConfigurationEntity.key == _key)
+                ).first()
+                if not existing:
                     value = None
                     if _key == ConfigurationKeys.APP_DEVICE_SYNC_TIMEOUT:
                         value = str(5)
@@ -144,7 +152,7 @@ class EcosystemDatabaseConfiguration:
                     conf.key = _key
                     conf.value = value
                     session.add(conf)
-                    created.append(_key)
+                    created.append(_key.value)  # Исправлено: берем значение enum
             if len(created) > 0:
                 Logger.debug(f'Created {len(created)} items: {",".join(created)}', LoggerType.APP)
 

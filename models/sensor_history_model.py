@@ -14,11 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from typing import Optional
-
 from pydantic import BaseModel
-
-from plugins.core.umni_mdns.classes.device_rest_commands import Capability
 
 
 class SensorHistoryModel(BaseModel):
