@@ -51,7 +51,7 @@ class ConfigurationRepository(BaseRepository):
                                 session.add(config_orm)
                 except Exception as e:
                     Logger.err(f'ConfigurationRepository->save_ecosystem_configuration: {str(e)}')
-                    return None
+                    raise
             eco.config.reread()
             return eco.config.groups
         except Exception as e:

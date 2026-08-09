@@ -89,7 +89,9 @@ class StorageRepository(BaseRepository):
         with write_session() as sess:
             try:
                 cls.path_exists(model.path)
-                storage = cls.get_storage(model.id)
+                storage = sess.get(StorageEntity, model.id)
+                if not storage:
+                    return None
                 storage.name = model.name
                 storage.path = model.path
                 storage.active = model.active
@@ -106,8 +108,8 @@ class StorageRepository(BaseRepository):
     def delete_storage(cls, storage_id: int):
         with write_session() as sess:
             try:
-                storage = cls.get_storage(storage_id)
-                if isinstance(storage, StorageEntity):
+                storage = sess.get(StorageEntity, storage_id)
+                if storage is not None:
                     sess.delete(storage)
                     sess.commit()
                 return SuccessResponse(success=True)

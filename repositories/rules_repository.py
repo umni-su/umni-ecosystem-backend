@@ -153,8 +153,6 @@ class RulesRepository(BaseRepository):
 
                 # Добавляем новые узлы
                 for node in graph_data.nodes:
-                    if node.key == RuleNodeTypeKeys.ACTION_WEBHOOK:
-                        print(node.data.model_dump(), node_data.model_dump_json(), "\r\n")
                     node_data = NodeDataWithList(**node.data.model_dump())
 
                     # Определяем entity_type и entity_id

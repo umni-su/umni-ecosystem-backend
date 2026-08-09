@@ -91,17 +91,19 @@ class UserRepository(BaseRepository):
                     user_db.username = user.username
                     user_db.firstname = user.firstname
                     user_db.lastname = user.lastname
-                    if user_db.change_password:
-                        session.add(user_db)
-                        session.commit()
-                        session.refresh(user_db)
-                        return UserResponseOut.model_validate(
-                            user_db.to_dict(
-                                include_relationships=True
-                            )
+                    if user.change_password:
+                        # TODO смена пароля пользователя
+                        pass
+                    session.add(user_db)
+                    session.commit()
+                    session.refresh(user_db)
+                    return UserResponseOut.model_validate(
+                        user_db.to_dict(
+                            include_relationships=True
                         )
+                    )
             except Exception as e:
-                Logger.err(f'Error create user: {str(e)}', LoggerType.USERS)
+                Logger.err(f'Error update user: {str(e)}', LoggerType.USERS)
 
     @classmethod
     def delete_user(cls, user_id: int) -> bool:

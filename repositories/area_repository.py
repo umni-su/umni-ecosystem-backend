@@ -127,7 +127,7 @@ class CameraAreaRepository(BaseRepository):
     def delete_area(cls, area_id: int) -> list[CameraAreaBaseModel] | None:
         with write_session() as session:
             try:
-                area = cls.get_area(area_id)
+                area = session.get(CameraAreaEntity, area_id)
                 if not area:
                     raise HTTPException(status_code=404, detail="Area not found")
 
@@ -137,6 +137,8 @@ class CameraAreaRepository(BaseRepository):
                 camera = CameraRepository.get_camera(area.camera_id)
                 return camera.areas
 
+            except HTTPException:
+                raise
             except Exception as e:
                 session.rollback()
                 raise HTTPException(status_code=500, detail=str(e))

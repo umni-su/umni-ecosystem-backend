@@ -148,7 +148,8 @@ class CameraEventsRepository(BaseRepository):
                         select(CameraEventEntity).where(CameraEventEntity.camera_recording_id == recording.id)
                     ).all()
                     count = len(other_events_with_same_record)
-                    if count == 1 and recording.id == other_events_with_same_record[0].id:
+                    # Удаляем запись только если это последнее событие, ссылающееся на неё
+                    if count == 1:
                         sess.delete(recording)
                 sess.delete(event)
                 return True

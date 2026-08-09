@@ -21,7 +21,11 @@ from sqlalchemy import func
 class TimeStampMixin:
     created: datetime = Field(default_factory=datetime.now, nullable=False)
 
-    updated: datetime | None = Field(default_factory=datetime.now, nullable=False)
+    updated: datetime | None = Field(
+        default_factory=datetime.now,
+        nullable=False,
+        sa_column_kwargs={"onupdate": datetime.now}
+    )
 
     # @declared_attr
     # def created(self):

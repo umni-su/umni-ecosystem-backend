@@ -20,7 +20,6 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.log_entry import LogEntity
-from entities.notification import NotificationEntity
 from models.log_model import LogModel, LogPageParams
 from repositories.base_repository import BaseRepository
 from sqlalchemy.sql import or_
@@ -94,7 +93,7 @@ class LogRepository(BaseRepository):
     def delete_log(cls, log_id: int) -> bool:
         with write_session() as sess:
             try:
-                log_entity = sess.get(NotificationEntity, log_id)
+                log_entity = sess.get(LogEntity, log_id)
                 if not log_entity:
                     return False
 
