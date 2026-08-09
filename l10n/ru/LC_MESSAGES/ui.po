@@ -638,11 +638,17 @@ msgstr "Отправить"
 msgid "Saved"
 msgstr "Сохранено"
 
+msgid "Scan"
+msgstr "Сканировать"
+
 msgid "Search"
 msgstr "Поиск"
 
 msgid "Secondary stream"
 msgstr "Дополнительный поток"
+
+msgid "Select plugin"
+msgstr "Выберите плагин"
 
 msgid "Select date"
 msgstr "Выберите дату"
@@ -772,6 +778,9 @@ msgstr "Первая бесплатная экосистема контроля 
 
 msgid "There are no storages"
 msgstr "Нет хранилищ"
+
+msgid "No devices available. Start a scan to find devices."
+msgstr "Нет доступных устройств. Начните сканирование для поиска устройств."
 
 msgid "This device is probably disabled. Please check his condition."
 msgstr "Вероятно, это устройство отключено. Пожалуйста, проверьте его состояние."
@@ -904,3 +913,104 @@ msgstr "0 условий | {n} условие | {n} условия | {n} усл�
 
 msgid "{n} triggers"
 msgstr "{n} триггеров | {n} триггер | {n} триггера | {n} триггеров"
+
+# Validation messages
+msgid "validation.validation_error"
+msgstr "Ошибка валидации данных"
+
+msgid "validation.default"
+msgstr "Ошибка валидации"
+
+msgid "validation.string_type"
+msgstr "Поле должно быть строкой"
+
+msgid "validation.missing"
+msgstr "Обязательное поле"
+
+msgid "validation.greater_than"
+msgstr "Значение должно быть больше {gt}"
+
+msgid "validation.less_than"
+msgstr "Значение должно быть меньше {lt}"
+
+msgid "validation.int_parsing"
+msgstr "Должно быть целым числом"
+
+msgid "validation.float_parsing"
+msgstr "Должно быть числом"
+
+msgid "validation.email"
+msgstr "Некорректный email адрес"
+
+msgid "validation.value_error"
+msgstr "Ошибка значения"
+
+msgid "validation.url_scheme"
+msgstr "Неподдерживаемая схема URL. Ожидается: {expected_schemes}"
+
+msgid "validation.min_length"
+msgstr "Длина должна быть не менее {min_length} символов"
+
+msgid "validation.max_length"
+msgstr "Длина должна быть не более {max_length} символов"
+
+msgid "validation.pattern"
+msgstr "Некорректный формат"
+
+msgid "validation.equal_to"
+msgstr "Значение должно быть равно {equal_to}"
+
+msgid "validation.not_equal_to"
+msgstr "Значение не должно быть равно {not_equal_to}"
+
+msgid "validation.enum"
+msgstr "Допустимые значения: {enum_values}"
+
+msgid "validation.multiple_of"
+msgstr "Значение должно быть кратно {multiple_of}"
+
+msgid "validation.decimal_places"
+msgstr "Не более {decimal_places} знаков после запятой"
+
+# Специфичные для полей сообщения
+msgid "validation.field.account.email.string_type"
+msgstr "Email должен быть строкой"
+
+msgid "validation.field.account.email.email"
+msgstr "Введите корректный email адрес"
+
+msgid "validation.field.account.password.string_type"
+msgstr "Пароль должен быть строкой"
+
+msgid "validation.field.account.password.min_length"
+msgstr "Пароль должен содержать минимум {min_length} символов"
+
+msgid "validation.field.account.username.string_type"
+msgstr "Имя пользователя должно быть строкой"
+
+msgid "validation.field.account.username.pattern"
+msgstr "Имя пользователя может содержать только буквы и цифры"
+
+msgid "validation.field.account.username.min_length"
+msgstr "Имя пользователя должно содержать минимум {min_length} символов"
+
+msgid "validation.field.account.username.max_length"
+msgstr "Имя пользователя должно содержать максимум {max_length} символов"
+
+msgid "validation.field.account.firstname.string_type"
+msgstr "Имя должно быть строкой"
+
+msgid "validation.field.account.firstname.min_length"
+msgstr "Имя должно содержать минимум {min_length} символа"
+
+msgid "validation.field.account.lastname.string_type"
+msgstr "Фамилия должна быть строкой"
+
+msgid "validation.field.account.lastname.min_length"
+msgstr "Фамилия должна содержать минимум {min_length} символа"
+
+msgid "validation.field.account.passwordConfirm.string_type"
+msgstr "Подтверждение пароля должно быть строкой"
+
+msgid "validation.field.account.passwordConfirm.equal_to"
+msgstr "Пароли не совпадают"

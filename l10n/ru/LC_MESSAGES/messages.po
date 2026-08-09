@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-31 20:15+0300\n"
+"POT-Creation-Date: 2026-08-09 13:59+0300\n"
 "PO-Revision-Date: 2025-08-29 13:25+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru\n"
@@ -18,6 +18,10 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
+
+#: classes/app/validation_error_handler.py:109
+msgid "validation.validation_error"
+msgstr ""
 
 #: classes/configuration/configuration.py:47
 msgid "Base settings"
@@ -95,27 +99,23 @@ msgstr "Отображаемое имя"
 msgid "Send notifications via SMTP email"
 msgstr "Отправка сообщения через клиент SMTP"
 
-#: classes/notifications/via/matrix_notification.py:34
+#: classes/notifications/via/matrix_notification.py:31
 msgid "Matrix configuration"
 msgstr "Конфигурация Matrix"
 
-#: classes/notifications/via/matrix_notification.py:38
+#: classes/notifications/via/matrix_notification.py:35
 msgid "Matrix homeserver URL (e.g., https://matrix-client.matrix.org)"
 msgstr "Адрес сервера Matrix (прим., https://matrix-client.matrix.org)"
 
-#: classes/notifications/via/matrix_notification.py:42
-msgid "Room ID to send messages to (e.g., !abc123:matrix.org)"
-msgstr "Идентификатор комнаты to (прим., !abc123:matrix.org)"
-
-#: classes/notifications/via/matrix_notification.py:47
+#: classes/notifications/via/matrix_notification.py:40
 msgid "Matrix access token for authentication"
 msgstr "Токен доступа пользователя Matrix"
 
-#: classes/notifications/via/matrix_notification.py:51
+#: classes/notifications/via/matrix_notification.py:44
 msgid "Enable HTML formatting in messages"
 msgstr "Форматировать сообщений как HTML"
 
-#: classes/notifications/via/matrix_notification.py:69
+#: classes/notifications/via/matrix_notification.py:62
 msgid "Send notifications via Matrix chat protocol"
 msgstr "Отправка уведомлений через протокол Matrix"
 
@@ -215,17 +215,25 @@ msgstr "Пароли не совпадают"
 msgid "Password is required when changing password"
 msgstr "При смене пароля - пароль обязателен =)"
 
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:37
+#: plugins/core/umni_devices/umni_devices_plugin.py:36
 msgid "Service type"
 msgstr "Тип сервиса"
 
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:38
+#: plugins/core/umni_devices/umni_devices_plugin.py:37
 msgid "Health check interval"
-msgstr ""
+msgstr "Интервал проверки доступности"
 
-#: plugins/core/umni_mdns/umni_mdns_plugin.py:39
+#: plugins/core/umni_devices/umni_devices_plugin.py:38
 msgid "Offline timeout (seconds)"
-msgstr ""
+msgstr "Таймаут бездействия (секунды)"
+
+#: plugins/core/umni_devices/umni_devices_plugin.py:39
+msgid "Syslog port"
+msgstr "Syslog порт"
+
+#: plugins/core/umni_devices/umni_devices_plugin.py:40
+msgid "Syslog address"
+msgstr "Syslog адрес"
 
 #: repositories/rules_repository.py:96
 msgid "Rule not found"
@@ -359,7 +367,7 @@ msgstr "Позволить удалять разрешения"
 msgid "Rule deleted"
 msgstr "Правило удалено"
 
-#: routes/sensors.py:68
+#: routes/sensors.py:95
 msgid "Error getting sensors history"
 msgstr "Ошибка получения истории сенсоров"
 
@@ -417,4 +425,7 @@ msgstr "Нельзя удалить последнего пользовател�
 
 #~ msgid "Continuous scan"
 #~ msgstr "Периодическое сканирование"
+
+#~ msgid "Room ID to send messages to (e.g., !abc123:matrix.org)"
+#~ msgstr "Идентификатор комнаты to (прим., !abc123:matrix.org)"
 

@@ -514,6 +514,9 @@ msgstr "Save"
 msgid "Saved"
 msgstr "Saved"
 
+msgid "Scan"
+msgstr "Scan"
+
 msgid "Search"
 msgstr "Search"
 
@@ -522,6 +525,9 @@ msgstr "Secondary stream"
 
 msgid "Select date"
 msgstr "Select date"
+
+msgid "Select plugin"
+msgstr "Select plugin"
 
 msgid "Select entity"
 msgstr "Select entity"
@@ -634,6 +640,9 @@ msgstr "The first free open-source ecosystem of control of automation devices, a
 msgid "There are no storages"
 msgstr "There are no storages"
 
+msgid "No devices available. Start a scan to find devices."
+msgstr "No devices available. Start a scan to find devices."
+
 msgid "This device is probably disabled. Please check his condition."
 msgstr "This device is probably disabled. Please check his condition."
 
@@ -744,3 +753,104 @@ msgstr "{n} months"
 
 msgid "{n} year"
 msgstr "{n} year"
+
+# Validation messages
+msgid "validation.validation_error"
+msgstr "Validation error"
+
+msgid "validation.default"
+msgstr "Validation error"
+
+msgid "validation.string_type"
+msgstr "Should be a string"
+
+msgid "validation.missing"
+msgstr "Required field"
+
+msgid "validation.greater_than"
+msgstr "Value must be greater than {gt}"
+
+msgid "validation.less_than"
+msgstr "Value must be less than {lt}"
+
+msgid "validation.int_parsing"
+msgstr "Must be a valid integer"
+
+msgid "validation.float_parsing"
+msgstr "Must be a valid number"
+
+msgid "validation.email"
+msgstr "Invalid email address"
+
+msgid "validation.value_error"
+msgstr "Invalid value"
+
+msgid "validation.url_scheme"
+msgstr "Unsupported URL scheme. Expected: {expected_schemes}"
+
+msgid "validation.min_length"
+msgstr "Length must be at least {min_length} characters"
+
+msgid "validation.max_length"
+msgstr "Length must be at most {max_length} characters"
+
+msgid "validation.pattern"
+msgstr "Invalid format"
+
+msgid "validation.equal_to"
+msgstr "Value must be equal to {equal_to}"
+
+msgid "validation.not_equal_to"
+msgstr "Value must not be equal to {not_equal_to}"
+
+msgid "validation.enum"
+msgstr "Allowed values: {enum_values}"
+
+msgid "validation.multiple_of"
+msgstr "Value must be a multiple of {multiple_of}"
+
+msgid "validation.decimal_places"
+msgstr "No more than {decimal_places} decimal places"
+
+# Field-specific messages
+msgid "validation.field.account.email.string_type"
+msgstr "Email must be a string"
+
+msgid "validation.field.account.email.email"
+msgstr "Please enter a valid email address"
+
+msgid "validation.field.account.password.string_type"
+msgstr "Password must be a string"
+
+msgid "validation.field.account.password.min_length"
+msgstr "Password must be at least {min_length} characters"
+
+msgid "validation.field.account.username.string_type"
+msgstr "Username must be a string"
+
+msgid "validation.field.account.username.pattern"
+msgstr "Username can only contain letters and numbers"
+
+msgid "validation.field.account.username.min_length"
+msgstr "Username must be at least {min_length} characters"
+
+msgid "validation.field.account.username.max_length"
+msgstr "Username must be at most {max_length} characters"
+
+msgid "validation.field.account.firstname.string_type"
+msgstr "First name must be a string"
+
+msgid "validation.field.account.firstname.min_length"
+msgstr "First name must be at least {min_length} characters"
+
+msgid "validation.field.account.lastname.string_type"
+msgstr "Last name must be a string"
+
+msgid "validation.field.account.lastname.min_length"
+msgstr "Last name must be at least {min_length} characters"
+
+msgid "validation.field.account.passwordConfirm.string_type"
+msgstr "Password confirmation must be a string"
+
+msgid "validation.field.account.passwordConfirm.equal_to"
+msgstr "Passwords do not match"
