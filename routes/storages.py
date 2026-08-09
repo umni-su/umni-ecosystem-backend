@@ -57,7 +57,7 @@ def update_storage(
 
 
 @storages.delete('/{storage_id}', response_model=SuccessResponse)
-def update_storage(
+def delete_storage(
         storage_id: int,
         user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
 ):
