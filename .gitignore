@@ -26,6 +26,8 @@ plugins/custom/**/
 
 logs
 
+/env_config/*
+
 .ecosystem.key
 
 opencode.json

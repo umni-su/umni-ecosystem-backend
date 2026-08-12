@@ -14,16 +14,20 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import uvicorn
+
 from fastapi import FastAPI
+
+from classes.crypto.crypto import Crypto
+
+Crypto.create_key()
+
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import configure_mappers
-from starlette.responses import PlainTextResponse
 
 from classes.app.validation_error_handler import ValidationErrorHandler
 from database.migrations import MigrationManager
 
 configure_mappers()
-
 MigrationManager.run_migrations()
 
 from classes.app.lifespan_manager import lifespan_manager

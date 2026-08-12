@@ -32,52 +32,59 @@ class Crypto:
         """Получает ключ из переменной окружения"""
         key = settings.ENCRYPTION_KEY
 
-        if key:
-            # Logger.info(f"Encryption key loaded from environment variable {cls._key_env_var}", LoggerType.APP)
+        if key is not None:
+            Logger.info(f"Encryption key loaded from environment variable {cls._key_env_var}", LoggerType.APP)
             return key
 
-        # Проверяем файл (обратная совместимость)
-        key_file = os.getenv(cls._key_env_var)
-        if key_file and Path(key_file).exists():
-            Logger.info(f"Encryption key loaded from file: {key_file}", LoggerType.APP)
-            with open(key_file, 'r') as f:
-                return f.read().strip()
+        return cls._generate_and_save_key_to_env()
 
-        # Если ключа нет - генерируем и сохраняем
+    @classmethod
+    def create_key(cls) -> str:
         return cls._generate_and_save_key_to_env()
 
     @classmethod
     def _generate_and_save_key_to_env(cls, force: bool = False) -> str:
-        if settings.ENCRYPTION_KEY is None or force:
+        if settings.ENCRYPTION_KEY is None or settings.ENCRYPTION_KEY == '' or force:
+
             """Генерирует новый ключ и добавляет в .env файл"""
             new_key = Fernet.generate_key().hex()
 
             # Добавляем ключ в .env файл
-            env_path = Path('.env')
+            env_path = Path('./env_config/.env').resolve()
 
             try:
-                # Читаем существующий .env
-                if env_path.exists():
-                    with open(env_path, 'r', encoding='utf-8') as f:
-                        lines = f.readlines()
-                else:
-                    lines = []
+                # Если файла вообще нет, создаем его пустым, чтобы r+ сработал
+                if not env_path.exists():
+                    env_path.touch()
 
-                # Проверяем есть ли уже ENCRYPTION_KEY
-                key_found = False
-                for i, line in enumerate(lines):
-                    if line.startswith('ENCRYPTION_KEY='):
-                        lines[i] = f'ENCRYPTION_KEY={new_key}\n'
-                        key_found = True
-                        break
+                # Открываем файл в режиме r+ (чтение и запись без удаления/пересоздания inode)
+                with open(env_path, 'r+', encoding='utf-8') as f:
+                    lines = f.readlines()
 
-                # Если нет - добавляем в конец
-                if not key_found:
-                    lines.append(f'ENCRYPTION_KEY={new_key}\n')
+                    # Проверяем, есть ли уже ENCRYPTION_KEY
+                    key_found = False
+                    for i, line in enumerate(lines):
+                        if line.startswith('ENCRYPTION_KEY='):
+                            lines[i] = f'ENCRYPTION_KEY={new_key}\n'
+                            key_found = True
+                            break
 
-                # Записываем обратно
-                with open(env_path, 'w', encoding='utf-8') as f:
+                    # Если нет - добавляем в конец
+                    if not key_found:
+                        if lines and not lines[-1].endswith('\n'):
+                            lines.append('\n')  # Перенос строки, если его не было
+                        lines.append(f'ENCRYPTION_KEY={new_key}\n')
+
+                    # Сбрасываем указатель в начало файла
+                    f.seek(0)
+                    # Записываем обновленные строки поверх старых
                     f.writelines(lines)
+                    # Обрезаем остатки старого контента, если новый файл стал меньше
+                    f.truncate()
+
+                    # Принудительно заставляем Docker и ОС синхронизировать файл с хостом
+                    f.flush()
+                    os.fsync(f.fileno())
 
                 Logger.info(f"Generated new encryption key and saved to .env file", LoggerType.APP)
                 return new_key
@@ -119,8 +126,9 @@ class Crypto:
             cls._generate_and_save_key_to_env(force=True)
             Logger.err(f"Decryption error, generate new key force: {e}", LoggerType.APP, with_db=True)
         except Exception as e:
-            cls._generate_and_save_key_to_env(force=True)
-            Logger.err(f"Decryption error, generate new key force: {e}", LoggerType.APP, with_db=True)
+            # cls._generate_and_save_key_to_env(force=True)
+            Logger.err(f"Decryption error, {e}", LoggerType.APP, with_db=True)
+            # Logger.err(f"Decryption error, generate new key force: {e}", LoggerType.APP, with_db=True)
 
     @classmethod
     def get_key_string(cls):

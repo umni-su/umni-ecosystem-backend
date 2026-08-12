@@ -12,7 +12,7 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from pathlib import Path
 from urllib.parse import quote_plus
 
 from pydantic import PostgresDsn
@@ -51,7 +51,8 @@ class Settings(BaseSettings):
         )
 
     class Config:
-        env_file = ".env"
+        # env_file = ".env"
+        env_file = "env_config/.env"
         env_file_encoding = "utf-8"
         case_sensitive = True
 
