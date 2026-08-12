@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+ENV/
+
+# Build artifacts
+out/
+dist/
+build/
+
+# VCS / IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.md
+LICENSE
+NOTICE
+
+# Environment & secrets
+.env
+env_config/.env.template
+.ecosystem.key
+*.key
+
+# Runtime data / logs
+logs/
+data/
+storage/
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
