@@ -236,7 +236,7 @@ class UmniDevicesPlugin(BasePlugin):
                 Logger.debug("No devices in DB to sync")
                 return
 
-            Logger.info(f"Syncing {len(devices)} devices from database")
+            Logger.debug(f"Syncing {len(devices)} devices from database")
 
             for device in devices:
                 # Проверяем, есть ли уже такое устройство в сканере
@@ -297,6 +297,10 @@ class UmniDevicesPlugin(BasePlugin):
                 if self._executor._shutdown:
                     Logger.debug("Executor shut down, exiting health check")
                     break
+
+                # Восстанавливаем в сканер устройства, зарегистрированные через
+                # REST после старта плагина (раньше это делалось только в execute()).
+                self._sync_devices_from_db()
 
                 devices = self.get_plugin_devices()
                 self._check_devices_parallel(devices)

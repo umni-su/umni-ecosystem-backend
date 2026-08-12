@@ -21,6 +21,7 @@ from fastapi.params import Query
 from classes.auth.auth import Auth
 from classes.charts.chart_sensor_history import SensorHistoryChart
 from classes.devices.device_manager import device_manager
+from classes.devices.device_sensor_type_enum import DeviceSensorTypeEnum
 
 from classes.l10n.l10n import _
 from classes.storages.device_storage import device_storage
@@ -37,6 +38,13 @@ sensors = APIRouter(
     prefix='/sensors',
     tags=['sensors']
 )
+
+
+@sensors.get('/types')
+def get_sensor_types(
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    return DeviceSensorTypeEnum.get_ui_schema()
 
 
 @sensors.get('/{id}')

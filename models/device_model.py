@@ -37,6 +37,7 @@ class DeviceModel(DeviceModelMain):
     total_heap: int | None = None
     fw_ver: str | None = None
     capabilities: list[str] | None = None
+    meta: dict | None = None
     last_sync: datetime | None = None
     created: datetime | None = None
     updated: datetime | None = None

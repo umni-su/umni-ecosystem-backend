@@ -4,6 +4,9 @@ msgstr ""
 "Language: ru\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid "Add device"
+msgstr "Добавить устройство"
+
 msgid "Access control"
 msgstr "Контроль доступа"
 
@@ -216,6 +219,9 @@ msgstr "Обнаружение"
 
 msgid "Device"
 msgstr "Устройство"
+
+msgid "Device added successfully"
+msgstr "Устройство успешно добавлено"
 
 msgid "Device info"
 msgstr "Информация об устройстве"
@@ -739,6 +745,57 @@ msgstr "Файл подкачки"
 
 msgid "Switch"
 msgstr "Выключатель"
+
+msgid "AI"
+msgstr "Аналоговый вход"
+
+msgid "Alarm"
+msgstr "Тревога"
+
+msgid "Battery"
+msgstr "Батарея"
+
+msgid "Brightness"
+msgstr "Яркость"
+
+msgid "CO2"
+msgstr "CO2"
+
+msgid "Color"
+msgstr "Цвет"
+
+msgid "Color Temp"
+msgstr "Цветовая температура"
+
+msgid "Contact"
+msgstr "Контакт"
+
+msgid "Current"
+msgstr "Ток"
+
+msgid "Energy"
+msgstr "Энергия"
+
+msgid "Fan"
+msgstr "Вентилятор"
+
+msgid "Illuminance"
+msgstr "Освещённость"
+
+msgid "Lock"
+msgstr "Замок"
+
+msgid "Motion"
+msgstr "Движение"
+
+msgid "NTC"
+msgstr "NTC"
+
+msgid "Power"
+msgstr "Мощность"
+
+msgid "Voltage"
+msgstr "Напряжение"
 
 msgid "Switch to drawing mode"
 msgstr "Переключиться в режим рисования"

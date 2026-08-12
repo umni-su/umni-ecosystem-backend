@@ -275,7 +275,8 @@ class PluginsService(BaseService):
                 else:
                     plugin_update = PluginRepository.get_plugin_by_name(plugin_name)
                     plugin_update.is_core = plugin_class.is_core
-                    plugin_update.active = plugin_class.is_core
+                    # НЕ сбрасываем active: пользователь мог включить пользовательский плагин.
+                    # Иначе active перезаписывается значением is_core (False) при каждом рестарте.
                     plugin_update.status = "running" if plugin_class.is_core else plugin_update.status
                     plugin_update.display_name = plugin_class.plugin_config_model.display_name
                     PluginRepository.update_plugin(plugin_update.id, plugin_update)
@@ -514,21 +515,39 @@ class PluginsService(BaseService):
                 if not plugin_entity:
                     return False
 
-                # Валидация конфигурации
+                current_config = plugin_entity.config or {}
+                new_config = new_config or {}
+
+                # Валидация и нормализация конфигурации:
+                #  - для sensitive полей (ключи/секреты) сохраняем прежнее зашифрованное
+                #    значение, если фронт прислал маску '********' или тот же шифртекст;
+                #  - сохраняем в БД результат валидации (зашифрованный dump), а не сырой ввод.
                 if plugin_name in self._plugin_classes:
                     plugin_class = self._plugin_classes[plugin_name]
-                    temp_instance = plugin_class(PluginModel.model_validate(plugin_entity))
-                    if not temp_instance.validate_config(new_config):
+                    config_class = plugin_class.config_class
+                    try:
+                        processed = self._process_sensitive_fields(
+                            config_class, new_config, current_config
+                        )
+                        config_instance = config_class.model_validate(processed)
+                        save_config = config_instance.model_dump()
+                    except Exception as e:
+                        Logger.err(
+                            f"Plugin {plugin_name} config validation failed: {e}",
+                            LoggerType.PLUGINS
+                        )
                         return False
+                else:
+                    save_config = new_config
 
                 # Сохраняем новую конфигурацию
-                plugin_entity.config = new_config
+                plugin_entity.config = save_config
                 session.add(plugin_entity)
                 session.commit()
 
             # Обновляем конфигурацию запущенного плагина
             if plugin_name in self._plugins:
-                self._plugins[plugin_name].on_config_update(new_config)
+                self._plugins[plugin_name].on_config_update(save_config)
 
             Logger.info(f"Plugin {plugin_name} config updated", LoggerType.PLUGINS)
             # return self.refresh_plugin(plugin_name)
@@ -537,6 +556,34 @@ class PluginsService(BaseService):
         except Exception as e:
             Logger.err(f"Error updating plugin config {plugin_name}: {str(e)}", LoggerType.PLUGINS)
             return False
+
+    @staticmethod
+    def _process_sensitive_fields(
+            config_class,
+            new_config: dict,
+            current_config: dict,
+    ) -> dict:
+        """Для sensitive полей сохраняем прежнее зашифрованное значение.
+
+        Фронт присылает маску '********' или прежний шифртекст (gAAAAA...),
+        чтобы не перезаписывать секрет. В этом случае берём текущее значение из БД.
+        """
+        result = new_config.copy()
+        for field_name, field_info in config_class.model_fields.items():
+            extra = field_info.json_schema_extra or {}
+            if not extra.get('sensitive'):
+                continue
+
+            new_value = new_config.get(field_name)
+            current_value = current_config.get(field_name)
+
+            if (isinstance(new_value, str) and
+                    isinstance(current_value, str) and
+                    current_value.startswith('gAAAAA') and
+                    (new_value == '********' or new_value == current_value)):
+                result[field_name] = current_value
+
+        return result
 
     def toggle_plugin(self, plugin_name: str, active: bool) -> bool:
         """Включение/выключение плагина"""

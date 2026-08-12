@@ -83,6 +83,12 @@ class DeviceBase:
         default=None,
         nullable=True,
     )
+    meta: Optional[dict] = Field(
+        sa_type=JSON,
+        default=None,
+        nullable=True,
+        description="Дополнительные данные плагина (например, зашифрованный local_key Tuya)"
+    )
 
 
 class DeviceEntity(

@@ -14,6 +14,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from fastapi import UploadFile
+from sqlalchemy import or_
 from sqlalchemy.orm import contains_eager
 from sqlmodel import select, col
 
@@ -80,7 +81,12 @@ class DeviceRepository(BaseRepository):
     def get_device_by_name(cls, name: str):
         with read_session() as sess:
             try:
-                q = select(DeviceEntity).where(col(DeviceEntity.name) == name)
+                q = select(DeviceEntity).where(
+                    or_(
+                        col(DeviceEntity.name) == name,
+                        col(DeviceEntity.external_id) == name,
+                    )
+                )
                 device_orm = sess.exec(q).first()
                 if isinstance(device_orm, DeviceEntity):
                     return DeviceModelWithRelations.model_validate(
@@ -88,6 +94,40 @@ class DeviceRepository(BaseRepository):
                             include_relationships=True
                         )
                     )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def get_device_by_external_id(cls, external_id: str):
+        with read_session() as sess:
+            try:
+                q = select(DeviceEntity).where(col(DeviceEntity.external_id) == external_id)
+                device_orm = sess.exec(q).first()
+                if isinstance(device_orm, DeviceEntity):
+                    return DeviceModelWithRelations.model_validate(
+                        device_orm.to_dict(
+                            include_relationships=True
+                        )
+                    )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
+    def update_device_meta(cls, device_id: int, meta: dict):
+        """Обновить meta устройства (данные плагина)."""
+        with write_session() as sess:
+            try:
+                device = sess.get(DeviceEntity, device_id)
+                if device is None:
+                    return None
+                device.meta = meta
+                sess.add(device)
+                sess.flush()
+                return DeviceModelWithRelations.model_validate(
+                    device.to_dict(
+                        include_relationships=True
+                    )
+                )
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
 

@@ -184,6 +184,43 @@ class DeviceManager:
             return False
         return self.registry.update_sensor_value(sensor.id, value)
 
+    def turn_on(self, sensor_id: int) -> bool:
+        """Включить устройство (сенсор переключателя)"""
+        return self._set_sensor_bool(sensor_id, True)
+
+    def turn_off(self, sensor_id: int) -> bool:
+        """Выключить устройство (сенсор переключателя)"""
+        return self._set_sensor_bool(sensor_id, False)
+
+    def toggle(self, sensor_id: int) -> bool:
+        """Переключить состояние устройства (сенсор переключателя)"""
+        sensor = self.get_sensor(sensor_id)
+        if not sensor or not sensor.device:
+            return False
+        return self._set_sensor_bool(sensor_id, not self._value_as_bool(sensor.value))
+
+    @staticmethod
+    def _value_as_bool(value: Any) -> bool:
+        """Интерпретация хранимого значения сенсора как bool (для toggle)."""
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return False
+        if isinstance(value, (int, float)):
+            return value != 0
+        return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+    def _set_sensor_bool(self, sensor_id: int, value: bool) -> bool:
+        """Отправить bool-команду через плагин, управляющий сенсором."""
+        sensor = self.get_sensor(sensor_id)
+        if not isinstance(sensor, SensorModelWithDevice) or not sensor.device:
+            return False
+        if not isinstance(sensor.device, DeviceModelMain):
+            return False
+
+        plugin, _ = self._get_plugin_for_device(sensor.device_id)
+        return plugin.set_sensor_value(sensor=sensor, value=value)
+
     def locate_device(self, device_id: int) -> bool:
         plugin, device = self._get_plugin_for_device(device_id)
 

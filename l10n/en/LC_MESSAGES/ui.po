@@ -4,6 +4,9 @@ msgstr ""
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 
+msgid "Add device"
+msgstr "Добавить устройство"
+
 msgid "Access control"
 msgstr "Access control"
 
@@ -174,6 +177,9 @@ msgstr "Detection"
 
 msgid "Device"
 msgstr "Device"
+
+msgid "Device added successfully"
+msgstr "Device added successfully"
 
 msgid "Device info"
 msgstr "Device info"
@@ -630,6 +636,57 @@ msgstr "Take screenshot"
 
 msgid "Telegram"
 msgstr "Telegram"
+
+msgid "AI"
+msgstr "AI"
+
+msgid "Alarm"
+msgstr "Alarm"
+
+msgid "Battery"
+msgstr "Battery"
+
+msgid "Brightness"
+msgstr "Brightness"
+
+msgid "CO2"
+msgstr "CO2"
+
+msgid "Color"
+msgstr "Color"
+
+msgid "Color Temp"
+msgstr "Color temperature"
+
+msgid "Contact"
+msgstr "Contact"
+
+msgid "Current"
+msgstr "Current"
+
+msgid "Energy"
+msgstr "Energy"
+
+msgid "Fan"
+msgstr "Fan"
+
+msgid "Illuminance"
+msgstr "Illuminance"
+
+msgid "Lock"
+msgstr "Lock"
+
+msgid "Motion"
+msgstr "Motion"
+
+msgid "NTC"
+msgstr "NTC"
+
+msgid "Power"
+msgstr "Power"
+
+msgid "Voltage"
+msgstr "Voltage"
 
 msgid "Temperature"
 msgstr "Temperature"
