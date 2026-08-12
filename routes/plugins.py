@@ -583,6 +583,40 @@ async def register_scanned_device(
         raise HTTPException(500, str(e))
 
 
+@plugins.post("/{plugin_id}/sensors/cleanup")
+async def cleanup_plugin_sensors(
+        plugin_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)]
+):
+    """
+    Удалить мусорные сенсоры плагина из БД (разовый запуск).
+    Плагин должен реализовать метод cleanup_sensors().
+    """
+    try:
+        ecosystem = get_ecosystem()
+        plugin_service: "PluginsService" = ecosystem.service_runner.get_service_by_name('plugins')
+
+        plugin = PluginRepository.get_plugin(plugin_id)
+        if not plugin:
+            raise HTTPException(404, "Plugin not found")
+
+        plugin_instance = plugin_service.get_plugin_by_name(plugin.name)
+        if not plugin_instance:
+            raise HTTPException(400, "Plugin is not running")
+
+        if not hasattr(plugin_instance, 'cleanup_sensors'):
+            raise HTTPException(400, "Plugin does not support sensor cleanup")
+
+        result = plugin_instance.cleanup_sensors()
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        Logger.err(f"Cleanup error: {e}", LoggerType.PLUGINS)
+        raise HTTPException(500, f"Cleanup failed: {str(e)}")
+
+
 @plugins.get("/{plugin_id}/schema")
 async def get_plugin_schema(
         plugin_id: int,

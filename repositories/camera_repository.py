@@ -68,7 +68,7 @@ class CameraRepository(BaseRepository):
             try:
                 camera = cls.prepare_camera(model, CameraEntity())
                 sess.add(camera)
-                sess.flush()
+                ### sess.commit()
 
                 return CameraModelWithRelations.model_validate(
                     camera.to_dict(

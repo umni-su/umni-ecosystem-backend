@@ -38,6 +38,8 @@ class DeviceModel(DeviceModelMain):
     fw_ver: str | None = None
     capabilities: list[str] | None = None
     meta: dict | None = None
+    widget_type: str | None = None
+    widget_name: str | None = None
     last_sync: datetime | None = None
     created: datetime | None = None
     updated: datetime | None = None
@@ -46,3 +48,5 @@ class DeviceModel(DeviceModelMain):
 class DeviceUpdateModel(BaseModel):
     id: int | None = None
     title: str | None = None
+    widget_type: str | None = None
+    widget_name: str | None = None

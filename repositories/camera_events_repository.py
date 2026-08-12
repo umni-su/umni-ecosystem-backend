@@ -116,7 +116,7 @@ class CameraEventsRepository(BaseRepository):
             try:
                 event.end = datetime.now()
                 sess.add(event)
-                sess.flush()
+                ### sess.commit()
 
                 return event
             except Exception as e:

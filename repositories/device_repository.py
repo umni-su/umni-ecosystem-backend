@@ -12,6 +12,7 @@
 #  #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from typing import Optional
 
 from fastapi import UploadFile
 from sqlalchemy import or_
@@ -122,7 +123,7 @@ class DeviceRepository(BaseRepository):
                     return None
                 device.meta = meta
                 sess.add(device)
-                sess.flush()
+                ### sess.commit()
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
                         include_relationships=True
@@ -146,13 +147,36 @@ class DeviceRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
+    def update_device_widget_type(cls, device_id: int, widget_type: Optional[str]):
+        """Обновить тип виджета устройства (задаётся плагином при синхронизации)."""
+        with write_session() as sess:
+            try:
+                device = sess.get(DeviceEntity, device_id)
+                if device is None:
+                    return None
+                device.widget_type = widget_type
+                sess.add(device)
+                sess.commit()
+                return DeviceModelWithRelations.model_validate(
+                    device.to_dict(
+                        include_relationships=True
+                    )
+                )
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+
+    @classmethod
     def update_device(cls, device_id: int, model: DeviceUpdateModel):
         with write_session() as sess:
             try:
                 device = sess.get(DeviceEntity, device_id)
                 device.title = model.title
+                if model.widget_type is not None:
+                    device.widget_type = model.widget_type
+                if model.widget_name is not None:
+                    device.widget_name = model.widget_name
                 sess.add(device)
-                sess.flush()
+                ### sess.commit()
 
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
@@ -176,7 +200,7 @@ class DeviceRepository(BaseRepository):
                 )
                 device.photo = photo
                 sess.add(device)
-                sess.flush()
+                ### sess.commit()
 
                 return DeviceModelWithRelations.model_validate(
                     device.to_dict(
@@ -207,7 +231,7 @@ class DeviceRepository(BaseRepository):
                 db_ni.gw = ni.gw
 
                 sess.add(db_ni)
-                sess.flush()
+                ### sess.commit()
 
                 return DeviceNetif.model_validate(
                     db_ni.to_dict(

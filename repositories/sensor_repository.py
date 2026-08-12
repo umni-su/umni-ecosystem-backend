@@ -114,7 +114,7 @@ class SensorRepository(BaseRepository):
                     model.model_dump()
                 )
                 sess.add(sensor)
-                sess.flush()
+                ### sess.commit()
                 return cls._return_sensor_with_relations(sensor)
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
@@ -135,7 +135,7 @@ class SensorRepository(BaseRepository):
                         sensor.photo = photo
 
                     sess.add(sensor)
-                    sess.flush()
+                    ### sess.commit()
 
                     return SensorModel.model_validate(
                         sensor.to_dict()

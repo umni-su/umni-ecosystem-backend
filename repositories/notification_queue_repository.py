@@ -138,7 +138,7 @@ class NotificationQueueRepository(BaseRepository):
                 )
 
                 sess.add(queue_item)
-                sess.flush()
+                ### sess.commit()
                 return NotificationQueueModel.model_validate(queue_item.to_dict())
 
             except Exception as e:
@@ -176,7 +176,7 @@ class NotificationQueueRepository(BaseRepository):
                     queue_item.options = model.options
 
                 sess.add(queue_item)
-                sess.flush()
+                ### sess.commit()
                 return NotificationQueueModel.model_validate(queue_item.to_dict())
 
             except Exception as e:

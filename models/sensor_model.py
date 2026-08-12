@@ -31,6 +31,7 @@ class SensorCreateModel(BaseModel):
     capability: str
     identifier: str
     active: bool
+    role: Optional[str] = None
     name: Optional[str] = None
     visible_name: Optional[str] = None
     options: Optional[dict] = None

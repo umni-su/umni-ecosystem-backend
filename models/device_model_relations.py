@@ -14,11 +14,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from typing import Optional
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, computed_field
 from models.device_model import DeviceModel
 from models.device_netif import DeviceNetif
 from models.plugin_model import PluginModelDevice
 from models.sensor_model import SensorModel
+from models.widget_model import WidgetDescriptor
+from classes.devices.device_widget_service import build_widget
 
 
 class DeviceModelWithSensors(DeviceModel):
@@ -37,3 +39,14 @@ class DeviceModelWithRelations(DeviceModelWithSensors, DeviceModelWithNetif, Dev
     model_config = ConfigDict(
         from_attributes=True
     )
+
+    @computed_field
+    @property
+    def widget(self) -> Optional[WidgetDescriptor]:
+        """Составной виджет устройства (вычисляется из сенсоров на каждый запрос)."""
+        return build_widget(
+            widget_type=self.widget_type,
+            widget_name=self.widget_name,
+            device_name=self.title or self.name,
+            sensors=self.sensors or [],
+        )

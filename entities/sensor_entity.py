@@ -49,6 +49,11 @@ class SensorBase:
         index=True,
         default=True
     )
+    role: str | None = Field(
+        index=True,
+        nullable=True,
+        description="Семантическая роль сенсора (power, brightness, color, mode, ...)"
+    )
     name: str = Field(
         nullable=True
     )

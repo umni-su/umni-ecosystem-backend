@@ -106,7 +106,7 @@ class RulesRepository(BaseRepository):
             try:
                 db_rule = RuleEntity.model_validate(rule_data)
                 sess.add(db_rule)
-                sess.flush()
+                ### sess.commit()
                 # Добавляем стартовый узел
                 start_node = RuleNode(
                     id=time.time(),
@@ -127,7 +127,7 @@ class RulesRepository(BaseRepository):
                     ).model_dump()
                 )
                 sess.add(start_node)
-                sess.flush()
+                ### sess.commit()
 
                 return RuleModel.model_validate(
                     db_rule.to_dict(

@@ -89,6 +89,15 @@ class DeviceBase:
         nullable=True,
         description="Дополнительные данные плагина (например, зашифрованный local_key Tuya)"
     )
+    widget_type: str | None = Field(
+        index=True,
+        nullable=True,
+        description="Тип виджета устройства (light_rgbcw, switch, thermostat, ...). Задаётся плагином при синхронизации"
+    )
+    widget_name: str | None = Field(
+        nullable=True,
+        description="Пользовательское имя виджета (Лампа, Мой котёл, ...)"
+    )
 
 
 class DeviceEntity(

@@ -195,11 +195,11 @@ class TelegramNotification(BaseRegisteredNotification):
 
     def _build_client(self, options: 'TelegramOptionsModel') -> TelegramClient:
         """Создает TelegramClient для отправки (клиент создается на каждый вызов)"""
+
         api_id = options.api_id
         api_hash = options.decrypted_api_hash
         if not api_id or not api_hash:
             raise ValueError(_("Telegram API ID and API hash are required"))
-
         bot_token = options.decrypted_bot_token or ''
         return TelegramClient(
             self._session_path(bot_token),

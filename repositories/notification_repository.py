@@ -72,7 +72,7 @@ class NotificationRepository(BaseRepository):
                 notification_entity.options = model.options if model.options else None
 
                 sess.add(notification_entity)
-                sess.flush()
+                ### sess.commit()
 
                 return NotificationModel.model_validate(
                     notification_entity.to_dict()
@@ -104,7 +104,7 @@ class NotificationRepository(BaseRepository):
                 notification_entity.options = processed_options
 
                 sess.add(notification_entity)
-                sess.flush()
+                ### sess.commit()
 
                 # Обновляем приоритет для уведомлений при смене статуса активности. -1 - уведомления не попадут в выборку в сервисе
                 NotificationQueueRepository.update_notifications_priority_batch(

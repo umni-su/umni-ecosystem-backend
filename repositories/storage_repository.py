@@ -76,7 +76,7 @@ class StorageRepository(BaseRepository):
                 storage.path = model.path
                 storage.active = model.active
                 sess.add(storage)
-                sess.flush()
+                ### sess.commit()
                 return StorageModel.model_validate(
                     storage.to_dict()
                 )
@@ -95,7 +95,7 @@ class StorageRepository(BaseRepository):
                 storage.path = model.path
                 storage.active = model.active
                 sess.add(storage)
-                sess.flush()
+                ### sess.commit()
                 return StorageModel.model_validate(
                     storage.to_dict()
                 )

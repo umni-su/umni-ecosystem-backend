@@ -93,7 +93,7 @@ class PluginRepository(BaseRepository):
                 plugin_entity.error_message = model.error_message
 
                 sess.add(plugin_entity)
-                sess.flush()
+                ### sess.commit()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
@@ -123,7 +123,7 @@ class PluginRepository(BaseRepository):
                 plugin_entity.is_core = model.is_core
 
                 sess.add(plugin_entity)
-                sess.flush()
+                ### sess.commit()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
@@ -147,7 +147,7 @@ class PluginRepository(BaseRepository):
                         setattr(plugin_entity, field, value)
 
                 sess.add(plugin_entity)
-                sess.flush()
+                ### sess.commit()
 
                 return PluginModel.model_validate(
                     plugin_entity.to_dict()
