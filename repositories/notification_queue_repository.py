@@ -138,7 +138,8 @@ class NotificationQueueRepository(BaseRepository):
                 )
 
                 sess.add(queue_item)
-                ### sess.commit()
+                sess.commit()
+                sess.refresh(queue_item)
                 return NotificationQueueModel.model_validate(queue_item.to_dict())
 
             except Exception as e:
