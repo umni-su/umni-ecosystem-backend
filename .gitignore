@@ -26,7 +26,11 @@ plugins/custom/**/
 
 logs
 
-/env_config/*
+/env_config/**/
+/env_config/.env
+/env_config/.env.prod
+/env_config/.env.production
+!/env_config/.env.template
 
 .ecosystem.key
 
