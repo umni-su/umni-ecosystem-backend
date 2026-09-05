@@ -17,6 +17,8 @@ from enum import StrEnum
 
 
 class EventType(StrEnum):
+    DEVICE_ONLINE = "device.online"
+    DEVICE_OFFLINE = "device.offline"
     DEVICE_CHANGE_STATE = "device.change.state"
     SENSOR_CHANGE_STATE = "sensor.change.state"
     SENSOR_SET_STATE = "sensor.set.state"

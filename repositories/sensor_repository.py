@@ -29,7 +29,7 @@ from entities.sensor_entity import SensorEntity
 from entities.sensor_history import SensorHistory
 from models.pagination_model import PageParams
 from models.sensor_model import SensorModel, SensorModelWithDevice, SensorCreateModel, \
-    SensorUpdateModelUi
+    SensorUpdateModelUi, SensorUpdateModel
 from repositories.base_repository import BaseRepository
 from starlette.status import HTTP_404_NOT_FOUND
 
@@ -120,12 +120,22 @@ class SensorRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
-    def update_sensor(cls, model: SensorUpdateModelUi):
+    def update_sensor(cls, model: SensorUpdateModelUi | SensorUpdateModel):
         with write_session() as sess:
             try:
                 sensor = sess.get(SensorEntity, model.id)
                 if isinstance(sensor, SensorEntity):
                     sensor.visible_name = model.visible_name
+
+                    if isinstance(model, SensorUpdateModel):
+                        sensor.value = str(model.value)
+                        sensor.options = model.options
+                        sensor.capability = model.capability
+                        sensor.identifier = model.identifier
+                        sensor.active = model.active
+                        sensor.device_id = model.device_id
+                        sensor.type = model.type.value
+                        # TODO other fields
 
                     if model.photo is not None:
                         photo = device_storage.sensor_cover_upload(

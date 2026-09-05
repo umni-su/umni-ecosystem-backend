@@ -24,9 +24,11 @@ pybabel init -i ./templates/messages.pot -d l10n -l en
 #1) Move to l10n plugin directory
 cd plugins/custom/{plugin_name}/l10n
 
+pybabel extract -i ./templates/messages.pot ../
+
 #2) Update
 pybabel update -i ./templates/messages.pot -d .
 
 #3) Compile
-pybabel init -i ./templates/messages.pot -d l10n -l en
+pybabel compile -d . -D messages
 ```

@@ -72,6 +72,7 @@ class SensorBase:
     icon: Optional[str] = Field(
         nullable=True
     )
+    # TODO maybe convert values by sensor type?
     value: Optional[str] | None = Field(
         nullable=True
     )

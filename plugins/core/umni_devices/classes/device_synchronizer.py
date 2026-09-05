@@ -158,6 +158,21 @@ class DeviceSynchronizer:
                             )
 
                         time.sleep(1)
+                    case SettingCapability.OPENCOLLECTORS:
+                        res = self.api.get_opencollectors_info()
+                        if not res.success:
+                            return
+                        for s in res.data.opencollectors:
+                            identifier = f'oc{(s.index + 1)}'
+                            self._update_or_create_sensor(
+                                identifier=identifier,
+                                name=s.label,
+                                capability=SettingCapability.OPENCOLLECTORS.value,
+                                stype=DeviceSensorTypeEnum.SWITCH,
+                                active=s.active,
+                                options={'index': s.index, 'port': s.index}
+                            )
+                        time.sleep(1)
                     case SettingCapability.INPUTS:
                         res = self.api.get_inputs_info()
                         if not res.success:
@@ -202,21 +217,6 @@ class DeviceSynchronizer:
                                 stype=DeviceSensorTypeEnum.FLOAT,
                                 active=s.active,
                                 options={'id': s.id}
-                            )
-                        time.sleep(1)
-                    case SettingCapability.OPENCOLLECTORS:
-                        res = self.api.get_opencollectors_info()
-                        if not res.success:
-                            return
-                        for s in res.data.opencollectors:
-                            identifier = f'oc{(s.index + 1)}'
-                            self._update_or_create_sensor(
-                                identifier=identifier,
-                                name=s.label,
-                                capability=SettingCapability.OPENCOLLECTORS.value,
-                                stype=DeviceSensorTypeEnum.SWITCH,
-                                active=s.active,
-                                options={'index': s.index}
                             )
                         time.sleep(1)
                     case SettingCapability.RF433:

@@ -17,6 +17,8 @@ from enum import StrEnum
 
 
 class WebsocketMessageTopicEnum(StrEnum):
+    DEVICE_ONLINE = 'device.online'
+    DEVICE_OFFLINE = 'device.offline'
     DETECTION_START = 'detection.start'
     DETECTION_END = 'detection.end'
     STORAGE_SIZE = 'storage.size'

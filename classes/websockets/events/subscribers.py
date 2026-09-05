@@ -15,8 +15,11 @@
 
 from classes.events.event_bus import event_handler, event_bus
 from classes.events.event_types import EventType
+from classes.websockets.messages.ws_message_device_onoff import WebsocketMessageDeviceOnline, \
+    WebsocketMessageDeviceOffline
 from classes.websockets.messages.ws_message_rule_executed import WebsocketMessageRuleExecuted
 from classes.websockets.websockets import WebSockets
+from models.device_model import DeviceModel
 from models.rule_model import NodeVisualize, EdgeCreate
 
 
@@ -30,5 +33,23 @@ def on_rule_executed(rule_id: int, nodes: list[NodeVisualize], edges: list[EdgeC
     )
 
 
+def on_device_online(device: DeviceModel):
+    WebSockets.send_broadcast(
+        WebsocketMessageDeviceOnline(
+            device=device
+        )
+    )
+
+
+def on_device_offline(device: DeviceModel):
+    WebSockets.send_broadcast(
+        WebsocketMessageDeviceOffline(
+            device=device
+        )
+    )
+
+
 def register_non_auto_subscribers():
+    event_bus.subscribe(EventType.DEVICE_ONLINE, on_device_online)
+    event_bus.subscribe(EventType.DEVICE_OFFLINE, on_device_offline)
     event_bus.subscribe(EventType.RULE_EXECUTED, on_rule_executed)

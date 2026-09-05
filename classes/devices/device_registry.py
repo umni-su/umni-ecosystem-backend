@@ -19,12 +19,15 @@ from typing import Any, Optional, List, Dict
 
 from sqlmodel import col
 
+from classes.events.event_bus import event_bus
+from classes.events.event_types import EventType
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session
 from entities.device import DeviceEntity
 from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.sensor_entity import SensorEntity
+from models.device_model import DeviceModel
 from models.device_model_relations import DeviceModelWithRelations
 from models.device_scan_model import DeviceScanModel
 from repositories.sensor_repository import SensorRepository
@@ -371,14 +374,19 @@ class DeviceRegistry:
                     )
                     return False
 
-                device.online = False
+                if device.online is True:
+                    device.online = False
+                    session.commit()
+                    event_bus.publish(
+                        EventType.DEVICE_OFFLINE, device=DeviceModel.model_validate(
+                            device.to_dict()
+                        )
+                    )
 
-                session.commit()
-
-                Logger.debug(
-                    f"Device set offline: {name} (id={device.id})",
-                    LoggerType.DEVICES
-                )
+                    Logger.debug(
+                        f"💔 Device set offline: {name} (id={device.id}, state={device.online})",
+                        LoggerType.DEVICES
+                    )
                 return True
 
             except Exception as e:
@@ -407,15 +415,22 @@ class DeviceRegistry:
                     )
                     return False
 
-                device.online = True
-                device.last_sync = datetime.now()
+                if device.online is False:
+                    device.online = True
+                    device.last_sync = datetime.now()
 
-                session.commit()
+                    session.commit()
 
-                Logger.debug(
-                    f"Device set online: {name} (id={device.id})",
-                    LoggerType.DEVICES
-                )
+                    event_bus.publish(
+                        EventType.DEVICE_ONLINE, device=DeviceModel.model_validate(
+                            device.to_dict()
+                        )
+                    )
+
+                    Logger.debug(
+                        f"💚 Device set online: {name} (id={device.id})",
+                        LoggerType.DEVICES
+                    )
                 return True
 
             except Exception as e:
