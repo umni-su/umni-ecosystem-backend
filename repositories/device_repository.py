@@ -133,6 +133,18 @@ class DeviceRepository(BaseRepository):
                 Logger.err(str(e), LoggerType.APP)
 
     @classmethod
+    def delete_device(cls, device_id: int):
+        with write_session() as sess:
+            try:
+                device = sess.get(DeviceEntity, device_id)
+                sess.delete(device)
+                return True
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+                return False
+        return False
+
+    @classmethod
     def get_device_by_plugin_id(cls, plugin_id: int):
         with read_session() as sess:
             try:

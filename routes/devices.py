@@ -89,6 +89,19 @@ def update_device(
         Logger.err(str(e), LoggerType.APP)
 
 
+@devices.delete('/{device_id}')
+def delete_device(
+        device_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    try:
+        res = DeviceRepository.delete_device(device_id)
+        return SuccessResponse(success=res)
+
+    except Exception as e:
+        Logger.err(str(e), LoggerType.APP)
+
+
 @devices.post('/{device_id}/cover')
 def update_device_cover(
         device_id: int,
