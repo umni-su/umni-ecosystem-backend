@@ -117,7 +117,7 @@ class CameraRepository(BaseRepository):
             camera.storage_id = model.storage_id
             camera.name = model.name
             camera.active = model.active
-            camera.alerts = model.active
+            camera.alerts = model.alerts
             camera.record = model.record
             camera.record_mode = model.record_mode.value
             camera.record_duration = model.record_duration
