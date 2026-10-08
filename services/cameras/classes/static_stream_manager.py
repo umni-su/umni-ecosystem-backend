@@ -19,7 +19,6 @@ import cv2
 import asyncio
 import threading
 
-from classes.app.lifespan_manager import lifespan_manager
 from repositories.camera_repository import CameraRepository
 from services.cameras.classes.stream_registry import StreamRegistry
 from services.cameras.utils.cameras_helpers import get_no_signal_frame
@@ -46,6 +45,7 @@ class StaticStreamManager:
         self._active_streams[camera_id] = True
 
         try:
+            from classes.app.lifespan_manager import lifespan_manager
             while (self._active_streams.get(camera_id, False) and
                    retry_count < max_retries and
                    not lifespan_manager.is_shutting_down):
