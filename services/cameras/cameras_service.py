@@ -38,6 +38,7 @@ class CamerasService(BaseService):
 
     def cameras_list_task(self):
         while True:
+            # TODO не запрашивать из БД, а удалять камеру и добавлять из REST
             self.cameras = CameraRepository.get_cameras()
             for cam in self.cameras:
                 current_stream = StreamRegistry.find_by_camera(cam)  # Используем StreamRegistry
