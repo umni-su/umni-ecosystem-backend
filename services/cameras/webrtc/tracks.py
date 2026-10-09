@@ -15,30 +15,30 @@
 
 import asyncio
 import time
-from typing import Optional
 
 import av
-import cv2
 from aiortc import AudioStreamTrack, VideoStreamTrack
 from aiortc.mediastreams import AUDIO_PTIME, MediaStreamError
 
-from classes.logger.logger import Logger
-from classes.logger.logger_types import LoggerType
-from services.cameras.utils.cameras_helpers import get_no_signal_frame
 from services.cameras.webrtc.media_hub import (
     AUDIO_SAMPLE_RATE,
     AUDIO_TIME_BASE,
-    VIDEO_CLOCK_RATE,
-    VIDEO_TIME_BASE,
     CameraMediaHub,
 )
 
-# Как часто отдавать «нет сигнала», если кадры не приходят (сек)
-PLACEHOLDER_INTERVAL = 1.0
+# Кадр Opus: 20 мс при 48 кГц, s16 stereo.
+AUDIO_SAMPLES_PER_FRAME = int(AUDIO_PTIME * AUDIO_SAMPLE_RATE)  # 960
+AUDIO_FRAME_BYTES = AUDIO_SAMPLES_PER_FRAME * 2 * 2
+# Предел внутреннего буфера (~1 с), чтобы не расти бесконечно при отставании.
+AUDIO_BUFFER_MAX_BYTES = AUDIO_SAMPLE_RATE * 2 * 2
 
 
 class HubVideoTrack(VideoStreamTrack):
-    """Видео-трек зрителя, читающий кадры из общего hub'а камеры."""
+    """Видео-трек зрителя, читающий кадры из общего hub'а камеры.
+
+    Отдаёт только реальные кадры: заглушку «нет сигнала» рисует фронтенд,
+    поэтому здесь ждём кадр из hub'а без вставки заглушки в поток.
+    """
 
     kind = "video"
 
@@ -46,40 +46,11 @@ class HubVideoTrack(VideoStreamTrack):
         super().__init__()
         self.hub = hub
         self.queue = hub.subscribe_video()
-        self._t0 = time.monotonic()
-        self._placeholder_cache: dict[tuple[int, int], av.VideoFrame] = {}
 
     async def recv(self) -> av.VideoFrame:
         if self.readyState != "live":
             raise MediaStreamError
-        try:
-            return await asyncio.wait_for(self.queue.get(), timeout=PLACEHOLDER_INTERVAL)
-        except asyncio.TimeoutError:
-            return self._placeholder()
-
-    def _placeholder(self) -> av.VideoFrame:
-        width, height = self.hub.get_target_size()
-        frame = self._placeholder_cache.get((width, height))
-        if frame is None:
-            frame = self._build_placeholder(width, height)
-            self._placeholder_cache[(width, height)] = frame
-        frame.pts = int((time.monotonic() - self._t0) * VIDEO_CLOCK_RATE)
-        frame.time_base = VIDEO_TIME_BASE
-        return frame
-
-    @staticmethod
-    def _build_placeholder(width: int, height: int) -> av.VideoFrame:
-        try:
-            image = get_no_signal_frame(width=width)
-            if image is None or getattr(image, 'size', 0) == 0:
-                image = None
-        except Exception:
-            image = None
-        if image is None:
-            image = av.VideoFrame(width=width, height=height)
-            return image.reformat(format='yuv420p')
-        image = cv2.resize(image, (width, height))
-        return av.VideoFrame.from_ndarray(image, format='bgr24').reformat(format='yuv420p')
+        return await self.queue.get()
 
     async def close(self) -> None:
         try:
@@ -90,7 +61,12 @@ class HubVideoTrack(VideoStreamTrack):
 
 
 class HubAudioTrack(AudioStreamTrack):
-    """Аудио-трек зрителя. При отсутствии кадров отдаёт тишину."""
+    """Аудио-трек зрителя.
+
+    Кадры декодера приходят неровно (пачками), а Opus-сендер aiortc для
+    аудио не спит сам — поэтому пейсим recv по стенным часам (20 мс) и выдаём
+    ровно по 960 сэмплов 48 кГц s16 stereo. Недобор добиваем тишиной.
+    """
 
     kind = "audio"
 
@@ -98,26 +74,52 @@ class HubAudioTrack(AudioStreamTrack):
         super().__init__()
         self.hub = hub
         self.queue = hub.subscribe_audio()
-        self._silence_samples = 0
+        self._pcm = bytearray()
+        self._start: float | None = None
+        self._timestamp = 0
 
     async def recv(self) -> av.AudioFrame:
         if self.readyState != "live":
             raise MediaStreamError
-        try:
-            return await asyncio.wait_for(self.queue.get(), timeout=AUDIO_PTIME)
-        except asyncio.TimeoutError:
-            return self._silence()
 
-    def _silence(self) -> av.AudioFrame:
-        samples = int(AUDIO_PTIME * AUDIO_SAMPLE_RATE)
-        frame = av.AudioFrame(format='s16', layout='stereo', samples=samples)
-        for plane in frame.planes:
-            plane.update(bytes(plane.buffer_size))
+        await self._pace()
+        self._drain()
+        chunk = self._take(AUDIO_FRAME_BYTES)
+
+        frame = av.AudioFrame(format='s16', layout='stereo', samples=AUDIO_SAMPLES_PER_FRAME)
+        frame.planes[0].update(chunk)
         frame.sample_rate = AUDIO_SAMPLE_RATE
-        frame.pts = self._silence_samples
+        frame.pts = self._timestamp
         frame.time_base = AUDIO_TIME_BASE
-        self._silence_samples += samples
         return frame
+
+    async def _pace(self) -> None:
+        if self._start is None:
+            self._start = time.time()
+            return
+        self._timestamp += AUDIO_SAMPLES_PER_FRAME
+        wait = self._start + self._timestamp / AUDIO_SAMPLE_RATE - time.time()
+        if wait > 0:
+            await asyncio.sleep(wait)
+
+    def _drain(self) -> None:
+        while True:
+            try:
+                frame = self.queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+            self._pcm.extend(bytes(frame.planes[0]))
+        if len(self._pcm) > AUDIO_BUFFER_MAX_BYTES:
+            del self._pcm[:len(self._pcm) - AUDIO_BUFFER_MAX_BYTES]
+
+    def _take(self, size: int) -> bytes:
+        if len(self._pcm) >= size:
+            chunk = bytes(self._pcm[:size])
+            del self._pcm[:size]
+            return chunk
+        chunk = bytes(self._pcm) + bytes(size - len(self._pcm))
+        self._pcm.clear()
+        return chunk
 
     async def close(self) -> None:
         try:
