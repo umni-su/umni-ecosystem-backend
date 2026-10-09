@@ -32,7 +32,8 @@ class StreamState(Enum):
 
 
 class StreamRegistry:
-    _streams: List["CameraStream"] = []
+    # Индекс потоков по id камеры: O(1) поиск вместо линейного скана
+    _streams: dict[int, "CameraStream"] = {}
     _lock = threading.Lock()
     _state = StreamState.RUNNING
     _restart_callbacks = []
@@ -76,26 +77,22 @@ class StreamRegistry:
     @classmethod
     def add_stream(cls, stream: "CameraStream") -> None:
         with cls._lock:
-            cls._streams.append(stream)
+            cls._streams[stream.id] = stream
 
     @classmethod
     def remove_stream(cls, stream: "CameraStream") -> None:
         with cls._lock:
-            if stream in cls._streams:
-                cls._streams.remove(stream)
+            cls._streams.pop(stream.id, None)
 
     @classmethod
     def find_by_camera(cls, camera: "CameraModelWithRelations") -> Optional["CameraStream"]:
         with cls._lock:
-            for stream in cls._streams:
-                if stream.id == camera.id:
-                    return stream
-            return None
+            return cls._streams.get(camera.id)
 
     @classmethod
     def get_all_streams(cls) -> List["CameraStream"]:
         with cls._lock:
-            return cls._streams.copy()
+            return list(cls._streams.values())
 
     @classmethod
     def stop_all_streams(cls):
