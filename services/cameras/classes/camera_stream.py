@@ -126,11 +126,12 @@ class CameraStream:
         self.last_heartbeat_check = 0
         self.restart_delay = 3  # Задержка между попытками перезапуска (сек)
         self.last_restart_time = 0
+        self.stop_join_timeout = 6  # Ожидание завершения потока камеры при остановке (сек)
 
         # For permanent events
         self.permanent_event: Optional["CameraEventModel"] = None
 
-        self._container_lock = threading.Lock()
+        self._container_lock = threading.RLock()
 
         # Атрибуты для асинхронной генерации
         self.frame_queue = queue.Queue(maxsize=2)  # Буфер на 2 кадра
@@ -316,9 +317,10 @@ class CameraStream:
             self._create_input_container()
 
     def stop_input_container(self):
-        if self.input_container is not None:
-            self.input_container.close()
-            self.input_container = None
+        with self._container_lock:
+            if self.input_container is not None:
+                self.input_container.close()
+                self.input_container = None
 
     def is_record_permanent(self):
         return self.is_video_mode() or self.is_screenshots_mode()
@@ -396,6 +398,10 @@ class CameraStream:
             return False
 
     def destroy_output_container(self):
+        with self._container_lock:
+            self._destroy_output_container_locked()
+
+    def _destroy_output_container_locked(self):
         if self.output_container is None:
             return
 
@@ -432,6 +438,10 @@ class CameraStream:
             self.permanent_event = None
 
     def create_output_container(self, path: str):
+        with self._container_lock:
+            return self._create_output_container_locked(path)
+
+    def _create_output_container_locked(self, path: str):
         # не стартуем, если поток должен быть закрыт (exit приложения)
         if not self.opened:
             return
@@ -613,10 +623,9 @@ class CameraStream:
                     # Читаем пакеты вместо фреймов для лучшей синхронизации
                     for packet in self.input_container.demux():
                         self.check_heartbeat()  # Проверка между пакетами
-                        if not self.camera.active and not self.opened:
-                            break
 
-                        if not self.camera.active and not self.opened:
+                        # Быстрый выход по запросу остановки или закрытию потока
+                        if self._stop_requested or not self.opened:
                             break
 
                         if self.need_skip or self.need_restart:
@@ -624,6 +633,8 @@ class CameraStream:
 
                         # Демультиплексируем пакеты в фреймы
                         for frame in packet.decode():
+                            if self._stop_requested or not self.opened:
+                                break
                             self.last_frame_time = time.time()  # Обновляем время последнего кадра
                             if (isinstance(frame, av.AudioFrame)
                                     and hasattr(self, 'audio_output_stream')
@@ -922,12 +933,19 @@ class CameraStream:
         # Останавливаем генерацию кадров
         self.stop_frame_generation()
 
-        # Останавливаем демон если он запущен
-        if self.daemon is not None:
-            try:
-                self.daemon = None
-            except Exception as e:
-                Logger.debug(f"[{self.camera.name}] Error stopping daemon: {e}", LoggerType.CAMERAS)
+        # Дожидаемся завершения потока-демона, чтобы не закрывать контейнеры,
+        # пока он читает/пишет в них (иначе нативный крэш FFmpeg).
+        daemon_thread = self.daemon.thread if isinstance(self.daemon, Daemon) else None
+        if daemon_thread is not None and daemon_thread.is_alive():
+            daemon_thread.join(timeout=self.stop_join_timeout)
+
+        daemon_alive = daemon_thread is not None and daemon_thread.is_alive()
+        if daemon_alive:
+            Logger.warn(
+                f"⚠️ [{self.camera.name}] Daemon did not stop within {self.stop_join_timeout}s, "
+                f"containers will be closed by the stream thread",
+                LoggerType.CAMERAS
+            )
 
         # Останавливаем трекер
         if self.tracker is not None:
@@ -936,9 +954,13 @@ class CameraStream:
             except Exception as e:
                 Logger.debug(f"[{self.camera.name}] Error stopping tracker: {e}", LoggerType.CAMERAS)
 
-        # Закрываем контейнеры
-        self.destroy_output_container()
-        self.stop_input_container()
+        # Закрываем контейнеры только если поток уже завершился.
+        # Иначе teardown выполнит сам loop_frames в своём finally.
+        if not daemon_alive:
+            self.destroy_output_container()
+            self.stop_input_container()
+
+        self.daemon = None
 
         # Очищаем очередь кадров
         while not self.frame_queue.empty():

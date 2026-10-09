@@ -185,8 +185,19 @@ def stop_camera_stream(
         user: Annotated[UserResponseOut, Depends(check_permission("cameras:delete"))]
 ):
     camera = CameraRepository.get_camera(camera_id)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
     stream = StreamRegistry.find_by_camera(camera)
-    stream.stop()
+    if stream is None:
+        raise HTTPException(status_code=404, detail="Camera stream not found")
+
+    try:
+        stream.stop()
+    except Exception as e:
+        Logger.err(f"Failed to stop stream for camera {camera_id}: {e}", LoggerType.CAMERAS)
+        raise HTTPException(status_code=500, detail="Failed to stop camera stream")
+
     return SuccessResponse(success=True)
 
 
