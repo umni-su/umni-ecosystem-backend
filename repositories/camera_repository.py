@@ -45,6 +45,7 @@ class CameraRepository(BaseRepository):
                 ]
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
+                return []
 
     @classmethod
     def get_camera(cls, camera_id: int) -> CameraModelWithRelations | None:
@@ -61,6 +62,7 @@ class CameraRepository(BaseRepository):
                 )
             except Exception as e:
                 Logger.err(str(e))
+                return None
 
     @classmethod
     def add_camera(cls, model: CameraBaseModel):
