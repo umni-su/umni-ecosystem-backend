@@ -15,6 +15,8 @@
 
 import signal
 import contextlib
+import threading
+import time
 from typing import AsyncIterator, Any
 from fastapi import FastAPI
 
@@ -36,7 +38,10 @@ from services.rule.rule_service import RuleService
 class LifespanManager:
     _instance = None
     _shutting_down = False
+    _shutdown_done = False
+    _shutdown_lock = threading.Lock()
     _original_handlers = {}
+    shutdown_timeout = 30  # Общий бюджет ожидания остановки потоков камер (сек)
 
     @property
     def is_shutting_down(self) -> bool:
@@ -53,28 +58,61 @@ class LifespanManager:
     def _signal_handler(self, signum: int, frame: Any):
         """Обработчик сигналов для graceful shutdown"""
         Logger.debug(f"Received signal {signum}, initiating graceful shutdown...", LoggerType.APP)
-        self._shutting_down = True
-        StreamRegistry.set_state(StreamState.SHUTTING_DOWN)
-        self._perform_shutdown()  # added
+        # _perform_shutdown идемпотентен и сам выставляет _shutting_down,
+        # поэтому здесь его НЕ выставляем заранее (иначе shutdown был бы пропущен)
+        self._perform_shutdown()
 
         # Вызываем оригинальный обработчик (для uvicorn)
         if signum in self._original_handlers and self._original_handlers[signum]:
             self._original_handlers[signum](signum, frame)
 
     def _perform_shutdown(self):
-        """Выполняет фактическое завершение работы"""
-        if self._shutting_down:
-            return
+        """Выполняет фактическое завершение работы (идемпотентно)."""
+        with self._shutdown_lock:
+            if self._shutdown_done:
+                return
+            self._shutdown_done = True
+            self._shutting_down = True
 
-        self._shutting_down = True
         Logger.debug("Stopping all streams gracefully...", LoggerType.APP)
-        StreamRegistry.stop_all_streams()
-        for stream in CamerasService.streams:
-            stream.opened = False
-            stream.destroy_output_container()
-            Logger.warn(f'❌ {stream.camera.name} Force stop camera stream', LoggerType.APP)
 
-        RuleService.task_manager.stop()
+        # 1. Останавливаем опрос камер, чтобы потоки не пересоздавались
+        try:
+            CamerasService.stop_polling()
+        except Exception as e:
+            Logger.err(f"Error stopping cameras polling: {e}", LoggerType.APP)
+
+        # 2. Переводим реестр в состояние завершения
+        StreamRegistry.set_state(StreamState.SHUTTING_DOWN)
+
+        streams = StreamRegistry.get_all_streams()
+
+        # 3. Сначала быстро сигнализируем всем потокам остановку
+        for stream in streams:
+            try:
+                stream.request_stop()
+            except Exception as e:
+                Logger.err(f"Error requesting stream stop: {e}", LoggerType.APP)
+
+        # 4. Дожидаемся завершения всех потоков в рамках общего бюджета
+        deadline = time.time() + self.shutdown_timeout
+        for stream in streams:
+            try:
+                remaining = max(0.0, deadline - time.time())
+                daemon_alive = not stream.join_thread(timeout=remaining)
+                stream.finalize_stop(daemon_alive)
+                if daemon_alive:
+                    Logger.warn(f'❌ {stream.camera.name} stream did not stop in time', LoggerType.APP)
+            except Exception as e:
+                Logger.err(f"Error stopping stream: {e}", LoggerType.APP)
+
+        # 5. Останавливаем пул правил
+        try:
+            RuleService.task_manager.stop()
+        except Exception as e:
+            Logger.err(f"Error stopping rule task manager: {e}", LoggerType.APP)
+
+        Logger.debug("Application streams stopped", LoggerType.APP)
 
     @contextlib.asynccontextmanager
     async def lifespan(self, app: FastAPI) -> AsyncIterator[None]:
@@ -86,6 +124,8 @@ class LifespanManager:
         ecosystem.start_background_tasks()
         Logger.info('Generator lifespan at start of app')
         self._shutting_down = False
+        self._shutdown_done = False
+        CamerasService.start_polling()
         self._setup_signal_handlers()
         StreamRegistry.set_state(StreamState.RUNNING)
 

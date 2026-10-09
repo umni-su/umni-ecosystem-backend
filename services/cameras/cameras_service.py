@@ -13,7 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
+import threading
 from typing import TYPE_CHECKING
 
 from classes.logger.logger import Logger
@@ -39,6 +39,21 @@ class CamerasService(BaseService):
     poll_interval = 5
     max_error_backoff = 60
 
+    # Сигнал остановки опроса камер (используется при graceful shutdown)
+    _stop_event = threading.Event()
+
+    @classmethod
+    def stop_polling(cls):
+        cls._stop_event.set()
+
+    @classmethod
+    def start_polling(cls):
+        cls._stop_event.clear()
+
+    @classmethod
+    def is_polling(cls) -> bool:
+        return not cls._stop_event.is_set()
+
     def sync_camera(self, cam: "CameraModelWithRelations"):
         """Регистрирует новую камеру или обновляет существующий поток.
 
@@ -56,11 +71,13 @@ class CamerasService(BaseService):
 
     def cameras_list_task(self):
         error_backoff = self.poll_interval
-        while True:
+        while not self._stop_event.is_set():
             try:
                 # TODO не запрашивать из БД, а удалять камеру и добавлять из REST
                 cameras = CameraRepository.get_cameras() or []
                 for cam in cameras:
+                    if self._stop_event.is_set():
+                        break
                     try:
                         self.sync_camera(cam)
                     except Exception as e:
@@ -76,10 +93,12 @@ class CamerasService(BaseService):
                     f'Camera list task failed: {e}. Retry in {error_backoff}s',
                     LoggerType.CAMERAS
                 )
-                time.sleep(error_backoff)
+                self._stop_event.wait(error_backoff)
                 error_backoff = min(error_backoff * 2, self.max_error_backoff)
                 continue
-            time.sleep(self.poll_interval)
+            self._stop_event.wait(self.poll_interval)
+
+        Logger.debug('Camera list task stopped', LoggerType.CAMERAS)
 
     def run(self):
         Logger.debug('Starting camera streams...', LoggerType.CAMERAS)

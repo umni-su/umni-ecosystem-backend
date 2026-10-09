@@ -918,14 +918,17 @@ class CameraStream:
 
         Logger.debug(f"✅ [{self.camera.name}] Camera stream started", LoggerType.CAMERAS)
 
-    def stop(self):
-        """Корректная остановка всех потоков камеры"""
+    def request_stop(self):
+        """Быстро выставляет флаги остановки, не дожидаясь завершения потоков.
+
+        Позволяет сначала сигнализировать всем камерам, а затем дождаться их
+        завершения параллельно (см. graceful shutdown).
+        """
         if self._stop_requested:
             return
 
         Logger.debug(f"🛑 [{self.camera.name}] Stopping camera stream...", LoggerType.CAMERAS)
 
-        # Устанавливаем флаг остановки
         self._stop_requested = True
         self.opened = False
         self.frame_generation_running = False
@@ -933,29 +936,28 @@ class CameraStream:
         # Останавливаем генерацию кадров
         self.stop_frame_generation()
 
-        # Дожидаемся завершения потока-демона, чтобы не закрывать контейнеры,
-        # пока он читает/пишет в них (иначе нативный крэш FFmpeg).
+    def join_thread(self, timeout: float | None = None) -> bool:
+        """Дожидается завершения потока-демона.
+
+        Возвращает True, если поток уже завершился (или его не было).
+        """
         daemon_thread = self.daemon.thread if isinstance(self.daemon, Daemon) else None
         if daemon_thread is not None and daemon_thread.is_alive():
-            daemon_thread.join(timeout=self.stop_join_timeout)
+            daemon_thread.join(timeout=timeout)
+        return not (daemon_thread is not None and daemon_thread.is_alive())
 
-        daemon_alive = daemon_thread is not None and daemon_thread.is_alive()
-        if daemon_alive:
-            Logger.warn(
-                f"⚠️ [{self.camera.name}] Daemon did not stop within {self.stop_join_timeout}s, "
-                f"containers will be closed by the stream thread",
-                LoggerType.CAMERAS
-            )
+    def finalize_stop(self, daemon_alive: bool):
+        """Останавливает трекер и закрывает контейнеры, если поток уже завершился.
 
-        # Останавливаем трекер
+        Если поток-демон ещё жив, teardown выполнит сам loop_frames в своём
+        finally — закрывать контейнеры извне нельзя (нативный крэш FFmpeg).
+        """
         if self.tracker is not None:
             try:
                 self.tracker = None
             except Exception as e:
                 Logger.debug(f"[{self.camera.name}] Error stopping tracker: {e}", LoggerType.CAMERAS)
 
-        # Закрываем контейнеры только если поток уже завершился.
-        # Иначе teardown выполнит сам loop_frames в своём finally.
         if not daemon_alive:
             self.destroy_output_container()
             self.stop_input_container()
@@ -968,5 +970,24 @@ class CameraStream:
                 self.frame_queue.get_nowait()
             except queue.Empty:
                 break
+
+    def stop(self):
+        """Корректная остановка всех потоков камеры"""
+        if self._stop_requested:
+            return
+
+        self.request_stop()
+
+        # Дожидаемся завершения потока-демона, чтобы не закрывать контейнеры,
+        # пока он читает/пишет в них (иначе нативный крэш FFmpeg).
+        daemon_alive = not self.join_thread(timeout=self.stop_join_timeout)
+        if daemon_alive:
+            Logger.warn(
+                f"⚠️ [{self.camera.name}] Daemon did not stop within {self.stop_join_timeout}s, "
+                f"containers will be closed by the stream thread",
+                LoggerType.CAMERAS
+            )
+
+        self.finalize_stop(daemon_alive)
 
         Logger.debug(f"✅ [{self.camera.name}] Camera stream stopped completely", LoggerType.CAMERAS)
