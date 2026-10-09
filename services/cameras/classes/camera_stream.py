@@ -31,6 +31,7 @@ from pydantic import BaseModel
 
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
+from config.settings import settings
 from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
@@ -45,6 +46,7 @@ from repositories.camera_repository import CameraRepository
 from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
 from services.cameras.utils.cameras_helpers import get_no_signal_frame
+from services.cameras.webrtc.media_hub import CameraMediaHub, MediaHubRegistry
 
 if TYPE_CHECKING:
     from models.camera_event_model import CameraEventModel
@@ -143,6 +145,9 @@ class CameraStream:
         self.frame_generation_running = False
         self.frame_generation_lock = threading.Lock()
 
+        # WebRTC: раздача A/V кадров зрителям (создаётся в set_camera)
+        self.media_hub: Optional[CameraMediaHub] = None
+
         # Регистрируем callback для перезапуска
         StreamRegistry.register_restart_callback(self._handle_registry_state_change)
         self._last_registry_state = StreamState.RUNNING
@@ -231,6 +236,16 @@ class CameraStream:
         self.link = self.prepare_link(self.camera)
         self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
 
+        # WebRTC hub камеры: раздаёт уже декодированные кадры зрителям
+        if self.media_hub is None:
+            self.media_hub = CameraMediaHub(
+                camera_id=self.id,
+                max_width=settings.WEBRTC_MAX_WIDTH,
+            )
+            MediaHubRegistry.register(self.media_hub)
+        else:
+            self.media_hub.set_max_width(settings.WEBRTC_MAX_WIDTH)
+
         if self.camera.record_mode != camera.record_mode:
             self.destroy_output_container()
             self.time_part_start = 0
@@ -271,6 +286,26 @@ class CameraStream:
         if self.resized is not None and self.opened:
             return self.resized.copy()  # Делаем копию для потокобезопасности
         return self.get_no_signal_frame()
+
+    def _publish_video_frame(self, frame: av.VideoFrame) -> None:
+        """Публикует декодированный видео-кадр WebRTC-зрителям (если они есть)."""
+        hub = self.media_hub
+        if hub is None or not hub.has_video_subscribers():
+            return
+        try:
+            hub.publish_video(frame)
+        except Exception as e:
+            Logger.debug(f"[{self.camera.name}] publish_video failed: {e}", LoggerType.CAMERAS)
+
+    def _publish_audio_frame(self, frame: av.AudioFrame) -> None:
+        """Публикует декодированный аудио-кадр WebRTC-зрителям (если они есть)."""
+        hub = self.media_hub
+        if hub is None or not hub.has_audio_subscribers():
+            return
+        try:
+            hub.publish_audio(frame)
+        except Exception as e:
+            Logger.debug(f"[{self.camera.name}] publish_audio failed: {e}", LoggerType.CAMERAS)
 
     def _wait_or_stop(self, seconds: float) -> bool:
         """Ждёт указанное время, но просыпается сразу при запросе остановки.
@@ -666,31 +701,38 @@ class CameraStream:
                             if self._stop_requested or not self.opened:
                                 break
                             self.last_frame_time = time.time()  # Обновляем время последнего кадра
-                            if (isinstance(frame, av.AudioFrame)
-                                    and hasattr(self, 'audio_output_stream')
-                                    and self.audio_output_stream is not None):
-                                # Обработка аудиофреймов
-                                if self.output_container is not None and self.write:
-                                    # Устанавливаем PTS для аудио
-                                    if not hasattr(self, 'audio_pts'):
-                                        self.audio_pts = 0
-                                    frame.pts = self.audio_pts
-                                    self.audio_pts += frame.samples
+                            if isinstance(frame, av.AudioFrame):
+                                # WebRTC: раздаём аудио зрителям независимо от записи
+                                self._publish_audio_frame(frame)
 
-                                    # Кодируем и записываем аудиофрейм
-                                    for packet in self.audio_output_stream.encode(frame):
-                                        if self.audio_output_stream is not None:
-                                            self.output_container.mux(packet)
-                                        else:
-                                            break
-                                else:
-                                    self.destroy_output_container()
+                                # Обработка аудиофреймов для записи
+                                if (hasattr(self, 'audio_output_stream')
+                                        and self.audio_output_stream is not None):
+                                    if self.output_container is not None and self.write:
+                                        # Устанавливаем PTS для аудио
+                                        if not hasattr(self, 'audio_pts'):
+                                            self.audio_pts = 0
+                                        frame.pts = self.audio_pts
+                                        self.audio_pts += frame.samples
+
+                                        # Кодируем и записываем аудиофрейм
+                                        for packet in self.audio_output_stream.encode(frame):
+                                            if self.audio_output_stream is not None:
+                                                self.output_container.mux(packet)
+                                            else:
+                                                break
+                                    else:
+                                        self.destroy_output_container()
                                 continue
 
                             if isinstance(frame, av.VideoFrame):
                                 # Обработка видеофреймов
                                 self.original = frame.to_ndarray(format='bgr24')
                                 self.resized = imutils.resize(self.original, width=640)
+
+                                # WebRTC: публикуем кадр зрителям до аналитики,
+                                # чтобы детекция/запись не «морозили» картинку
+                                self._publish_video_frame(frame)
 
                                 # Start permanent record or permanent screenshots
                                 if self.is_record_permanent() and self.time_part_start == 0:

@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     DEBUG_MODE: str = ''
     ENCRYPTION_KEY: str = ''
 
+    # WebRTC (просмотр камер в браузере)
+    # STUN-серверы через запятую, напр. "stun:stun.l.google.com:19302".
+    # Пусто — только host-кандидаты (локальная сеть).
+    WEBRTC_STUN_URLS: str = ''
+    # Максимальная ширина видео для WebRTC. 0 — отдавать исходное разрешение.
+    WEBRTC_MAX_WIDTH: int = 1280
+
     # Автоматически создаем DSN строку
     @property
     def database_url(self) -> PostgresDsn:
