@@ -49,6 +49,7 @@ from routes.sensors import sensors
 from routes.systeminfo import systeminfo
 from routes.users import users
 from routes.websockets import websockets
+from routes.webrtc import webrtc, webrtc_config
 from routes.notifications import notifications
 from routes.settings import settings as router_settings
 
@@ -95,6 +96,8 @@ app.include_router(router_settings)
 app.include_router(systeminfo)
 app.include_router(users)
 app.include_router(websockets)
+app.include_router(webrtc)
+app.include_router(webrtc_config)
 
 app.add_exception_handler(RequestValidationError, ValidationErrorHandler.handle)
 

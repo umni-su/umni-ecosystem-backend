@@ -32,6 +32,7 @@ from entities.enums.notification_type_enum import NotificationTypeEnum
 from services.cameras.cameras_service import CamerasService
 from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
+from services.cameras.webrtc.manager import WebRTCManager
 
 from database.migrations import MigrationManager
 from classes.ecosystem import Ecosystem
@@ -78,6 +79,12 @@ class LifespanManager:
             self._shutting_down = True
 
         Logger.debug("Stopping all streams gracefully...", LoggerType.APP)
+
+        # 0. Закрываем WebRTC-сессии зрителей до остановки камер
+        try:
+            WebRTCManager.shutdown()
+        except Exception as e:
+            Logger.err(f"Error stopping WebRTC sessions: {e}", LoggerType.APP)
 
         # 1. Останавливаем опрос камер, чтобы потоки не пересоздавались
         try:
@@ -143,6 +150,7 @@ class LifespanManager:
         # Запоминаем серверный event loop: WebSocket-сообщения из фоновых
         # потоков должны планироваться в нём, а не в новых loop'ах
         WebSockets.set_loop(asyncio.get_running_loop())
+        WebRTCManager.set_loop(asyncio.get_running_loop())
         self._shutting_down = False
         self._shutdown_done = False
         CamerasService.start_polling()
@@ -160,6 +168,7 @@ class LifespanManager:
         # Shutdown
         self._perform_shutdown()
         WebSockets.clear_loop()
+        WebRTCManager.clear_loop()
         Logger.debug("Application shutting down...", LoggerType.APP)
 
 
