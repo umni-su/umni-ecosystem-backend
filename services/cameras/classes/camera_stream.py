@@ -17,6 +17,7 @@ import asyncio
 from datetime import datetime
 import os
 import queue
+import random
 import threading
 import time
 from typing import TYPE_CHECKING, Optional, Union
@@ -64,6 +65,7 @@ class ScreenshotResultModel(BaseModel):
 class CameraStream:
     def __init__(self, camera: CameraModelWithRelations):
         self._stop_requested = False  # Добавляем флаг остановки
+        self._stop_event = threading.Event()  # Прерываемый сигнал остановки
         self.ecosystem = get_ecosystem()
         self.id: int = 0
         self.video_pts = 0
@@ -127,6 +129,8 @@ class CameraStream:
         self.restart_delay = 3  # Задержка между попытками перезапуска (сек)
         self.last_restart_time = 0
         self.stop_join_timeout = 6  # Ожидание завершения потока камеры при остановке (сек)
+        self.reconnect_initial_delay = 1.0  # Начальная задержка переподключения (сек)
+        self.reconnect_max_delay = 30.0  # Максимальная задержка переподключения (сек)
 
         # For permanent events
         self.permanent_event: Optional["CameraEventModel"] = None
@@ -268,53 +272,75 @@ class CameraStream:
             return self.resized.copy()  # Делаем копию для потокобезопасности
         return self.get_no_signal_frame()
 
-    def _create_input_container(self):
+    def _wait_or_stop(self, seconds: float) -> bool:
+        """Ждёт указанное время, но просыпается сразу при запросе остановки.
+
+        Возвращает True, если камеру останавливают.
+        """
+        return self._stop_event.wait(timeout=max(0.0, seconds))
+
+    def _create_input_container(self) -> bool:
+        """Открывает входной контейнер с ограниченным экспоненциальным backoff.
+
+        Вместо неограниченной рекурсии выполняет цикл повторов с джиттером,
+        который прерывается при остановке камеры.
+        Возвращает True при успехе, False если камеру остановили.
+        """
         options = {
             'rtsp_transport': 'tcp',
             'timeout': '5000000',  # 5 seconds timeout
             'max_delay': '500000',  # Max packet delay
         }
 
-        try:
-            self.input_container = av.open(self.link, options=options, timeout=10)
-            self.capture_error = False
-            if not self.camera.online:
-                CameraRepository.set_online(camera_id=self.camera.id)
-                Logger.info(
-                    f"🎉 [{self.camera.name}] Camera online!",
-                    LoggerType.CAMERAS,
-                    with_db=True,
-                    entity_code=LogEntityCode(
-                        id=self.camera.id,
-                        code=LogCode.CAMERA_ONLINE
+        delay = self.reconnect_initial_delay
+        while not self._stop_requested:
+            try:
+                self.input_container = av.open(self.link, options=options, timeout=10)
+                self.capture_error = False
+                if not self.camera.online:
+                    CameraRepository.set_online(camera_id=self.camera.id)
+                    Logger.info(
+                        f"🎉 [{self.camera.name}] Camera online!",
+                        LoggerType.CAMERAS,
+                        with_db=True,
+                        entity_code=LogEntityCode(
+                            id=self.camera.id,
+                            code=LogCode.CAMERA_ONLINE
+                        )
                     )
-                )
-            Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}", LoggerType.CAMERAS)
-            # Set online
-        except Exception as e:
-            self.capture_error = True
-            if self.camera.online:
-                CameraRepository.set_online(camera_id=self.camera.id, online=False)
+                Logger.debug(f"🎉 [{self.camera.name}] Start capture on link {self.link}", LoggerType.CAMERAS)
+                return True
+            except Exception as e:
+                self.input_container = None
+                self.capture_error = True
+                if self.camera.online:
+                    CameraRepository.set_online(camera_id=self.camera.id, online=False)
+                    Logger.err(
+                        f"⚠️ [{self.camera.name}] Camera offline: {e}",
+                        LoggerType.CAMERAS,
+                        with_db=True,
+                        entity_code=LogEntityCode(
+                            id=self.camera.id,
+                            code=LogCode.CAMERA_OFFLINE
+                        )
+                    )
                 Logger.err(
-                    f"⚠️ [{self.camera.name}] Camera offline: {e}",
-                    LoggerType.CAMERAS,
-                    with_db=True,
-                    entity_code=LogEntityCode(
-                        id=self.camera.id,
-                        code=LogCode.CAMERA_OFFLINE
-                    )
+                    f"⚠️ [{self.camera.name}] Failed to open stream: {e}. Retry in {delay:.1f}s",
+                    LoggerType.CAMERAS
                 )
-            Logger.err(
-                f"⚠️ [{self.camera.name}] Failed to open stream: {e}",
-                LoggerType.CAMERAS
-            )
-            time.sleep(3)
-            # Set offline
-            self._create_input_container()
+                # Экспоненциальный backoff с джиттером, прерываемый остановкой
+                jitter = random.uniform(0, delay * 0.3)
+                if self._wait_or_stop(delay + jitter):
+                    break
+                delay = min(delay * 2, self.reconnect_max_delay)
 
-    def create_input_container(self):
+        Logger.debug(f"🛑 [{self.camera.name}] Input container creation stopped", LoggerType.CAMERAS)
+        return False
+
+    def create_input_container(self) -> bool:
         if self.input_container is None:
-            self._create_input_container()
+            return self._create_input_container()
+        return True
 
     def stop_input_container(self):
         with self._container_lock:
@@ -612,8 +638,12 @@ class CameraStream:
                             self.flush_output_container()
                         last_flush_time = current_time
 
-                    if self.need_restart and (current_time - self.last_restart_time) > self.restart_delay:
-                        self._perform_restart()
+                    if self.need_restart:
+                        if (current_time - self.last_restart_time) > self.restart_delay:
+                            self._perform_restart()
+                        else:
+                            # Не крутимся в busy-loop до истечения restart_delay
+                            self._wait_or_stop(self.restart_delay)
                         continue
 
                     if self.input_container is None:
@@ -725,7 +755,7 @@ class CameraStream:
                         Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
                                     LoggerType.CAMERAS)
                         self.need_restart = True
-                        time.sleep(1)
+                        self._wait_or_stop(1)
                     pass
 
                 except av.error.FFmpegError as e:
@@ -733,13 +763,13 @@ class CameraStream:
                         Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
                         self.need_restart = True
                         self.capture_error = True
-                        time.sleep(3)
+                        self._wait_or_stop(3)
                 except Exception as e:
                     if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
                         Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
                         self.need_restart = True
                         self.capture_error = True
-                        time.sleep(5)
+                        self._wait_or_stop(5)
             self.destroy_output_container()
             self.stop_input_container()
             self.output_container = None
@@ -924,6 +954,9 @@ class CameraStream:
         Позволяет сначала сигнализировать всем камерам, а затем дождаться их
         завершения параллельно (см. graceful shutdown).
         """
+        # Взводим событие до проверки флага: оно прерывает ожидания/backoff
+        self._stop_event.set()
+
         if self._stop_requested:
             return
 
