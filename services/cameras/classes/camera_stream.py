@@ -308,10 +308,7 @@ class CameraStream:
         options = {
             'rtsp_transport': 'tcp',
             'timeout': '5000000',  # 5 seconds timeout
-            'max_delay': '100000',  # Max packet delay (0.1s) — меньше буферизация/задержка
-            'fflags': 'nobuffer',   # Не накапливать входной буфер (ниже задержка)
-            'flags': 'low_delay',   # Разрешить декодирование с минимальной задержкой
-            'reorder_queue_size': '0',
+            'max_delay': '500000',  # Max packet delay
         }
 
         delay = self.reconnect_initial_delay
