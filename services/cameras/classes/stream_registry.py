@@ -41,12 +41,15 @@ class StreamRegistry:
     def set_state(cls, state: StreamState):
         with cls._lock:
             cls._state = state
-            # Уведомляем все зарегистрированные callback'и
-            for callback in cls._restart_callbacks:
-                try:
-                    callback(state)
-                except Exception as e:
-                    print(f"Error in restart callback: {e}")
+            # Снимаем копию callback'ов под блокировкой...
+            callbacks = list(cls._restart_callbacks)
+        # ...а вызываем вне неё, чтобы не держать lock во время работы
+        # callback'ов (join потоков, рестарты) и не провоцировать дедлоки
+        for callback in callbacks:
+            try:
+                callback(state)
+            except Exception as e:
+                print(f"Error in restart callback: {e}")
 
     @classmethod
     def get_state(cls) -> StreamState:
@@ -97,16 +100,17 @@ class StreamRegistry:
     @classmethod
     def stop_all_streams(cls):
         """Останавливает все потоки генерации кадров"""
-        with cls._lock:
-            for stream in cls._streams:
-                try:
-                    if hasattr(stream, 'stop_frame_generation'):
-                        stream.stop_frame_generation()
-                    # Также останавливаем основной поток камеры если нужно
-                    if hasattr(stream, 'opened'):
-                        stream.opened = False
-                except Exception as e:
-                    print(f"Error stopping stream {stream.id}: {e}")
+        # Работаем по снимку вне блокировки: остановка потоков может блокировать
+        streams = cls.get_all_streams()
+        for stream in streams:
+            try:
+                if hasattr(stream, 'stop_frame_generation'):
+                    stream.stop_frame_generation()
+                # Также останавливаем основной поток камеры если нужно
+                if hasattr(stream, 'opened'):
+                    stream.opened = False
+            except Exception as e:
+                print(f"Error stopping stream {stream.id}: {e}")
 
     @classmethod
     def get_streams_as_models(cls):
