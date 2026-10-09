@@ -39,6 +39,30 @@ webrtc_config = APIRouter(prefix='/cameras', tags=['webrtc'])
 
 VIEW_PERMISSION = 'cameras:view'
 
+MIN_VIDEO_WIDTH = 16
+
+
+def _normalize_width(value, default: int | None = None) -> int | None:
+    """Приводит ширину видео к допустимому диапазону [MIN..settings].
+
+    Возвращает None, если значение невалидно (сообщение можно игнорировать).
+    """
+    if isinstance(value, bool) or value is None:
+        if default is None:
+            return None
+        value = default
+    try:
+        width = int(value)
+    except (TypeError, ValueError):
+        if default is None:
+            return None
+        width = default
+    if width <= 0:
+        if default is None:
+            return None
+        width = default
+    return max(MIN_VIDEO_WIDTH, min(width, settings.WEBRTC_MAX_WIDTH))
+
 
 @webrtc_config.get('/webrtc/config')
 def get_webrtc_config(
@@ -97,6 +121,13 @@ async def webrtc_endpoint(
                     })
                     continue
 
+                # Разрешение видео на сессию (клип по settings.WEBRTC_MAX_WIDTH).
+                # По умолчанию — максимальное доступное (как раньше).
+                video_width = _normalize_width(
+                    message.get('width'),
+                    default=settings.WEBRTC_MAX_WIDTH,
+                )
+
                 # Пересоздаём сессию с тем же id (повторный offer/реконнект)
                 await close_session(session_id)
                 session = PeerSession(
@@ -104,6 +135,7 @@ async def webrtc_endpoint(
                     camera_id=camera_id,
                     hub=hub,
                     send=send,
+                    video_max_width=video_width,
                 )
                 sessions[session_id] = session
                 WebRTCManager.add_session(session)
@@ -131,6 +163,14 @@ async def webrtc_endpoint(
                     'sdp': answer_sdp,
                     'sdp_type': 'answer',
                 })
+
+            elif msg_type == 'set_width':
+                # Смена разрешения на лету, без пересоединения
+                session = sessions.get(str(message.get('session_id') or ''))
+                if session is not None:
+                    width = _normalize_width(message.get('width'))
+                    if width is not None:
+                        session.set_video_width(width)
 
             elif msg_type == 'close':
                 await close_session(str(message.get('session_id') or ''))

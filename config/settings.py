@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # Пусто — только host-кандидаты (локальная сеть).
     WEBRTC_STUN_URLS: str = ''
     # Максимальная ширина видео для WebRTC. 0 — отдавать исходное разрешение.
-    WEBRTC_MAX_WIDTH: int = 1280
+    WEBRTC_MAX_WIDTH: int = 1920
 
     # Автоматически создаем DSN строку
     @property

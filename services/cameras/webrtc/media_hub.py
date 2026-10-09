@@ -68,14 +68,15 @@ class CameraMediaHub:
     # --- Настройки ---------------------------------------------------------
 
     def set_max_width(self, width: int):
-        self._max_width = max(0, int(width or 0))
+        with self._lock:
+            self._max_width = max(0, int(width or 0))
 
     def get_target_size(self) -> tuple[int, int]:
         """Размер, к которому приводится видео (для заглушки, пока нет кадров)."""
         with self._lock:
             if self._target_size is not None:
                 return self._target_size
-        width = self._max_width or 1280
+            width = self._max_width or 1920
         height = int(round(width * 9 / 16))
         return self._even(width), self._even(height)
 
@@ -138,13 +139,22 @@ class CameraMediaHub:
                 self._target_size = (width, height)
             pts = int((time.monotonic() - self._clock_start) * VIDEO_CLOCK_RATE)
 
-            # Каждому зрителю — собственная копия кадра: энкодер aiortc мутирует
-            # frame.pict_type, поэтому делить один объект между треками нельзя.
+            # Один общий кадр canonical-размера для всех зрителей: твоими
+            # глазами каждый зритель доскаливает до своего разрешения в recv,
+            # создавая собственный экземпляр кадра.
+            if (width, height) != (frame.width, frame.height):
+                base = frame.reformat(width=width, height=height, format='yuv420p')
+            else:
+                # Свой объект: нельзя отдавать кадр декодера в event loop
+                base = frame.reformat(format='yuv420p')  # всегда возвращает новый объект
+
+            # Каждому подписчику — свой экземпляр, чтобы reformat в recv
+            # не трогал общий AVFrame
             for queue in subs:
-                copy = frame.reformat(width=width, height=height, format='yuv420p')
-                copy.pts = pts
-                copy.time_base = VIDEO_TIME_BASE
-                self._schedule_put(loop, queue, copy)
+                clone = base.reformat(format=base.format.name)  # или _copy_frame
+                clone.pts = pts
+                clone.time_base = VIDEO_TIME_BASE
+                self._schedule_put(loop, queue, clone)
         except Exception as e:
             Logger.debug(f"[webrtc][camera {self.camera_id}] publish_video failed: {e}", LoggerType.CAMERAS)
 
@@ -194,9 +204,11 @@ class CameraMediaHub:
             pass
 
     def _scaled_size(self, width: int, height: int) -> tuple[int, int]:
-        if self._max_width and width > self._max_width:
-            ratio = self._max_width / float(width)
-            width = self._max_width
+        with self._lock:
+            max_width = self._max_width
+        if max_width and width > max_width:
+            ratio = max_width / float(width)
+            width = max_width
             height = int(round(height * ratio))
         return self._even(width), self._even(height)
 

@@ -36,21 +36,58 @@ AUDIO_BUFFER_MAX_BYTES = AUDIO_SAMPLE_RATE * 2 * 2
 class HubVideoTrack(VideoStreamTrack):
     """Видео-трек зрителя, читающий кадры из общего hub'а камеры.
 
-    Отдаёт только реальные кадры: заглушку «нет сигнала» рисует фронтенд,
-    поэтому здесь ждём кадр из hub'а без вставки заглушки в поток.
+    У каждого зрителя своя целевая ширина (``max_width``): кадр из hub'а
+    масштабируется под неё в ``recv``. Всегда создаём свежий объект кадра —
+    aiortc-энкодер мутирует отданный кадр (``pict_type``), а источник в hub'е
+    общий для всех зрителей.
     """
 
     kind = "video"
 
-    def __init__(self, hub: CameraMediaHub):
+    def __init__(self, hub: CameraMediaHub, max_width: int | None = None):
         super().__init__()
         self.hub = hub
         self.queue = hub.subscribe_video()
+        self._max_width = max(0, int(max_width or 0))
+
+    def set_max_width(self, width: int) -> None:
+        """Меняет целевое разрешение на лету (применяется на следующем кадре)."""
+        self._max_width = max(0, int(width or 0))
 
     async def recv(self) -> av.VideoFrame:
         if self.readyState != "live":
             raise MediaStreamError
-        return await self.queue.get()
+        frame = await self.queue.get()
+
+        pts = frame.pts
+        time_base = frame.time_base
+        width = self._target_width(frame.width)
+        height = self._target_height(frame, width)
+
+        # Всегда создаём новый объект, даже если размеры совпали
+        frame = frame.reformat(width=width, height=height, format='yuv420p')
+        frame.pts = pts
+        frame.time_base = time_base
+        return frame
+
+    @staticmethod
+    def _copy_frame(frame: av.VideoFrame) -> av.VideoFrame:
+        copy = av.VideoFrame(width=frame.width, height=frame.height, format=frame.format.name)
+        for index, plane in enumerate(frame.planes):
+            copy.planes[index].update(bytes(plane))
+        return copy
+
+    def _target_width(self, src_width: int) -> int:
+        if self._max_width and src_width > self._max_width:
+            return self._max_width
+        return src_width
+
+    @staticmethod
+    def _target_height(frame: av.VideoFrame, width: int) -> int:
+        height = round(width * frame.height / frame.width) if frame.width else 0
+        if height < 2:
+            height = 2
+        return height - (height % 2)
 
     async def close(self) -> None:
         try:

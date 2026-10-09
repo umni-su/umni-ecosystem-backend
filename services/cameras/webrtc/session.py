@@ -50,6 +50,7 @@ class PeerSession:
             camera_id: int,
             hub: CameraMediaHub,
             send: SendCallable,
+            video_max_width: int | None = None,
     ):
         self.session_id = session_id
         self.camera_id = camera_id
@@ -58,10 +59,14 @@ class PeerSession:
         self._closed = False
 
         self.pc = RTCPeerConnection(configuration=build_rtc_configuration())
-        self.video = HubVideoTrack(hub)
+        self.video = HubVideoTrack(hub, max_width=video_max_width)
         self.audio = HubAudioTrack(hub)
         self.pc.addTrack(self.video)
         self.pc.addTrack(self.audio)
+
+    def set_video_width(self, width: int) -> None:
+        """Меняет разрешение видео на лету, без пересоединения."""
+        self.video.set_max_width(width)
 
         @self.pc.on("icecandidate")
         def on_icecandidate(candidate) -> None:
