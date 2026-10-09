@@ -356,6 +356,9 @@ msgstr "Больше или равно"
 msgid "High"
 msgstr "Высокий"
 
+msgid "High quality"
+msgstr "Высокое качество"
+
 msgid "History"
 msgstr "История"
 
@@ -457,6 +460,12 @@ msgstr "Память"
 
 msgid "Message"
 msgstr "Сообщение"
+
+msgid "Minimum quality"
+msgstr "Низкое качество"
+
+msgid "Medium quality"
+msgstr "Среднее качество"
 
 msgid "Min area"
 msgstr "Минимальная зона"
@@ -889,6 +898,9 @@ msgstr "Имя пользователя"
 
 msgid "Used: {used} of {total}"
 msgstr "Занято: {used} из {total}"
+
+msgid "Ultra quality"
+msgstr "Наивысшее качество"
 
 msgid "Value"
 msgstr "Значение"
