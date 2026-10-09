@@ -13,6 +13,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import asyncio
 import signal
 import contextlib
 import threading
@@ -22,6 +23,7 @@ from fastapi import FastAPI
 
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
+from classes.websockets.websockets import WebSockets
 from classes.notifications.notification_factory import NotificationFactory
 from classes.notifications.via.email_notification import EmailNotification
 from classes.notifications.via.matrix_notification import MatrixNotification
@@ -136,6 +138,9 @@ class LifespanManager:
         ecosystem.register_non_auto_subscribers()
         ecosystem.start_background_tasks()
         Logger.info('Generator lifespan at start of app')
+        # Запоминаем серверный event loop: WebSocket-сообщения из фоновых
+        # потоков должны планироваться в нём, а не в новых loop'ах
+        WebSockets.set_loop(asyncio.get_running_loop())
         self._shutting_down = False
         self._shutdown_done = False
         CamerasService.start_polling()
@@ -152,6 +157,7 @@ class LifespanManager:
 
         # Shutdown
         self._perform_shutdown()
+        WebSockets.clear_loop()
         Logger.debug("Application shutting down...", LoggerType.APP)
 
 
