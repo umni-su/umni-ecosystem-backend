@@ -16,18 +16,16 @@
 from typing import Annotated
 
 import cv2
-from fastapi import APIRouter, Depends, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends
 from starlette.responses import Response
 
-from classes.app.lifespan_manager import lifespan_manager
 from classes.auth.auth import Auth
 from classes.l10n.l10n import _
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.permissions.permission_decorators import register_permission, register_permission_category, \
     register_category_permissions
-from classes.permissions.permission_dependency import check_permission, check_permission_by_token
+from classes.permissions.permission_dependency import check_permission
 from classes.storages.camera_storage import CameraStorage
 from models.camera_area_model import CameraAreaBaseModel
 from models.camera_event_model import CameraEventModel, CameraEventBaseModel
@@ -40,7 +38,6 @@ from responses.success import SuccessResponse
 from responses.user import UserResponseOut
 from starlette.exceptions import HTTPException
 
-from services.cameras.classes.static_stream_manager import static_stream_manager
 from services.cameras.classes.stream_registry import StreamRegistry
 
 tag = "cameras"
@@ -123,42 +120,6 @@ def get_camera_cover(
     return CameraStorage.get_cover(
         camera=camera,
         width=640)
-
-
-@cameras.get('/{camera_id}/stream')
-async def get_camera_stream(
-        camera_id: int,
-        user: Annotated[UserResponseOut, Depends(check_permission_by_token("cameras:view"))],
-        background_tasks: BackgroundTasks,
-):
-    # Проверяем глобальное состояние shutdown
-    if lifespan_manager.is_shutting_down:
-        raise HTTPException(status_code=503, detail="Service is shutting down")
-
-    # Проверяем состояние потоков
-    if StreamRegistry.is_shutting_down():
-        raise HTTPException(status_code=503, detail="Streams are shutting down")
-
-    camera = CameraRepository.get_camera(camera_id)
-    stream = StreamRegistry.find_by_camera(camera)
-
-    if stream and stream.opened and StreamRegistry.is_running():
-        # Добавляем задачу для очистки
-        background_tasks.add_task(
-            lambda: stream.stop_frame_generation()
-            if hasattr(stream, 'stop_frame_generation')
-            else None
-        )
-
-        return StreamingResponse(
-            content=stream.generate_frames_async(),
-            media_type='multipart/x-mixed-replace; boundary=frame'
-        )
-
-    return StreamingResponse(
-        content=static_stream_manager.generate_static_placeholder(camera_id, camera.name),
-        media_type='multipart/x-mixed-replace; boundary=frame'
-    )
 
 
 @cameras.get('/streams')

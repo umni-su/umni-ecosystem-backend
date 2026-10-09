@@ -13,10 +13,8 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import asyncio
 from datetime import datetime
 import os
-import queue
 import random
 import threading
 import time
@@ -139,12 +137,6 @@ class CameraStream:
 
         self._container_lock = threading.RLock()
 
-        # Атрибуты для асинхронной генерации
-        self.frame_queue = queue.Queue(maxsize=2)  # Буфер на 2 кадра
-        self.frame_generation_thread = None
-        self.frame_generation_running = False
-        self.frame_generation_lock = threading.Lock()
-
         # WebRTC: раздача A/V кадров зрителям (создаётся в set_camera)
         self.media_hub: Optional[CameraMediaHub] = None
 
@@ -171,14 +163,6 @@ class CameraStream:
             return
 
         self._last_registry_state = new_state
-
-        if new_state == StreamState.RESTARTING:
-            # Останавливаем генерацию кадров при перезапуске
-            self.stop_frame_generation()
-        elif new_state == StreamState.RUNNING:
-            # При возврате в running состояние можно автоматически перезапустить
-            if self.opened and self.camera.active:
-                self.start_frame_generation()
 
     # Event handlers (unchanged)
     def handle_motion_start(self, event: "ROIDetectionEvent"):
@@ -626,202 +610,199 @@ class CameraStream:
         return isinstance(self.input_container, av.container.InputContainer)
 
     def loop_frames(self):
-        try:
-            first_run: bool = True
-            need_create_input = False
+        first_run: bool = True
+        need_create_input = False
 
-            last_flush_time = time.time()
-            flush_interval = 30  # Флашим каждые 30 секунд
+        last_flush_time = time.time()
+        flush_interval = 30  # Флашим каждые 30 секунд
 
-            if self.input_container is None:
-                need_create_input = True
+        if self.input_container is None:
+            need_create_input = True
 
-            if need_create_input:
-                self.create_input_container()
-                Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}', LoggerType.CAMERAS)
+        if need_create_input:
+            self.create_input_container()
+            Logger.debug(f'[{self.camera.name}] Create input container {self.is_opened()}', LoggerType.CAMERAS)
 
-            if self.tracker is None:
-                self.tracker = ROITracker(camera=self.camera)
-                self.tracker.set_callbacks(
-                    motion_start=self.handle_motion_start,
-                    motion_end=self.handle_motion_end,
-                    recording_start=self.handle_recording_start,
-                    recording_end=self.handle_recording_end
-                )
+        if self.tracker is None:
+            self.tracker = ROITracker(camera=self.camera)
+            self.tracker.set_callbacks(
+                motion_start=self.handle_motion_start,
+                motion_end=self.handle_motion_end,
+                recording_start=self.handle_recording_start,
+                recording_end=self.handle_recording_end
+            )
 
-            # Initialize PTS counters
-            self.video_pts = 0
-            self.audio_pts = 0
+        # Initialize PTS counters
+        self.video_pts = 0
+        self.audio_pts = 0
 
-            while self.camera.active and self.opened and not self._stop_requested:
-                try:
-                    # Проверка heartbeat
-                    self.check_heartbeat()
+        while self.camera.active and self.opened and not self._stop_requested:
+            try:
+                # Проверка heartbeat
+                self.check_heartbeat()
 
-                    if self._stop_requested:  # Проверка флага остановки
+                if self._stop_requested:  # Проверка флага остановки
+                    break
+
+                if self.need_skip:
+                    continue
+
+                # Проверяем, нужно ли перезапустить контейнер
+                current_time = time.time()
+
+                # Периодический flush
+                if current_time - last_flush_time > flush_interval:
+                    with self._container_lock:
+                        self.flush_output_container()
+                    last_flush_time = current_time
+
+                if self.need_restart:
+                    if (current_time - self.last_restart_time) > self.restart_delay:
+                        self._perform_restart()
+                    else:
+                        # Не крутимся в busy-loop до истечения restart_delay
+                        self._wait_or_stop(self.restart_delay)
+                    continue
+
+                if self.input_container is None:
+                    self.create_input_container()
+                    continue
+
+                # Читаем пакеты вместо фреймов для лучшей синхронизации
+                for packet in self.input_container.demux():
+                    self.check_heartbeat()  # Проверка между пакетами
+
+                    # Быстрый выход по запросу остановки или закрытию потока
+                    if self._stop_requested or not self.opened:
                         break
 
-                    if self.need_skip:
-                        continue
+                    if self.need_skip or self.need_restart:
+                        break
 
-                    # Проверяем, нужно ли перезапустить контейнер
-                    current_time = time.time()
-
-                    # Периодический flush
-                    if current_time - last_flush_time > flush_interval:
-                        with self._container_lock:
-                            self.flush_output_container()
-                        last_flush_time = current_time
-
-                    if self.need_restart:
-                        if (current_time - self.last_restart_time) > self.restart_delay:
-                            self._perform_restart()
-                        else:
-                            # Не крутимся в busy-loop до истечения restart_delay
-                            self._wait_or_stop(self.restart_delay)
-                        continue
-
-                    if self.input_container is None:
-                        self.create_input_container()
-                        continue
-
-                    # Читаем пакеты вместо фреймов для лучшей синхронизации
-                    for packet in self.input_container.demux():
-                        self.check_heartbeat()  # Проверка между пакетами
-
-                        # Быстрый выход по запросу остановки или закрытию потока
+                    # Демультиплексируем пакеты в фреймы
+                    for frame in packet.decode():
                         if self._stop_requested or not self.opened:
                             break
+                        self.last_frame_time = time.time()  # Обновляем время последнего кадра
+                        if isinstance(frame, av.AudioFrame):
+                            # WebRTC: раздаём аудио зрителям независимо от записи
+                            self._publish_audio_frame(frame)
 
-                        if self.need_skip or self.need_restart:
-                            break
+                            # Обработка аудиофреймов для записи
+                            if (hasattr(self, 'audio_output_stream')
+                                    and self.audio_output_stream is not None):
+                                if self.output_container is not None and self.write:
+                                    # Устанавливаем PTS для аудио
+                                    if not hasattr(self, 'audio_pts'):
+                                        self.audio_pts = 0
+                                    frame.pts = self.audio_pts
+                                    self.audio_pts += frame.samples
 
-                        # Демультиплексируем пакеты в фреймы
-                        for frame in packet.decode():
-                            if self._stop_requested or not self.opened:
-                                break
-                            self.last_frame_time = time.time()  # Обновляем время последнего кадра
-                            if isinstance(frame, av.AudioFrame):
-                                # WebRTC: раздаём аудио зрителям независимо от записи
-                                self._publish_audio_frame(frame)
+                                    # Кодируем и записываем аудиофрейм
+                                    for packet in self.audio_output_stream.encode(frame):
+                                        if self.audio_output_stream is not None:
+                                            self.output_container.mux(packet)
+                                        else:
+                                            break
+                                else:
+                                    self.destroy_output_container()
+                            continue
 
-                                # Обработка аудиофреймов для записи
-                                if (hasattr(self, 'audio_output_stream')
-                                        and self.audio_output_stream is not None):
-                                    if self.output_container is not None and self.write:
-                                        # Устанавливаем PTS для аудио
-                                        if not hasattr(self, 'audio_pts'):
-                                            self.audio_pts = 0
-                                        frame.pts = self.audio_pts
-                                        self.audio_pts += frame.samples
+                        if isinstance(frame, av.VideoFrame):
+                            # Обработка видеофреймов
+                            self.original = frame.to_ndarray(format='bgr24')
+                            self.resized = imutils.resize(self.original, width=640)
 
-                                        # Кодируем и записываем аудиофрейм
-                                        for packet in self.audio_output_stream.encode(frame):
-                                            if self.audio_output_stream is not None:
-                                                self.output_container.mux(packet)
-                                            else:
-                                                break
-                                    else:
-                                        self.destroy_output_container()
-                                continue
+                            # WebRTC: публикуем кадр зрителям до аналитики,
+                            # чтобы детекция/запись не «морозили» картинку
+                            self._publish_video_frame(frame)
 
-                            if isinstance(frame, av.VideoFrame):
-                                # Обработка видеофреймов
-                                self.original = frame.to_ndarray(format='bgr24')
-                                self.resized = imutils.resize(self.original, width=640)
+                            # Start permanent record or permanent screenshots
+                            if self.is_record_permanent() and self.time_part_start == 0:
+                                self.time_part_start = time.time()
 
-                                # WebRTC: публикуем кадр зрителям до аналитики,
-                                # чтобы детекция/запись не «морозили» картинку
-                                self._publish_video_frame(frame)
-
-                                # Start permanent record or permanent screenshots
-                                if self.is_record_permanent() and self.time_part_start == 0:
-                                    self.time_part_start = time.time()
-
-                                    if self.is_screenshots_mode():
-                                        res = CameraStorage.take_screenshot(self.camera, self.original)
-                                        Logger.debug(
-                                            f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]",
-                                            LoggerType.CAMERAS)
-                                    elif self.is_video_mode() and (self.output_container is None):
-                                        self.create_output_container(CameraStorage.video_path(self.camera))
-                                        self.write = True
-                                        # Create event
-                                        self.permanent_event = CameraEventsRepository.add_permanent_event(
-                                            camera=self.camera,
-                                            frame=self.original,
-                                            record_path=self.output_file
-                                        )
-                                        Logger.debug(
-                                            f'🎬 [{self.camera.name}] Permanent event start: #ID{self.permanent_event.id}]',
-                                            LoggerType.CAMERAS)
-
+                                if self.is_screenshots_mode():
+                                    res = CameraStorage.take_screenshot(self.camera, self.original)
                                     Logger.debug(
-                                        f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}',
+                                        f"[Camera {self.camera.name}] Take screenshot: success={res.success}, fn={res.filename}, dir={res.directory}]",
+                                        LoggerType.CAMERAS)
+                                elif self.is_video_mode() and (self.output_container is None):
+                                    self.create_output_container(CameraStorage.video_path(self.camera))
+                                    self.write = True
+                                    # Create event
+                                    self.permanent_event = CameraEventsRepository.add_permanent_event(
+                                        camera=self.camera,
+                                        frame=self.original,
+                                        record_path=self.output_file
+                                    )
+                                    Logger.debug(
+                                        f'🎬 [{self.camera.name}] Permanent event start: #ID{self.permanent_event.id}]',
                                         LoggerType.CAMERAS)
 
-                                # Take cover
-                                now = time.time()
-                                elapsed = now - self.screen_timer
-
-                                if elapsed > self.screen_interval:
-                                    CameraStorage.upload_cover(self.camera, self.original)
-                                    self.screen_timer = now
-
-                                # Write frames to output container if needed
-                                with self._container_lock:
-                                    if self.output_container is not None and self.write:
-                                        self.write_frame_safe(frame)
-                                    else:
-                                        self.destroy_output_container()
-
-                                pause = time.time() - self.silence_timer
-
-                                if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
-                                    frame_copy = self.resized.copy()
-                                    changes = self.tracker.detect_changes(frame_copy, self.original)
-                                    __frame = self.tracker.draw_rois(frame_copy, changes)
-
-                                elif self.is_record_permanent():
-                                    record_part_diff = time.time() - self.time_part_start
-                                    if record_part_diff > self.camera.record_duration * 60:
-                                        self.destroy_output_container()
-                                        Logger.debug(f'Camera {self.camera.name} end record video part',
-                                                     LoggerType.CAMERAS)
-
-                                first_run = False
-
-
-                except EOFError as e:
-                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
-                        Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
+                                Logger.debug(
+                                    f'📽 [{self.camera.name}] with permanent record mode: {self.camera.record_mode}',
                                     LoggerType.CAMERAS)
-                        self.need_restart = True
-                        self._wait_or_stop(1)
-                    pass
 
-                except av.error.FFmpegError as e:
-                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
-                        Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
-                        self.need_restart = True
-                        self.capture_error = True
-                        self._wait_or_stop(3)
-                except Exception as e:
-                    if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
-                        Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
-                        self.need_restart = True
-                        self.capture_error = True
-                        self._wait_or_stop(5)
-            self.destroy_output_container()
-            self.stop_input_container()
-            self.output_container = None
-            self.input_container = None
-            self.opened = False
+                            # Take cover
+                            now = time.time()
+                            elapsed = now - self.screen_timer
 
-            if not self._stop_requested:
-                Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
-        finally:
-            self.stop_frame_generation()
+                            if elapsed > self.screen_interval:
+                                CameraStorage.upload_cover(self.camera, self.original)
+                                self.screen_timer = now
+
+                            # Write frames to output container if needed
+                            with self._container_lock:
+                                if self.output_container is not None and self.write:
+                                    self.write_frame_safe(frame)
+                                else:
+                                    self.destroy_output_container()
+
+                            pause = time.time() - self.silence_timer
+
+                            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+                                frame_copy = self.resized.copy()
+                                changes = self.tracker.detect_changes(frame_copy, self.original)
+                                __frame = self.tracker.draw_rois(frame_copy, changes)
+
+                            elif self.is_record_permanent():
+                                record_part_diff = time.time() - self.time_part_start
+                                if record_part_diff > self.camera.record_duration * 60:
+                                    self.destroy_output_container()
+                                    Logger.debug(f'Camera {self.camera.name} end record video part',
+                                                 LoggerType.CAMERAS)
+
+                            first_run = False
+
+
+            except EOFError as e:
+                if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                    Logger.warn(f"⚠️ [{self.camera.name}] EOF reached, stream may be disconnected: {e}",
+                                LoggerType.CAMERAS)
+                    self.need_restart = True
+                    self._wait_or_stop(1)
+                pass
+
+            except av.error.FFmpegError as e:
+                if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                    Logger.err(f"⚠️ [{self.camera.name}] FFmpegError: {e}", LoggerType.CAMERAS)
+                    self.need_restart = True
+                    self.capture_error = True
+                    self._wait_or_stop(3)
+            except Exception as e:
+                if not self._stop_requested:  # Проверяем флаг перед обработкой ошибок
+                    Logger.err(f"⚠️ [{self.camera.name}] Unexpected error: {e}", LoggerType.CAMERAS)
+                    self.need_restart = True
+                    self.capture_error = True
+                    self._wait_or_stop(5)
+        self.destroy_output_container()
+        self.stop_input_container()
+        self.output_container = None
+        self.input_container = None
+        self.opened = False
+
+        if not self._stop_requested:
+            Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
 
     def _perform_restart(self):
         """Выполняет полный перезапуск потока"""
@@ -839,131 +820,6 @@ class CameraStream:
 
     def get_no_signal_frame(self):
         return get_no_signal_frame(width=640)
-
-    def start_frame_generation(self):
-        """Запускает генерацию кадров в отдельном потоке"""
-        with self.frame_generation_lock:
-            if self.frame_generation_running:
-                return
-
-            self.frame_generation_running = True
-            self.frame_generation_thread = threading.Thread(
-                target=self._frame_generation_worker,
-                daemon=True  # Важно: делаем поток демоном
-            )
-            self.frame_generation_thread.start()
-
-    def stop_frame_generation(self):
-        """Останавливает генерацию кадров"""
-        with self.frame_generation_lock:
-            self.frame_generation_running = False
-            if self.frame_generation_thread and self.frame_generation_thread.is_alive():
-                self.frame_generation_thread.join(timeout=1.0)
-            # Очищаем очередь
-            while not self.frame_queue.empty():
-                try:
-                    self.frame_queue.get_nowait()
-                except queue.Empty:
-                    break
-
-    def _frame_generation_worker(self):
-        """Рабочий поток для генерации кадров"""
-        while self.frame_generation_running and self.opened:
-            try:
-                if self.input_container is None or self.resized is None:
-                    frame = self.get_no_signal_frame()
-                else:
-                    frame = self.resized
-
-                ret, buffer = cv2.imencode('.jpg', frame)
-                if not ret:
-                    time.sleep(0.03)
-                    continue
-
-                frame_data = (b'--frame\r\n'
-                              b'Content-Type: image/jpeg\r\n\r\n' +
-                              buffer.tobytes() + b'\r\n')
-
-                # Очищаем очередь если она полная
-                if self.frame_queue.full():
-                    try:
-                        self.frame_queue.get_nowait()
-                    except queue.Empty:
-                        pass
-
-                self.frame_queue.put(frame_data)
-                time.sleep(0.03)
-
-            except Exception as e:
-                Logger.debug(f"[{self.camera.name}] Frame generation error: {e}", LoggerType.CAMERAS)
-                break
-
-    def generate_frames(self):
-
-        while True:
-            if self.input_container is None or self.resized is None:
-                frame = self.get_no_signal_frame()
-            else:
-                frame = self.resized
-            ret, buffer = cv2.imencode('.jpg', frame)
-            if not ret:
-                continue
-
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-    async def generate_frames_async(self):
-        """Асинхронная генерация кадров для StreamingResponse"""
-        # Проверяем состояние реестра перед запуском
-        if StreamRegistry.is_shutting_down():
-            return
-
-        if StreamRegistry.is_restarting():
-            # Если идет перезапуск, ждем его завершения
-            max_wait_time = 10  # seconds
-            wait_start = time.time()
-
-            while (StreamRegistry.is_restarting() and
-                   time.time() - wait_start < max_wait_time):
-                await asyncio.sleep(0.5)
-
-            if StreamRegistry.is_restarting():
-                # Если перезапуск затянулся, возвращаем ошибку
-                raise Exception("Stream restart taking too long")
-
-        self.start_frame_generation()
-
-        try:
-            while (self.opened and
-                   self.frame_generation_running and
-                   not StreamRegistry.is_shutting_down()):
-
-                # Проверяем, не начался ли перезапуск
-                if StreamRegistry.is_restarting():
-                    break
-
-                try:
-                    # Асинхронно получаем кадр из очереди
-                    frame_data = await asyncio.get_event_loop().run_in_executor(
-                        None, self.frame_queue.get, True, 1.0
-                    )
-                    yield frame_data
-                except queue.Empty:
-                    # Если нет кадров, отправляем заставку
-                    if not StreamRegistry.is_restarting():
-                        placeholder = self.get_no_signal_frame()
-                        ret, buffer = cv2.imencode('.jpg', placeholder)
-                        if ret:
-                            yield (b'--frame\r\n'
-                                   b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-                    await asyncio.sleep(0.5)
-                except Exception as e:
-                    Logger.debug(f"[{self.camera.name}] Async frame error: {e}", LoggerType.CAMERAS)
-                    break
-        finally:
-            if not StreamRegistry.is_restarting():
-                # Не останавливаем генерацию если идет перезапуск
-                self.stop_frame_generation()
 
     def is_stopped(self):
         return self._stop_requested
@@ -985,9 +841,6 @@ class CameraStream:
             self.daemon = Daemon(self.loop_frames)
             Logger.debug(f"👻 [{self.camera.name}] Daemon started", LoggerType.CAMERAS)
 
-        # Запускаем генерацию кадров
-        self.start_frame_generation()
-
         Logger.debug(f"✅ [{self.camera.name}] Camera stream started", LoggerType.CAMERAS)
 
     def request_stop(self):
@@ -1006,10 +859,6 @@ class CameraStream:
 
         self._stop_requested = True
         self.opened = False
-        self.frame_generation_running = False
-
-        # Останавливаем генерацию кадров
-        self.stop_frame_generation()
 
     def join_thread(self, timeout: float | None = None) -> bool:
         """Дожидается завершения потока-демона.
@@ -1038,13 +887,6 @@ class CameraStream:
             self.stop_input_container()
 
         self.daemon = None
-
-        # Очищаем очередь кадров
-        while not self.frame_queue.empty():
-            try:
-                self.frame_queue.get_nowait()
-            except queue.Empty:
-                break
 
     def stop(self):
         """Корректная остановка всех потоков камеры"""

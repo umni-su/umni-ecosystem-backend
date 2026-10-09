@@ -99,14 +99,11 @@ class StreamRegistry:
 
     @classmethod
     def stop_all_streams(cls):
-        """Останавливает все потоки генерации кадров"""
+        """Останавливает все потоки камер"""
         # Работаем по снимку вне блокировки: остановка потоков может блокировать
         streams = cls.get_all_streams()
         for stream in streams:
             try:
-                if hasattr(stream, 'stop_frame_generation'):
-                    stream.stop_frame_generation()
-                # Также останавливаем основной поток камеры если нужно
                 if hasattr(stream, 'opened'):
                     stream.opened = False
             except Exception as e:
