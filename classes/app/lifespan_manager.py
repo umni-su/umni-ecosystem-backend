@@ -28,6 +28,7 @@ from classes.notifications.via.matrix_notification import MatrixNotification
 from classes.notifications.via.telegram_notification import TelegramNotification
 from entities.enums.notification_type_enum import NotificationTypeEnum
 from services.cameras.cameras_service import CamerasService
+from services.cameras.classes.camera_notifier import CameraNotifier
 from services.cameras.classes.stream_registry import StreamRegistry, StreamState
 
 from database.migrations import MigrationManager
@@ -111,6 +112,12 @@ class LifespanManager:
             RuleService.task_manager.stop()
         except Exception as e:
             Logger.err(f"Error stopping rule task manager: {e}", LoggerType.APP)
+
+        # 6. Останавливаем пул нотификаций камер
+        try:
+            CameraNotifier.shutdown()
+        except Exception as e:
+            Logger.err(f"Error stopping camera notifier: {e}", LoggerType.APP)
 
         Logger.debug("Application streams stopped", LoggerType.APP)
 

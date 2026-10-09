@@ -14,8 +14,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import threading
 import traceback
-from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Any, TYPE_CHECKING
 
 from classes.events.event_bus import event_bus
@@ -54,19 +55,77 @@ class CameraNotifier:
     active_events: list[CameraEventBaseModel] = []
     active_recordings: list[CameraRecordingModel] = []
 
-    @staticmethod
-    def _find_active_event(area_id: int):
-        for event in CameraNotifier.active_events:
-            if event.area_id == area_id:
-                return event
+    # Защита общего состояния от гонок между шардовыми воркерами
+    _state_lock = threading.RLock()
+
+    # Пул воркеров, шардированный по camera_id: события одной камеры
+    # обрабатываются строго последовательно, но число потоков ограничено.
+    _shards_count = 8
+    _shards: list[ThreadPoolExecutor] = []
+    _shards_lock = threading.Lock()
+
+    @classmethod
+    def _get_shard(cls, camera_id: int) -> ThreadPoolExecutor:
+        with cls._shards_lock:
+            if not cls._shards:
+                cls._shards = [
+                    ThreadPoolExecutor(
+                        max_workers=1,
+                        thread_name_prefix=f"cam-notify-{i}"
+                    )
+                    for i in range(cls._shards_count)
+                ]
+            return cls._shards[camera_id % cls._shards_count]
+
+    @classmethod
+    def shutdown(cls):
+        """Останавливает пул нотификаций (вызывать при завершении приложения)."""
+        with cls._shards_lock:
+            for executor in cls._shards:
+                executor.shutdown(wait=False)
+            cls._shards = []
+
+    @classmethod
+    def _find_active_event(cls, area_id: int):
+        with cls._state_lock:
+            for event in cls.active_events:
+                if event.area_id == area_id:
+                    return event
         return None
 
-    @staticmethod
-    def _find_active_recording(camera_id: int):
-        for record in CameraNotifier.active_recordings:
-            if record.camera_id == camera_id:
-                return record
+    @classmethod
+    def _add_active_event(cls, event: CameraEventBaseModel):
+        with cls._state_lock:
+            cls.active_events.append(event)
+
+    @classmethod
+    def _remove_active_event(cls, event: CameraEventBaseModel):
+        with cls._state_lock:
+            try:
+                cls.active_events.remove(event)
+            except ValueError:
+                pass
+
+    @classmethod
+    def _find_active_recording(cls, camera_id: int):
+        with cls._state_lock:
+            for record in cls.active_recordings:
+                if record.camera_id == camera_id:
+                    return record
         return None
+
+    @classmethod
+    def _add_active_recording(cls, record: CameraRecordingModel):
+        with cls._state_lock:
+            cls.active_recordings.append(record)
+
+    @classmethod
+    def _remove_active_recording(cls, record: CameraRecordingModel):
+        with cls._state_lock:
+            try:
+                cls.active_recordings.remove(record)
+            except ValueError:
+                pass
 
     @staticmethod
     def handle_motion_start(event: "ROIDetectionEvent", stream: "CameraStream"):
@@ -77,7 +136,7 @@ class CameraNotifier:
             event (ROIDetectionEvent): Событие обнаружения движения
             stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_start, event, stream)
+        CameraNotifier._dispatch(event.camera.id, CameraNotifier._on_motion_start, event, stream)
 
     @staticmethod
     def handle_motion_end(event: "ROIDetectionEvent", stream: "CameraStream"):
@@ -88,7 +147,7 @@ class CameraNotifier:
             event (ROIDetectionEvent): Событие окончания движения
             stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_motion_end, event, stream)
+        CameraNotifier._dispatch(event.camera.id, CameraNotifier._on_motion_end, event, stream)
 
     @staticmethod
     def handle_recording_start(event: "ROIRecordEvent", stream: "CameraStream"):
@@ -99,7 +158,7 @@ class CameraNotifier:
             event (ROIRecordEvent): Событие начала записи
             stream:
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_start, event, stream)
+        CameraNotifier._dispatch(event.camera.id, CameraNotifier._on_recording_start, event, stream)
 
     @staticmethod
     def handle_recording_end(event: "ROIRecordEvent", stream: "CameraStream"):
@@ -110,7 +169,7 @@ class CameraNotifier:
             event (ROIRecordEvent): Событие окончания записи
             stream: (CameraStream)
         """
-        CameraNotifier._notify_in_thread(CameraNotifier._on_recording_end, event, stream)
+        CameraNotifier._dispatch(event.camera.id, CameraNotifier._on_recording_end, event, stream)
 
     @staticmethod
     def _on_motion_start(event: "ROIDetectionEvent", stream: "CameraStream"):
@@ -200,8 +259,8 @@ class CameraNotifier:
                 recording_model = CameraRecordingModel.model_validate(
                     recording.to_dict()
                 )
-                CameraNotifier.active_recordings.append(recording_model)
-            CameraNotifier.active_events.append(event_model)
+                CameraNotifier._add_active_recording(recording_model)
+            CameraNotifier._add_active_event(event_model)
 
             # Publish motion start event
             event_bus.publish(EventType.MOTION_START, event=event_model)
@@ -245,7 +304,7 @@ class CameraNotifier:
             )
             WebSockets.send_broadcast(message)
 
-            CameraNotifier.active_events.remove(founded_event)
+            CameraNotifier._remove_active_event(founded_event)
 
             # Publish motion end event
             event_bus.publish(EventType.MOTION_END, event=event_model)
@@ -298,22 +357,24 @@ class CameraNotifier:
                     #         )
 
                     sess.commit()
-                    CameraNotifier.active_recordings.remove(founded_record)
+                    CameraNotifier._remove_active_recording(founded_record)
                     Logger.debug(
                         f"[{recording.end}] Завершена запись с {event.camera.name}. Длительность: {recording.duration:.2f} сек",
                         LoggerType.CAMERAS)
                     stream.stop_write_video()
 
-    @staticmethod
-    def _notify_in_thread(target: Callable, *args: Any, **kwargs: Any) -> None:
-        """Запускает переданную функцию в отдельном потоке с обработкой исключений.
+    @classmethod
+    def _dispatch(cls, camera_id: int, target: Callable, *args: Any, **kwargs: Any) -> None:
+        """Планирует обработку события в шардовом пуле с обработкой исключений.
+
+        События одной камеры выполняются строго последовательно (шард с одним
+        воркером), поэтому больше не создаётся отдельный поток на каждое событие.
 
         Args:
-            target (Callable): Функция для выполнения в потоке
+            camera_id (int): Идентификатор камеры (ключ шардирования)
+            target (Callable): Функция для выполнения
             *args: Аргументы для целевой функции
             **kwargs: Именованные аргументы для целевой функции
-
-        При возникновении ошибки логирует её с деталями.
         """
 
         def wrapped_target():
@@ -331,10 +392,9 @@ class CameraNotifier:
                 )
                 Logger.err(error_msg, LoggerType.CAMERAS)
 
-        thread = Thread(
-            daemon=True,
-            target=wrapped_target,
-            name=f"CameraNotifierThread-{target.__name__}"  # Полезно для отладки
-        )
-        thread.start()
-        Logger.debug(f"🐍 Запущен поток для обработки {target.__name__} (ID: {thread.native_id})", LoggerType.CAMERAS)
+        try:
+            cls._get_shard(camera_id).submit(wrapped_target)
+        except RuntimeError:
+            # Пул уже остановлен (shutdown) — обрабатываем синхронно, чтобы
+            # не потерять финальные события при graceful shutdown
+            wrapped_target()
