@@ -39,3 +39,7 @@ class BaseService:
 
     def run(self):
         return
+
+    def stop(self):
+        """Хук остановки сервиса. По умолчанию ничего не делает."""
+        self.running = False

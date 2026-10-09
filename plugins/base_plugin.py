@@ -49,6 +49,7 @@ class BasePlugin(ABC):
     daemon: Daemon | None = None
     is_core: bool = False
     _is_running: bool = False
+    _worker_thread: Optional[Any] = None
     plugin_name = None
     manager: DeviceManager
     repository: DeviceRepository
@@ -175,13 +176,27 @@ class BasePlugin(ABC):
             thread = Thread(
                 target=self.execute,
                 args=(data,),
-                daemon=True
+                daemon=True,
+                name=f"{self.name}-execute"
             )
+            # Сохраняем ссылку, чтобы фреймворк мог дождаться завершения
+            # рабочего потока плагина при остановке
+            self._worker_thread = thread
             thread.start()
 
     def on_stop(self):
         """Вызывается при остановке плагина"""
         self._is_running = False
+
+    def join_worker(self, timeout: float = 5.0) -> bool:
+        """Дожидается завершения рабочего потока execute().
+
+        Возвращает True, если поток завершился (или отсутствовал).
+        """
+        thread = getattr(self, '_worker_thread', None)
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=timeout)
+        return not (thread is not None and thread.is_alive())
 
     def on_config_update(self, new_config: Dict[str, Any]):
         """Вызывается при обновлении конфигурации"""

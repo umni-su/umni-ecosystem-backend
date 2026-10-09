@@ -56,6 +56,20 @@ class ServiceRunner:
                     except Exception as e:
                         Logger.err(f"⏩ ServiceRunner __init__ {e}", LoggerType.SERVICES)
 
+    def stop(self):
+        """Останавливает все запущенные сервисы (best-effort)."""
+        for service in self.services:
+            try:
+                stop = getattr(service, 'stop', None)
+                if callable(stop):
+                    stop()
+            except Exception as e:
+                Logger.err(
+                    f"⏩ ServiceRunner stop error for "
+                    f"{getattr(service, 'name', service)}: {e}",
+                    LoggerType.SERVICES
+                )
+
     def get_service_by_name(self, service_name: str) -> Optional[BaseService]:
         """
         Получить инстанс сервиса по его имени

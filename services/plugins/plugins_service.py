@@ -40,6 +40,8 @@ from services.base_service import BaseService
 class PluginsService(BaseService):
     name = "plugins"
     plugins_dir: str | Path = Path("plugins")
+    # Таймаут ожидания завершения рабочего потока плагина при остановке (сек)
+    plugin_stop_timeout = 5.0
 
     def __init__(self, config: EcosystemDatabaseConfiguration):
         super().__init__(config)
@@ -345,6 +347,11 @@ class PluginsService(BaseService):
 
             plugin_instance = self._plugins[plugin_name]
             plugin_instance.on_stop()
+            # Дожидаемся завершения рабочего потока execute() даже если сам
+            # плагин не вызвал super().on_stop() из своего on_stop()
+            join_worker = getattr(plugin_instance, 'join_worker', None)
+            if callable(join_worker):
+                join_worker(timeout=self.plugin_stop_timeout)
             del self._plugins[plugin_name]
 
             with write_session() as session:

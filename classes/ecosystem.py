@@ -83,6 +83,11 @@ class Ecosystem:
     def is_installed(self):
         return self.installed
 
+    def stop_services(self):
+        """Останавливает фоновые сервисы (плагины и т.п.), best-effort."""
+        if self.service_runner is not None:
+            self.service_runner.stop()
+
     def get_logger_service(self):
         """Безопасное получение сервиса логирования"""
         if self.service_runner is not None:
