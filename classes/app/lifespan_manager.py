@@ -79,12 +79,6 @@ class LifespanManager:
 
         Logger.debug("Stopping all streams gracefully...", LoggerType.APP)
 
-        # 0. Останавливаем фоновые сервисы (плагины и т.п.) через их on_stop()
-        try:
-            Ecosystem().stop_services()
-        except Exception as e:
-            Logger.err(f"Error stopping services: {e}", LoggerType.APP)
-
         # 1. Останавливаем опрос камер, чтобы потоки не пересоздавались
         try:
             CamerasService.stop_polling()
@@ -128,6 +122,14 @@ class LifespanManager:
             Logger.err(f"Error stopping camera notifier: {e}", LoggerType.APP)
 
         Logger.debug("Application streams stopped", LoggerType.APP)
+
+        # 7. Только после того как камеры/запись финализированы, останавливаем
+        #    фоновые сервисы (плагины и т.п.) через их on_stop(). Медленное
+        #    завершение плагинов (например tuya) задерживает только этот шаг.
+        try:
+            Ecosystem().stop_services()
+        except Exception as e:
+            Logger.err(f"Error stopping services: {e}", LoggerType.APP)
 
     @contextlib.asynccontextmanager
     async def lifespan(self, app: FastAPI) -> AsyncIterator[None]:
