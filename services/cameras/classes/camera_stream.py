@@ -213,8 +213,13 @@ class CameraStream:
 
             if changed_fields and not 'cover' in changed_fields:
                 Logger.debug(f"Changes detected in {self.camera.name}: {changed_fields}", LoggerType.CAMERAS)
-                Logger.debug(f'{self.camera.name} was changed! Changes: {changed_fields}', LoggerType.CAMERAS)
-                self.need_restart = True
+                if self.camera.active and not camera.active:
+                    self.stop()
+                else:
+                    if not self.opened:
+                        self.start()
+                    else:
+                        self.need_restart = True
 
         self.camera = camera
         self.id = self.camera.id
@@ -728,6 +733,7 @@ class CameraStream:
             self.stop_input_container()
             self.output_container = None
             self.input_container = None
+            self.opened = False
 
             if not self._stop_requested:
                 Logger.warn(f'⛔️ [{self.camera.name}] stop stream', LoggerType.CAMERAS)
