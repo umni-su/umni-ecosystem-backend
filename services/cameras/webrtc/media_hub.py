@@ -47,7 +47,7 @@ class CameraMediaHub:
             camera_id: int,
             max_width: int = 0,
             max_video_queue: int = 4,
-            max_audio_queue: int = 32,
+            max_audio_queue: int = 100,
     ):
         self.camera_id = camera_id
         self._max_width = max(0, int(max_width or 0))
