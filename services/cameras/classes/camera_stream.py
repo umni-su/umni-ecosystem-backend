@@ -77,7 +77,7 @@ class CameraStream:
 
         # Timer processing settings
         self.silence_timer: float = 0
-        self.silence_pause: int = 10
+        self.silence_pause: float = 1.0
 
         # Frame processing
         self.font = cv2.FONT_HERSHEY_SIMPLEX
@@ -761,9 +761,8 @@ class CameraStream:
                             pause = time.time() - self.silence_timer
 
                             if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
-                                frame_copy = self.resized.copy()
-                                changes = self.tracker.detect_changes(frame_copy, self.original)
-                                __frame = self.tracker.draw_rois(frame_copy, changes)
+                                self.tracker.detect_changes(self.resized, self.original)
+                                self.silence_timer = time.time()
 
                             elif self.is_record_permanent():
                                 record_part_diff = time.time() - self.time_part_start
