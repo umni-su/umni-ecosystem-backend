@@ -42,10 +42,19 @@ class MigrationManager:
     @staticmethod
     def get_alembic_config(config_path: Optional[str] = None) -> Config:
         """Создаем конфиг Alembic с учетом настроек приложения"""
-        alembic_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        config_path = config_path or os.path.join(alembic_dir, "alembic.ini")
+        backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        config_path = config_path or os.path.join(backend_root, "alembic.ini")
+        migrations_dir = os.path.join(backend_root, "database", "migrations").replace(os.sep, "/")
 
-        alembic_cfg = Config(config_path)
+        if os.path.isfile(config_path):
+            alembic_cfg = Config(config_path)
+        else:
+            # alembic.ini может отсутствовать в образе (например, собран из git без ini-файла)
+            alembic_cfg = Config()
+            alembic_cfg.set_main_option("prepend_sys_path", ".")
+
+        # Путь к скриптам миграций задаём из кода, чтобы не зависеть от alembic.ini.
+        alembic_cfg.set_main_option("script_location", migrations_dir)
         # Переопределяем URL из настроек приложения
         alembic_cfg.set_main_option("sqlalchemy.url", str(settings.database_url))
         return alembic_cfg
