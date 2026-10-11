@@ -16,15 +16,18 @@
 import os
 from pathlib import Path
 
+from classes.storages.path_map import path_map
+
 
 class Filesystem:
     @staticmethod
     def mkdir(path_or_filename: str, mode: int = 0o777, recursive: bool = True, exist=True):
-        path = Path(path_or_filename)
+        path = Path(path_map.resolve(path_or_filename))
         path.mkdir(mode, recursive, exist)
 
     @staticmethod
     def exists(path: str) -> bool:
+        path = path_map.resolve(path)
         if not os.path.isabs(path):
             path = os.path.abspath(path)
         return os.path.exists(path)
@@ -39,6 +42,7 @@ class Filesystem:
         total_size = 0
         if start_path is None:
             return total_size
+        start_path = path_map.resolve(start_path)
         for dirpath, dirnames, filenames in os.walk(start_path):
             for f in filenames:
                 fp = os.path.join(dirpath, f)

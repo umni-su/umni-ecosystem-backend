@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from classes.storages.filesystem import Filesystem
+from classes.storages.path_map import path_map
 from classes.storages.storage import StorageBase
 from database.session import write_session
 from entities.camera import CameraEntity
@@ -44,7 +45,7 @@ class CameraStorage(StorageBase):
     def upload_cover(cls, camera: "CameraModelWithRelations", frame: cv2.Mat):
 
         try:
-            cls.path = camera.storage.path
+            cls.path = path_map.resolve(camera.storage.path)
             rel_path = os.path.join(
                 str(camera.id),
                 f'cover_{cls.date_filename()}.jpg'
@@ -137,7 +138,7 @@ class CameraStorage(StorageBase):
             if camera.cover is None:
                 return cls.image_response_from_bytes(get_no_signal_frame(width=width))
             path = os.path.join(
-                camera.storage.path,
+                path_map.resolve(camera.storage.path),
                 camera.cover
             )
             if os.path.exists(path):
@@ -151,7 +152,7 @@ class CameraStorage(StorageBase):
     @classmethod
     def camera_path(cls, camera: "CameraModelWithRelations"):
         return os.path.join(
-            camera.storage.path,
+            path_map.resolve(camera.storage.path),
             str(camera.id)
         )
 

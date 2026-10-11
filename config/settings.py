@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     DEBUG_MODE: str = ''
     ENCRYPTION_KEY: str = ''
 
+    # Корень, куда в контейнере монтируются диски хоста (см. docker-compose.yml).
+    # Windows-путь "D:\\folder" резолвится в "<STORAGE_HOST_BASE>/D/folder".
+    # На нативной Windows/Linux значение игнорируется, если путь недоступен.
+    STORAGE_HOST_BASE: str = '/host'
+
     # WebRTC (просмотр камер в браузере)
     # STUN-серверы через запятую, напр. "stun:stun.l.google.com:19302".
     # Пусто — только host-кандидаты (локальная сеть).

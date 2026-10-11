@@ -16,6 +16,7 @@
 import psutil
 from pydantic import computed_field
 
+from classes.storages.path_map import path_map
 from classes.websockets.messages.ws_message_base import WebsocketMessageBase
 from classes.websockets.ws_message_topic import WebsocketMessageTopicEnum
 
@@ -35,7 +36,7 @@ class WebsocketMessageStorageSize(WebsocketMessageBase):
     @computed_field
     @property
     def usage(self) -> dict:
-        usage = psutil.disk_usage(self.storage_path)
+        usage = psutil.disk_usage(path_map.resolve(self.storage_path))
         storage_percent = 100 * self.size / usage.total
         used_total = 100 * usage.used / usage.total
         return {

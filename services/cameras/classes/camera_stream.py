@@ -33,6 +33,7 @@ from config.settings import settings
 from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
+from classes.storages.path_map import path_map
 from classes.thread.daemon import Daemon
 
 from entities.enums.camera_record_type_enum import CameraRecordTypeEnum
@@ -218,7 +219,7 @@ class CameraStream:
         self.camera = camera
         self.id = self.camera.id
         self.link = self.prepare_link(self.camera)
-        self.path = os.path.join(self.camera.storage.path, str(self.camera.id))
+        self.path = os.path.join(path_map.resolve(self.camera.storage.path), str(self.camera.id))
 
         # WebRTC hub камеры: раздаёт уже декодированные кадры зрителям
         if self.media_hub is None:
