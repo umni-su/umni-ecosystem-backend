@@ -6,7 +6,6 @@ database/source/*.sqlite
 .env
 .env.production
 .env.development
-alembic.ini
 .venv
 .idea
 out
