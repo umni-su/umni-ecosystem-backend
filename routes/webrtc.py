@@ -73,6 +73,7 @@ def get_webrtc_config(
     return {
         "ice_servers": ice_servers,
         "max_width": settings.WEBRTC_MAX_WIDTH,
+        "default_width": settings.WEBRTC_DEFAULT_WIDTH,
     }
 
 
@@ -122,10 +123,11 @@ async def webrtc_endpoint(
                     continue
 
                 # Разрешение видео на сессию (клип по settings.WEBRTC_MAX_WIDTH).
-                # По умолчанию — максимальное доступное (как раньше).
+                # По умолчанию — settings.WEBRTC_DEFAULT_WIDTH (клиент может
+                # поднять до максимума через set_width).
                 video_width = _normalize_width(
                     message.get('width'),
-                    default=settings.WEBRTC_MAX_WIDTH,
+                    default=settings.WEBRTC_DEFAULT_WIDTH,
                 )
 
                 # Пересоздаём сессию с тем же id (повторный offer/реконнект)

@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     WEBRTC_STUN_URLS: str = ''
     # Максимальная ширина видео для WebRTC. 0 — отдавать исходное разрешение.
     WEBRTC_MAX_WIDTH: int = 1920
+    # Ширина видео по умолчанию (когда клиент не запросил конкретную).
+    # Полный максимум (WEBRTC_MAX_WIDTH) остаётся доступен через set_width.
+    WEBRTC_DEFAULT_WIDTH: int = 1280
 
     # Автоматически создаем DSN строку
     @property
