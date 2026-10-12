@@ -26,8 +26,12 @@ from aiortc import (
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.settings import settings
+from services.cameras.webrtc.encoder import apply_realtime_encoder
 from services.cameras.webrtc.media_hub import CameraMediaHub
 from services.cameras.webrtc.tracks import HubAudioTrack, HubVideoTrack
+
+# libx264(preset=ultrafast) вместо дефолтного preset=medium у aiortc.
+apply_realtime_encoder()
 
 SendCallable = Callable[[dict], Awaitable[None]]
 

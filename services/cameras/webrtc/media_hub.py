@@ -45,12 +45,10 @@ class CameraMediaHub:
     def __init__(
             self,
             camera_id: int,
-            max_width: int = 0,
             max_video_queue: int = 4,
             max_audio_queue: int = 32,
     ):
         self.camera_id = camera_id
-        self._max_width = max(0, int(max_width or 0))
 
         self._lock = threading.Lock()
         self._video_subs: set[asyncio.Queue] = set()
@@ -63,22 +61,6 @@ class CameraMediaHub:
         self._clock_start = time.monotonic()
         self._audio_pts = 0
         self._resampler: Optional[av.AudioResampler] = None
-        self._target_size: Optional[tuple[int, int]] = None
-
-    # --- Настройки ---------------------------------------------------------
-
-    def set_max_width(self, width: int):
-        with self._lock:
-            self._max_width = max(0, int(width or 0))
-
-    def get_target_size(self) -> tuple[int, int]:
-        """Размер, к которому приводится видео (для заглушки, пока нет кадров)."""
-        with self._lock:
-            if self._target_size is not None:
-                return self._target_size
-            width = self._max_width or 1920
-        height = int(round(width * 9 / 16))
-        return self._even(width), self._even(height)
 
     # --- Подписки ----------------------------------------------------------
 
@@ -134,24 +116,16 @@ class CameraMediaHub:
             return
 
         try:
-            width, height = self._scaled_size(frame.width, frame.height)
-            with self._lock:
-                self._target_size = (width, height)
             pts = int((time.monotonic() - self._clock_start) * VIDEO_CLOCK_RATE)
 
-            # Один общий кадр canonical-размера для всех зрителей: твоими
-            # глазами каждый зритель доскаливает до своего разрешения в recv,
-            # создавая собственный экземпляр кадра.
-            if (width, height) != (frame.width, frame.height):
-                base = frame.reformat(width=width, height=height, format='yuv420p')
-            else:
-                # Свой объект: нельзя отдавать кадр декодера в event loop
-                base = frame.reformat(format='yuv420p')  # всегда возвращает новый объект
-
-            # Каждому подписчику — свой экземпляр, чтобы reformat в recv
-            # не трогал общий AVFrame
-            for queue in subs:
-                clone = base.reformat(format=base.format.name)  # или _copy_frame
+            # Каждому зрителю — отдельный объект кадра: декодер переиспользует
+            # свой буфер, а масштаб под конкретного зрителя делает его трек
+            # в recv (ровно один раз). Здесь только отвязываемся от декодера.
+            source = frame.reformat(format='yuv420p')  # всегда новый объект
+            for index, queue in enumerate(subs):
+                # Последнему отдаём сам source, остальным — собственные копии,
+                # чтобы ни один кадр не читался/менялся двумя зрителями.
+                clone = source if index == len(subs) - 1 else source.reformat(format=source.format.name)
                 clone.pts = pts
                 clone.time_base = VIDEO_TIME_BASE
                 self._schedule_put(loop, queue, clone)
@@ -202,22 +176,6 @@ class CameraMediaHub:
             queue.put_nowait(item)
         except Exception:
             pass
-
-    def _scaled_size(self, width: int, height: int) -> tuple[int, int]:
-        with self._lock:
-            max_width = self._max_width
-        if max_width and width > max_width:
-            ratio = max_width / float(width)
-            width = max_width
-            height = int(round(height * ratio))
-        return self._even(width), self._even(height)
-
-    @staticmethod
-    def _even(value: int) -> int:
-        value = int(value)
-        if value < 2:
-            return 2
-        return value - (value % 2)
 
 
 class MediaHubRegistry:

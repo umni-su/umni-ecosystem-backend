@@ -59,15 +59,18 @@ class HubVideoTrack(VideoStreamTrack):
             raise MediaStreamError
         frame = await self.queue.get()
 
-        pts = frame.pts
-        time_base = frame.time_base
         width = self._target_width(frame.width)
         height = self._target_height(frame, width)
 
-        # Всегда создаём новый объект, даже если размеры совпали
-        frame = frame.reformat(width=width, height=height, format='yuv420p')
-        frame.pts = pts
-        frame.time_base = time_base
+        # Кадр из hub приходит в yuv420p и нативном размере; масштаб под
+        # зрителя делаем здесь ровно один раз. Если размер уже целевой —
+        # лишний reformat/копию не создаём.
+        if frame.width != width or frame.height != height or frame.format.name != 'yuv420p':
+            pts = frame.pts
+            time_base = frame.time_base
+            frame = frame.reformat(width=width, height=height, format='yuv420p')
+            frame.pts = pts
+            frame.time_base = time_base
         return frame
 
     @staticmethod

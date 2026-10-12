@@ -29,7 +29,6 @@ from pydantic import BaseModel
 
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
-from config.settings import settings
 from classes.logger.logger import Logger
 from classes.storages.camera_storage import CameraStorage
 from classes.storages.filesystem import Filesystem
@@ -223,13 +222,8 @@ class CameraStream:
 
         # WebRTC hub камеры: раздаёт уже декодированные кадры зрителям
         if self.media_hub is None:
-            self.media_hub = CameraMediaHub(
-                camera_id=self.id,
-                max_width=settings.WEBRTC_MAX_WIDTH,
-            )
+            self.media_hub = CameraMediaHub(camera_id=self.id)
             MediaHubRegistry.register(self.media_hub)
-        else:
-            self.media_hub.set_max_width(settings.WEBRTC_MAX_WIDTH)
 
         if self.camera.record_mode != camera.record_mode:
             self.destroy_output_container()
@@ -710,17 +704,29 @@ class CameraStream:
                             continue
 
                         if isinstance(frame, av.VideoFrame):
-                            # Обработка видеофреймов
-                            self.original = frame.to_ndarray(format='bgr24')
-                            self.resized = imutils.resize(self.original, width=640)
-
                             # WebRTC: публикуем кадр зрителям до аналитики,
                             # чтобы детекция/запись не «морозили» картинку
                             self._publish_video_frame(frame)
 
+                            now = time.time()
+                            pause = now - self.silence_timer
+                            elapsed = now - self.screen_timer
+
+                            record_start = self.is_record_permanent() and self.time_part_start == 0
+                            cover_due = elapsed > self.screen_interval
+                            detection_due = self.is_detection_mode() and (pause > self.silence_pause or first_run is True)
+
+                            # Полный BGR-кадр и 640-ресайз нужны только реальным
+                            # потребителям (детекция/обложка/скриншот/событие), а не
+                            # каждому кадру при live-просмотре: детекция и так
+                            # вызывается не чаще раза в self.silence_pause.
+                            if record_start or cover_due or detection_due:
+                                self.original = frame.to_ndarray(format='bgr24')
+                                self.resized = imutils.resize(self.original, width=640)
+
                             # Start permanent record or permanent screenshots
-                            if self.is_record_permanent() and self.time_part_start == 0:
-                                self.time_part_start = time.time()
+                            if record_start:
+                                self.time_part_start = now
 
                                 if self.is_screenshots_mode():
                                     res = CameraStorage.take_screenshot(self.camera, self.original)
@@ -745,10 +751,7 @@ class CameraStream:
                                     LoggerType.CAMERAS)
 
                             # Take cover
-                            now = time.time()
-                            elapsed = now - self.screen_timer
-
-                            if elapsed > self.screen_interval:
+                            if cover_due:
                                 CameraStorage.upload_cover(self.camera, self.original)
                                 self.screen_timer = now
 
@@ -759,11 +762,9 @@ class CameraStream:
                                 else:
                                     self.destroy_output_container()
 
-                            pause = time.time() - self.silence_timer
-
-                            if self.is_detection_mode() and (pause > self.silence_pause or first_run is True):
+                            if detection_due:
                                 self.tracker.detect_changes(self.resized, self.original)
-                                self.silence_timer = time.time()
+                                self.silence_timer = now
 
                             elif self.is_record_permanent():
                                 record_part_diff = time.time() - self.time_part_start
