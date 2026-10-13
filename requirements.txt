@@ -74,7 +74,7 @@ Pygments==2.21.0
 PyJWT==2.13.0
 pylibsrtp==1.0.0
 pyopenssl==26.4.0
-pyTelegramBotAPI==4.36.1
+pyTelegramBotAPI==4.37.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.3
 python-gettext==5.0
