@@ -96,7 +96,7 @@ SQLAlchemy==2.0.52
 sqlmodel==0.0.42
 starlette==1.6.0
 Telethon==1.44.0
-typer==0.27.2
+typer==0.27.3
 typing-inspection==0.4.4
 typing_extensions==4.16.0
 tzdata==2026.3
