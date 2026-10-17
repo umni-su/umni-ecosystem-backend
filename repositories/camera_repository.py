@@ -121,7 +121,7 @@ class CameraRepository(BaseRepository):
             camera.active = model.active
             camera.alerts = model.alerts
             camera.record = model.record
-            camera.record_mode = model.record_mode.value
+            camera.record_mode = None if model.record_mode is None else model.record_mode.value
             camera.record_duration = model.record_duration
             camera.delete_after = model.delete_after
             if model.protocol is not CameraProtocolEnum.USB:
