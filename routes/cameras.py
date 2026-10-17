@@ -73,6 +73,7 @@ register_category_permissions(
     ]
 )
 
+
 @cameras.get('', response_model=list[CameraModelWithRelations])
 def get_cameras(
         user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
@@ -169,7 +170,7 @@ def save_camera_areas(
         areas: list[CameraAreaBaseModel],
 ):
     camera = CameraRepository.get_camera(camera_id)
-    saved_areas = CameraAreaRepository.save_areas_data(areas, camera)  # TODO fix concurent queries
+    saved_areas = CameraAreaRepository.save_areas_data(areas, camera)  # TODO fix concurrent queries
 
     return saved_areas
 

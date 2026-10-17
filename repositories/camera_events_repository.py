@@ -248,7 +248,8 @@ class CameraEventsRepository(BaseRepository):
                     session=sess,
                     page_params=params,
                     where_conditions=where_conditions,
-                    order_by=col(CameraEventEntity.start).desc()
+                    order_by=col(CameraEventEntity.start).desc(),
+                    include_relationships=True
                 )
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
