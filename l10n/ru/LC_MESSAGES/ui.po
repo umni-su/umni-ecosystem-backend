@@ -304,6 +304,9 @@ msgstr "Событие"
 msgid "Event log"
 msgstr "Журнал событий"
 
+msgid "Events filter"
+msgstr "Фильтр событий"
+
 msgid "Event has been deleted"
 msgstr "Событие было удалено"
 
