@@ -66,6 +66,9 @@ class CameraStream:
     def __init__(self, camera: CameraModelWithRelations):
         self._stop_requested = False  # Добавляем флаг остановки
         self._stop_event = threading.Event()  # Прерываемый сигнал остановки
+        # Дренаж энкодеров выполняется один раз на контейнер: encode(None)
+        # безвозвратно переводит кодек в draining, повторный вызов даёт AVERROR_EOF
+        self._encoder_flushed: bool = False
         self.ecosystem = get_ecosystem()
         self.id: int = 0
         self.video_pts = 0
@@ -488,6 +491,7 @@ class CameraStream:
 
         self.video_pts = 0
         self.audio_pts = 0
+        self._encoder_flushed = False
 
         if not Filesystem.exists(path):
             Filesystem.mkdir(path, recursive=True)
@@ -555,8 +559,18 @@ class CameraStream:
             return False
 
     def flush_output_container(self):
-        if self.output_container is None:
+        """Досылает хвостовые пакеты энкодеров в muxer перед закрытием контейнера.
+
+        ``encode(None)`` безвозвратно переводит кодек в draining-состояние:
+        повторный вызов возвращает ``AVERROR_EOF``
+        («End of file: 'avcodec_send_frame()'»), а дальнейшая запись кадров
+        в такой контейнер невозможна. Поэтому дренаж выполняется ровно один
+        раз на контейнер — непосредственно перед ``close()``.
+        """
+        if self.output_container is None or self._encoder_flushed:
             return
+
+        self._encoder_flushed = True
 
         try:
             # Для видео
@@ -569,6 +583,9 @@ class CameraStream:
                 for packet in self.audio_output_stream.encode(None):
                     self.output_container.mux(packet)
 
+        except EOFError:
+            # Кодек уже дренирован или закрыт — флашить больше нечего
+            pass
         except Exception as e:
             Logger.err(f"[{self.camera.name}] Error during flush: {e}", LoggerType.CAMERAS)
 
@@ -608,9 +625,6 @@ class CameraStream:
         first_run: bool = True
         need_create_input = False
 
-        last_flush_time = time.time()
-        flush_interval = 30  # Флашим каждые 30 секунд
-
         if self.input_container is None:
             need_create_input = True
 
@@ -644,12 +658,6 @@ class CameraStream:
 
                 # Проверяем, нужно ли перезапустить контейнер
                 current_time = time.time()
-
-                # Периодический flush
-                if current_time - last_flush_time > flush_interval:
-                    with self._container_lock:
-                        self.flush_output_container()
-                    last_flush_time = current_time
 
                 if self.need_restart:
                     if (current_time - self.last_restart_time) > self.restart_delay:
