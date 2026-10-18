@@ -15,7 +15,7 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from sqlmodel import Field, JSON
+from sqlmodel import DateTime, Field, JSON
 
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
@@ -54,7 +54,8 @@ class NotificationQueueEntityBase:
     )
     last_attempt: Optional[datetime] = Field(
         default=None,
-        nullable=True
+        nullable=True,
+        sa_type=DateTime
     )
     options: Optional[Dict[str, Any]] = Field(
         sa_type=JSON,

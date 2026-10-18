@@ -14,16 +14,25 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from sqlmodel import Field
+from sqlmodel import DateTime, Field
 from sqlalchemy import func
 
 
 class TimeStampMixin:
-    created: datetime = Field(default_factory=datetime.now, nullable=False)
+    # SQLModel >= 0.0.48 по умолчанию типизирует datetime-поля как UTCDateTime
+    # (DateTime(timezone=True)) и отклоняет значения без tzinfo. Все timestamp-
+    # колонки в БД — "timestamp without time zone", поэтому явно возвращаем
+    # наивный DateTime, как это делал SQLModel до апгрейда.
+    created: datetime = Field(
+        default_factory=datetime.now,
+        nullable=False,
+        sa_type=DateTime
+    )
 
     updated: datetime | None = Field(
         default_factory=datetime.now,
         nullable=False,
+        sa_type=DateTime,
         sa_column_kwargs={"onupdate": datetime.now}
     )
 

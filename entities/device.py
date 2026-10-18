@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import JSON
-from sqlmodel import Field, Relationship, BIGINT
+from sqlmodel import DateTime, Field, Relationship, BIGINT
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
@@ -76,7 +76,8 @@ class DeviceBase:
     )
     last_sync: datetime | None = Field(
         index=True,
-        nullable=True
+        nullable=True,
+        sa_type=DateTime
     )
     capabilities: Optional[List[str]] = Field(
         sa_type=JSON,

@@ -21,7 +21,7 @@ from entities.camera_area import CameraAreaEntity
 from entities.camera_recording import CameraRecordingEntity
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
-from sqlmodel import Field, Relationship
+from sqlmodel import DateTime, Field, Relationship
 
 from entities.mixins.pagination_mixin import PaginationMixin
 
@@ -50,11 +50,13 @@ class CameraEventBase:
     start: datetime = Field(
         index=True,
         default_factory=datetime.now,
-        nullable=False
+        nullable=False,
+        sa_type=DateTime
     )
     end: datetime = Field(
         index=True,
-        nullable=True
+        nullable=True,
+        sa_type=DateTime
     )
     resized: str = Field(
         nullable=True

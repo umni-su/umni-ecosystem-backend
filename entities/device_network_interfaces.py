@@ -16,7 +16,7 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from sqlmodel import Field, Relationship
+from sqlmodel import DateTime, Field, Relationship
 from entities.mixins.created_updated import TimeStampMixin
 from entities.mixins.id_column import IdColumnMixin
 
@@ -49,7 +49,8 @@ class DeviceNetworkInterfaceBase:
     )
     last_sync: datetime = Field(
         index=True,
-        nullable=True
+        nullable=True,
+        sa_type=DateTime
     )
 
 
