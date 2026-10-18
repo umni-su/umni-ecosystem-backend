@@ -533,6 +533,9 @@ msgstr "Настройки уведомлений"
 msgid "Now you are ready to install UMNI Server Ecosystem"
 msgstr "Теперь Вы готовы установить экосистему УМНЫЙ \"СЕРВЕР\""
 
+msgid "No signal"
+msgstr "Нет сигнала"
+
 msgid "NTC thermistor"
 msgstr "NTC термистор"
 
@@ -743,6 +746,9 @@ msgstr "Хранилища"
 msgid "Store permanent"
 msgstr "Хранить постоянно"
 
+msgid "Stopped"
+msgstr "Остановлен"
+
 msgid "Stream"
 msgstr "Поток"
 
@@ -781,6 +787,9 @@ msgstr "Цветовая температура"
 
 msgid "Contact"
 msgstr "Контакт"
+
+msgid "Connecting..."
+msgstr "Соединение..."
 
 msgid "Current"
 msgstr "Ток"
