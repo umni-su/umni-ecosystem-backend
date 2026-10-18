@@ -68,10 +68,11 @@ class PeerSession:
         self.pc.addTrack(self.video)
         self.pc.addTrack(self.audio)
 
-    def set_video_width(self, width: int) -> None:
-        """Меняет разрешение видео на лету, без пересоединения."""
-        self.video.set_max_width(width)
-
+        # Обработчики регистрируются один раз здесь. Раньше они были вложены
+        # внутрь set_video_width(), поэтому в обычном сценарии не
+        # подписывались вовсе: connectionstatechange не приходил, сессии не
+        # закрывались при failed/closed (утечка RTCPeerConnection и ICE-портов),
+        # а клиент не получал {"type": "state"} и оставался на лоадере.
         @self.pc.on("icecandidate")
         def on_icecandidate(candidate) -> None:
             # При non-trickle кандидаты уже в SDP ответа; событие игнорируем.
@@ -88,6 +89,10 @@ class PeerSession:
             await self._emit({"type": "state", "state": state})
             if state in ("failed", "closed"):
                 await self.close()
+
+    def set_video_width(self, width: int) -> None:
+        """Меняет разрешение видео на лету, без пересоединения."""
+        self.video.set_max_width(width)
 
     async def handle_offer(self, sdp: str, sdp_type: str = "offer") -> str:
         """Принимает offer клиента, возвращает SDP-answer (non-trickle)."""

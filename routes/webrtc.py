@@ -130,8 +130,17 @@ async def webrtc_endpoint(
                     default=settings.WEBRTC_DEFAULT_WIDTH,
                 )
 
-                # Пересоздаём сессию с тем же id (повторный offer/реконнект)
+                # Пересоздаём сессию: закрываем и старую (по session_id), и
+                # любые предыдущие сессии этой же камеры. Клиент генерит новый
+                # session_id на каждый play, поэтому без этого накапливаются
+                # незакрытые RTCPeerConnection — утечка ICE-портов сервера, из-за
+                # которой новые соединения перестают подниматься вовсе.
                 await close_session(session_id)
+                for stale_id in [
+                    sid for sid, existing in sessions.items()
+                    if existing.camera_id == camera_id and sid != session_id
+                ]:
+                    await close_session(stale_id)
                 session = PeerSession(
                     session_id=session_id,
                     camera_id=camera_id,

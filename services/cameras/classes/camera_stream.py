@@ -842,6 +842,11 @@ class CameraStream:
         Logger.debug(f"▶️ [{self.camera.name}] Starting camera stream...", LoggerType.CAMERAS)
 
         # Сбрасываем флаги
+        # _stop_event сбрасываем обязательно: request_stop() ставит его и нигде
+        # больше не снимает, а _wait_or_stop() прерывает им backoff в
+        # _create_input_container(). Без clear() после stop() любой один
+        # неудачный av.open() мгновенно рвёт ретраи и поток зависает навсегда.
+        self._stop_event.clear()
         self._stop_requested = False
         self.opened = True
 
