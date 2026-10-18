@@ -57,7 +57,11 @@ class Settings(BaseSettings):
     def database_url(self) -> PostgresDsn:
         encoded_password = quote_plus(self.DB_PASSWORD)
         return PostgresDsn.build(
-            scheme="postgresql",
+            # SQLAlchemy 2.1 по умолчанию резолвит "postgresql://" в диалект
+            # PGDialect_psycopg (psycopg3), а проект использует psycopg2 —
+            # поэтому драйвер указываем явно, иначе падаем с
+            # "No module named 'psycopg'".
+            scheme="postgresql+psycopg2",
             username=self.DB_USER,
             password=encoded_password,
             host=self.DB_HOST,
