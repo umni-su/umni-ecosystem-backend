@@ -15,6 +15,7 @@
 
 from typing import List, Optional, TYPE_CHECKING
 import threading
+import time
 from enum import Enum
 
 from models.camera_stream_model import CameraStreamModel
@@ -110,14 +111,30 @@ class StreamRegistry:
     def get_streams_as_models(cls):
         res = []
         streams = StreamRegistry.get_all_streams()
+        # Один снимок времени на весь список: значения в ответе должны быть
+        # согласованы между собой, а не посчитаны в разные моменты.
+        now = time.time()
         for stream in streams:
+            last_frame_time = stream.last_frame_time
+            has_live_frame = (
+                0 < last_frame_time
+                and now - last_frame_time <= stream.heartbeat_timeout
+            )
             res.append(
                 CameraStreamModel(
                     name=stream.camera.name,
                     camera_id=stream.id,
                     stopped=stream.is_stopped(),
                     need_restart=stream.need_restart,
-                    capture_error=stream.capture_error
+                    capture_error=stream.capture_error,
+                    running=stream.opened and not stream.is_stopped(),
+                    recording=bool(stream.write),
+                    has_live_frame=has_live_frame,
+                    last_frame_age_sec=(
+                        round(now - last_frame_time, 2)
+                        if last_frame_time else None
+                    ),
+                    need_skip=stream.need_skip,
                 )
             )
         return res

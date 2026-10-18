@@ -22,3 +22,12 @@ class CameraStreamModel(BaseModel):
     stopped: bool = Field(...)
     need_restart: bool = Field(...)
     capture_error: bool = Field(default=False)
+    # Диагностика: поток открыт и не остановлен
+    running: bool = Field(default=False)
+    # Идёт запись видео в файл
+    recording: bool = Field(default=False)
+    # Есть свежие кадры (не старше CameraStream.heartbeat_timeout)
+    has_live_frame: bool = Field(default=False)
+    # Секунды с последнего кадра; None, если кадров ещё не было
+    last_frame_age_sec: float | None = Field(default=None)
+    need_skip: bool = Field(default=False)

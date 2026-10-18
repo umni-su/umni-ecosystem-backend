@@ -91,6 +91,15 @@ def add_camera(
     return camera
 
 
+# Обязательно ДО /{camera_id}: Starlite матчит роуты в порядке регистрации,
+# иначе "streams" попадает под path-параметр camera_id (typed int) -> 422.
+@cameras.get('/streams')
+def get_streams_as_list(
+        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
+):
+    return StreamRegistry.get_streams_as_models()
+
+
 @cameras.put('/{camera_id}', response_model=CameraModelWithRelations)
 def update_camera(
         model: CameraBaseModel,
@@ -121,13 +130,6 @@ def get_camera_cover(
     return CameraStorage.get_cover(
         camera=camera,
         width=640)
-
-
-@cameras.get('/streams')
-def get_streams_as_list(
-        user: Annotated[UserResponseOut, Depends(check_permission("cameras:view"))]
-):
-    return StreamRegistry.get_streams_as_models()
 
 
 @cameras.put('/{camera_id}/stream')
