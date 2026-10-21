@@ -691,8 +691,8 @@ msgstr "Voltage"
 msgid "Temperature"
 msgstr "Temperature"
 
-msgid "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
-msgstr "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
+msgid "An open‑source software system for smart home devices, video analytics, and access control"
+msgstr "An open‑source software system for smart home devices, video analytics, and access control"
 
 msgid "There are no storages"
 msgstr "There are no storages"

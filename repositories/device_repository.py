@@ -183,10 +183,6 @@ class DeviceRepository(BaseRepository):
             try:
                 device = sess.get(DeviceEntity, device_id)
                 device.title = model.title
-                if model.widget_type is not None:
-                    device.widget_type = model.widget_type
-                if model.widget_name is not None:
-                    device.widget_name = model.widget_name
                 sess.add(device)
                 ### sess.commit()
 

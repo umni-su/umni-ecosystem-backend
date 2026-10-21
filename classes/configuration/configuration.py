@@ -15,7 +15,6 @@
 
 from sqlmodel import select
 
-from classes.configuration.config_consts import BLANK_PASSWORD
 from classes.l10n.l10n import _, translator
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
@@ -77,37 +76,8 @@ class EcosystemDatabaseConfiguration:
             ]
         )
 
-        mqtt_group = ConfigurationGroup(
-            label=_('MQTT settings'),
-            key='mqtt',
-            items=[
-                ConfigurationModelWithTranslation(
-                    key=ConfigurationKeys.MQTT_HOST,
-                    translation=_("MQTT host"),
-                    value=self.get_setting(ConfigurationKeys.MQTT_HOST).value or None
-                ),
-                ConfigurationModelWithTranslation(
-                    key=ConfigurationKeys.MQTT_PORT,
-                    translation=_("MQTT port"),
-                    value=self.get_setting(ConfigurationKeys.MQTT_PORT).value or None
-                ),
-                ConfigurationModelWithTranslation(
-                    key=ConfigurationKeys.MQTT_USER,
-                    translation=_("MQTT user"),
-                    value=self.get_setting(ConfigurationKeys.MQTT_USER).value or None
-                ),
-                ConfigurationModelWithTranslation(
-                    key=ConfigurationKeys.MQTT_PASSWORD,
-                    translation=_("MQTT password"),
-                    value=BLANK_PASSWORD if self.get_setting(
-                        ConfigurationKeys.MQTT_PASSWORD).value is not None else None
-                )
-            ]
-        )
-
         self.groups.append(app_group)
         self.groups.append(device_group)
-        self.groups.append(mqtt_group)
 
     def reread(self):
         self._refresh_db_config()

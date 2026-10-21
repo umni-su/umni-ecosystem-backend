@@ -284,10 +284,11 @@ class PluginsService(BaseService):
                     PluginRepository.update_plugin(plugin_update.id, plugin_update)
 
             # Удаление плагинов, которых нет в файловой системе
-            for db_plugin in db_plugins:
-                if db_plugin.name not in self._plugin_classes:
-                    Logger.info(f"Removing orphaned plugin from database: {db_plugin.name}", LoggerType.PLUGINS)
-                    session.delete(db_plugin)
+            # TODO - отключаем плагин, так как любая ошибка внутри него вызывает удаление всех связанных устройств!
+            # for db_plugin in db_plugins:
+            # if db_plugin.name not in self._plugin_classes:
+            # Logger.info(f"Removing orphaned plugin from database: {db_plugin.name}", LoggerType.PLUGINS)
+            # session.delete(db_plugin)
 
             session.commit()
 

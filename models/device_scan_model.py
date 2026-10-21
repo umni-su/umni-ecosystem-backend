@@ -28,3 +28,5 @@ class DeviceScanModel(BaseModel):
     ip: Optional[str] = None
     port: Optional[int] = None
     extra: Optional[dict] = None
+
+    exists: Optional[bool] = False

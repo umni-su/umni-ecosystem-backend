@@ -32,10 +32,6 @@ class ConfigurationKeys(StrEnum):
     APP_DEVICE_SYNC_TIMEOUT = 'app.device_sync_timeout',
     APP_ALARM_MODE = 'app.mode_alarm',
     APP_SECURITY_MODE = 'app.mode_security',
-    MQTT_HOST = 'mqtt.host',
-    MQTT_PORT = 'mqtt.port',
-    MQTT_USER = 'mqtt.user',
-    MQTT_PASSWORD = 'mqtt.password',
 
 
 class ConfigurationEntityBase:

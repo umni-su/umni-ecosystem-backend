@@ -25,7 +25,6 @@ from entities.configuration import ConfigurationKeys, ConfigurationEntity
 from entities.user import UserEntity
 from responses.account import AccountBody
 from responses.install import InstallBody
-from responses.mqtt import MqttBody
 from responses.success import SuccessResponse
 from cryptography.fernet import InvalidToken
 

@@ -851,8 +851,8 @@ msgstr "Кому"
 msgid "Temperature"
 msgstr "Температура"
 
-msgid "The first free open-source ecosystem of control of automation devices, access control systems and video surveillance"
-msgstr "Первая бесплатная экосистема контроля устройств автоматизации, систем контроля доступа и видеонаблюдения с открытым исходным кодом"
+msgid "An open‑source software system for smart home devices, video analytics, and access control"
+msgstr "Открытый программный комплекс для устройств умного дома, видеоаналитики и контроля доступа"
 
 msgid "There are no storages"
 msgstr "Нет хранилищ"

@@ -24,6 +24,7 @@ from classes.devices.device_registry import device_registry
 from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from config.dependencies import get_ecosystem
+from models.device_model_relations import DeviceModelWithRelations
 from models.device_netif import DeviceNetifBase
 from models.device_scan_model import DeviceScanModel
 from models.plugin_model import PluginModel
@@ -482,6 +483,12 @@ async def scan_plugin_devices(
 
         # Сканируем
         devices = plugin_instance.scan_devices()
+
+        i = 0
+        for device in devices:
+            orm_device = DeviceRepository.get_device_by_external_id(device.external_id)
+            devices[i].exists = isinstance(orm_device, DeviceModelWithRelations)
+            i = i + 1
 
         # Сохраняем в кэш
         device_registry.store_scan_results(plugin_id, devices)
