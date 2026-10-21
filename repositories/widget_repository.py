@@ -13,6 +13,7 @@
 
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy.orm import selectinload
 from sqlmodel import select, col
 
@@ -20,9 +21,11 @@ from classes.logger.logger import Logger
 from classes.logger.logger_types import LoggerType
 from database.session import write_session, read_session
 from entities.enums.widget_type_enum import WidgetTypeEnum
+from entities.sensor_entity import SensorEntity
 from entities.widget import WidgetEntity
 from entities.widget_item import WidgetItemEntity
-from models.widget_model import WidgetCreateModel, WidgetModel, WidgetUpdateModel
+from models.widget_model import WidgetCreateModel, WidgetItemCreateModel, \
+    WidgetItemModel, WidgetItemReorderModel, WidgetModel, WidgetUpdateModel
 from repositories.base_repository import BaseRepository
 
 
@@ -89,13 +92,17 @@ class WidgetRepository(BaseRepository):
     def _sync_items(cls, widget: WidgetEntity, items) -> None:
         """Перезаписать items виджета (полная замена списка)."""
         widget.items.clear()
-        for item_data in items or []:
+        for index, item_data in enumerate(items or []):
             widget.items.append(
                 WidgetItemEntity(
                     title=item_data.title,
                     entity_id=item_data.entity_id,
                     options=item_data.options,
-                    sort_order=item_data.sort_order,
+                    sort_order=(
+                        item_data.sort_order
+                        if item_data.sort_order is not None
+                        else index
+                    ),
                 )
             )
 
@@ -177,3 +184,176 @@ class WidgetRepository(BaseRepository):
             except Exception as e:
                 Logger.err(str(e), LoggerType.APP)
                 return False
+
+    # ========== Items ==========
+
+    @classmethod
+    def _item_to_model(cls, item: WidgetItemEntity) -> WidgetItemModel:
+        return WidgetItemModel.model_validate(item.to_dict())
+
+    @classmethod
+    def _get_widget_orm(cls, sess, widget_id: int) -> WidgetEntity:
+        widget = sess.get(WidgetEntity, widget_id)
+        if widget is None:
+            raise HTTPException(status_code=404, detail='Widget not found')
+        return widget
+
+    @classmethod
+    def _validate_item_entity(
+            cls,
+            sess,
+            widget: WidgetEntity,
+            entity_id: Optional[int],
+    ) -> None:
+        """Проверить, что entity_id item'а указывает на сущность владельца.
+
+        Items поддерживаются только у DEVICE-виджетов: entity_id должен
+        указывать на сенсор, принадлежащий device_id виджета.
+        """
+        if widget.type != WidgetTypeEnum.DEVICE:
+            raise HTTPException(
+                status_code=400,
+                detail='Widget items are supported only for DEVICE widgets',
+            )
+        if entity_id is None:
+            return
+        sensor = sess.exec(
+            select(SensorEntity).where(col(SensorEntity.id) == entity_id)
+        ).first()
+        if sensor is None or sensor.device_id != widget.entity_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f'Sensor {entity_id} does not belong to device {widget.entity_id}',
+            )
+
+    @classmethod
+    def get_widget_items(cls, widget_id: int) -> Optional[list[WidgetItemModel]]:
+        with read_session() as sess:
+            try:
+                widget = sess.get(WidgetEntity, widget_id)
+                if widget is None:
+                    return None
+                q = (
+                    select(WidgetItemEntity)
+                    .where(col(WidgetItemEntity.widget_id) == widget_id)
+                    .order_by(
+                        col(WidgetItemEntity.sort_order).asc(),
+                        col(WidgetItemEntity.id).asc(),
+                    )
+                )
+                items_orm = sess.exec(q).all()
+                return [cls._item_to_model(i) for i in items_orm]
+            except Exception as e:
+                Logger.err(str(e), LoggerType.APP)
+                return None
+
+    @classmethod
+    def create_item(
+            cls,
+            widget_id: int,
+            model: WidgetItemCreateModel,
+    ) -> WidgetItemModel:
+        """Добавить item; sort_order = max+1, если не передан."""
+        with write_session() as sess:
+            widget = cls._get_widget_orm(sess, widget_id)
+            cls._validate_item_entity(sess, widget, model.entity_id)
+
+            if model.sort_order is None:
+                last = sess.exec(
+                    select(WidgetItemEntity)
+                    .where(col(WidgetItemEntity.widget_id) == widget_id)
+                    .order_by(col(WidgetItemEntity.sort_order).desc())
+                ).first()
+                model.sort_order = (last.sort_order + 1) if last else 0
+
+            item = WidgetItemEntity(
+                widget_id=widget_id,
+                title=model.title,
+                entity_id=model.entity_id,
+                options=model.options,
+                sort_order=model.sort_order,
+            )
+            sess.add(item)
+            sess.commit()
+            sess.refresh(item)
+            return cls._item_to_model(item)
+
+    @classmethod
+    def update_item(
+            cls,
+            widget_id: int,
+            item_id: int,
+            model: WidgetItemCreateModel,
+    ) -> WidgetItemModel:
+        """Изменить item; поиск строго по паре (widget_id, item_id)."""
+        with write_session() as sess:
+            widget = cls._get_widget_orm(sess, widget_id)
+            item = sess.exec(
+                select(WidgetItemEntity)
+                .where(col(WidgetItemEntity.id) == item_id)
+                .where(col(WidgetItemEntity.widget_id) == widget_id)
+            ).first()
+            if item is None:
+                raise HTTPException(status_code=404, detail='Widget item not found')
+
+            cls._validate_item_entity(sess, widget, model.entity_id)
+            item.title = model.title
+            item.entity_id = model.entity_id
+            item.options = model.options
+            if model.sort_order is not None:
+                item.sort_order = model.sort_order
+            sess.add(item)
+            sess.commit()
+            sess.refresh(item)
+            return cls._item_to_model(item)
+
+    @classmethod
+    def delete_item(cls, widget_id: int, item_id: int) -> bool:
+        with write_session() as sess:
+            item = sess.exec(
+                select(WidgetItemEntity)
+                .where(col(WidgetItemEntity.id) == item_id)
+                .where(col(WidgetItemEntity.widget_id) == widget_id)
+            ).first()
+            if item is None:
+                return False
+            sess.delete(item)
+            sess.commit()
+            return True
+
+    @classmethod
+    def reorder_items(
+            cls,
+            widget_id: int,
+            items: list[WidgetItemReorderModel],
+    ) -> list[WidgetItemModel]:
+        """Batch-обновление порядка items в одной сессии (атомарно).
+
+        Все id должны принадлежать виджету, иначе откат всего запроса.
+        """
+        with write_session() as sess:
+            widget = cls._get_widget_orm(sess, widget_id)
+
+            items_orm = sess.exec(
+                select(WidgetItemEntity)
+                .where(col(WidgetItemEntity.widget_id) == widget_id)
+            ).all()
+            by_id = {i.id: i for i in items_orm}
+
+            requested_ids = [r.id for r in items]
+            if len(set(requested_ids)) != len(requested_ids) or \
+                    any(i not in by_id for i in requested_ids):
+                raise HTTPException(
+                    status_code=400,
+                    detail='Reorder payload must contain unique item ids of this widget',
+                )
+
+            for r in items:
+                by_id[r.id].sort_order = r.sort_order
+            sess.add_all(items_orm)
+            sess.commit()
+
+            for i in items_orm:
+                sess.refresh(i)
+            items_orm.sort(key=lambda i: (i.sort_order, i.id))
+            return [cls._item_to_model(i) for i in items_orm]

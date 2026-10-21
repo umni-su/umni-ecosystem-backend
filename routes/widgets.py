@@ -18,7 +18,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from classes.auth.auth import Auth
 from classes.l10n.l10n import _
 from entities.enums.widget_type_enum import WidgetTypeEnum
-from models.widget_model import WidgetCreateModel, WidgetModel, WidgetUpdateModel
+from models.widget_model import WidgetCreateModel, WidgetItemCreateModel, \
+    WidgetItemModel, WidgetItemReorderModel, WidgetModel, WidgetUpdateModel
 from repositories.widget_repository import WidgetRepository
 from responses.user import UserResponseOut
 
@@ -92,4 +93,68 @@ def delete_widget(
 ):
     if not WidgetRepository.delete_widget(widget_id):
         raise HTTPException(status_code=404, detail=_('Widget not found'))
+    return {"success": True}
+
+
+# ========== Items ==========
+# Литеральный путь /items/reorder объявлен выше /items/{item_id}:
+# Starlette матчит по порядку регистрации, иначе "reorder" съедается
+# как item_id и запрос падает с 422.
+
+
+@widgets.get('/{widget_id}/items', response_model=list[WidgetItemModel])
+def get_widget_items(
+        widget_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    """Список items виджета (по sort_order)."""
+    items = WidgetRepository.get_widget_items(widget_id)
+    if items is None:
+        raise HTTPException(status_code=404, detail=_('Widget not found'))
+    return items
+
+
+@widgets.post('/{widget_id}/items', response_model=WidgetItemModel)
+def create_widget_item(
+        widget_id: int,
+        model: WidgetItemCreateModel,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    """Добавить item; sort_order назначается max+1, если не передан.
+
+    Items поддерживаются только у DEVICE-виджетов; entity_id должен
+    указывать на сенсор устройства-владельца виджета.
+    """
+    return WidgetRepository.create_item(widget_id, model)
+
+
+@widgets.put('/{widget_id}/items/reorder', response_model=list[WidgetItemModel])
+def reorder_widget_items(
+        widget_id: int,
+        items: list[WidgetItemReorderModel],
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    """Bulk-reorder: [{"id": 1, "sort_order": 0}, ...]; атомарно."""
+    return WidgetRepository.reorder_items(widget_id, items)
+
+
+@widgets.put('/{widget_id}/items/{item_id}', response_model=WidgetItemModel)
+def update_widget_item(
+        widget_id: int,
+        item_id: int,
+        model: WidgetItemCreateModel,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    """Изменить item (title, entity_id, options, sort_order)."""
+    return WidgetRepository.update_item(widget_id, item_id, model)
+
+
+@widgets.delete('/{widget_id}/items/{item_id}')
+def delete_widget_item(
+        widget_id: int,
+        item_id: int,
+        user: Annotated[UserResponseOut, Depends(Auth.get_current_active_user)],
+):
+    if not WidgetRepository.delete_item(widget_id, item_id):
+        raise HTTPException(status_code=404, detail=_('Widget item not found'))
     return {"success": True}

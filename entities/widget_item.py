@@ -33,8 +33,8 @@ class WidgetItemBase:
     title: str | None = Field(
         nullable=True
     )
-    # Что отображается в элементе: для DEVICE-виджета — device_sensors.id,
-    # для CAMERA — например camera_areas.id. Полиморфный, без FK.
+    # Что отображается в элементе: device_sensors.id. Items поддерживаются
+    # только у DEVICE-виджетов; для CAMERA-виджетов items запрещены.
     entity_id: int | None = Field(
         default=None,
         index=True

@@ -43,7 +43,7 @@ class WidgetItemModel(BaseModel):
     id: Optional[int] = None
     widget_id: Optional[int] = None
     title: Optional[str] = None
-    # Для DEVICE-виджета — device_sensors.id, для CAMERA — camera_areas.id
+    # Для DEVICE-виджета — device_sensors.id (items у CAMERA-виджетов запрещены)
     entity_id: Optional[int] = None
     options: Optional[dict] = None
     sort_order: int = 0
@@ -54,7 +54,14 @@ class WidgetItemCreateModel(BaseModel):
     title: Optional[str] = None
     entity_id: Optional[int] = None
     options: Optional[dict] = None
-    sort_order: int = 0
+    # None -> при точечном создании репозиторий назначит max+1
+    sort_order: Optional[int] = None
+
+
+class WidgetItemReorderModel(BaseModel):
+    """Точка изменения порядка items: ровно id + sort_order."""
+    id: int
+    sort_order: int
 
 
 class WidgetModel(BaseModel):
