@@ -24,6 +24,8 @@ from entities.device_network_interfaces import DeviceNetworkInterface
 from entities.camera import CameraEntity
 from entities.camera_area import CameraAreaEntity
 from entities.camera_event import CameraEventEntity
+from entities.widget import WidgetEntity
+from entities.widget_item import WidgetItemEntity
 
 from entities.location import LocationEntity
 from entities.notification import NotificationEntity

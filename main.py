@@ -52,6 +52,7 @@ from routes.websockets import websockets
 from routes.webrtc import webrtc, webrtc_config
 from routes.notifications import notifications
 from routes.settings import settings as router_settings
+from routes.widgets import widgets
 
 from services.cameras.classes.stream_registry import StreamRegistry
 
@@ -96,6 +97,7 @@ app.include_router(router_settings)
 app.include_router(systeminfo)
 app.include_router(users)
 app.include_router(websockets)
+app.include_router(widgets)
 app.include_router(webrtc)
 app.include_router(webrtc_config)
 
