@@ -148,6 +148,9 @@ msgstr "Выберите сущность"
 msgid "Choose notification type"
 msgstr "Выберите тип уведомления"
 
+msgid "Choose sensor"
+msgstr "Выберите датчик"
+
 msgid "Close"
 msgstr "Закрыть"
 
@@ -687,7 +690,7 @@ msgid "Select users"
 msgstr "Выберите пользователей"
 
 msgid "Sensor data"
-msgstr "Данные сенсора"
+msgstr "Данные датчика"
 
 msgid "Sensor editing"
 msgstr "Редактирование датчика"
