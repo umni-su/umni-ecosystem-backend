@@ -7,6 +7,12 @@ msgstr ""
 msgid "Add device"
 msgstr "Добавить устройство"
 
+msgid "Add widget"
+msgstr "Добавить виджет"
+
+msgid "Add widget item"
+msgstr "Добавить элемент виджета"
+
 msgid "Access control"
 msgstr "Контроль доступа"
 
