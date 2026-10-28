@@ -89,22 +89,28 @@ class WidgetRepository(BaseRepository):
     # ========== Запись ==========
 
     @classmethod
-    def _sync_items(cls, widget: WidgetEntity, items) -> None:
+    def _sync_items(cls, widget: WidgetEntity, items: list[WidgetItemCreateModel]) -> None:
         """Перезаписать items виджета (полная замена списка)."""
-        widget.items.clear()
         for index, item_data in enumerate(items or []):
-            widget.items.append(
-                WidgetItemEntity(
-                    title=item_data.title,
-                    entity_id=item_data.entity_id,
-                    options=item_data.options,
-                    sort_order=(
-                        item_data.sort_order
-                        if item_data.sort_order is not None
-                        else index
-                    ),
+            if item_data.id:
+                existing_index = next((i for i, itm in enumerate(widget.items) if itm.id == item_data.id), None)
+                if existing_index > -1:
+                    widget.items[existing_index].title = item_data.title
+                    widget.items[existing_index].options = item_data.options
+                    widget.items[existing_index].sort_order = index
+            else:
+                widget.items.append(
+                    WidgetItemEntity(
+                        title=item_data.title,
+                        entity_id=item_data.entity_id,
+                        options=item_data.options,
+                        sort_order=(
+                            item_data.sort_order
+                            if item_data.sort_order is not None
+                            else index
+                        ),
+                    )
                 )
-            )
 
     @classmethod
     def create_widget(cls, model: WidgetCreateModel) -> Optional[WidgetModel]:

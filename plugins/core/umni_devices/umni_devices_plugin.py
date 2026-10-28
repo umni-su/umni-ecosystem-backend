@@ -71,7 +71,7 @@ class UmniDevicesPlugin(BasePlugin):
         def new_syslog_message(msg: SyslogMessage):
             device = self.get_device(msg.device_name)
             identifier = msg.data.identifier
-            value = msg.data.value
+            value = round(msg.data.value, 2) if isinstance(msg.data.value, float) else msg.data.value
             self.manager.update_value_in_db(
                 device_name=device.unique_id,
                 sensor_identifier=identifier,

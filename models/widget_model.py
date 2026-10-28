@@ -70,7 +70,7 @@ class WidgetModel(BaseModel):
     type: WidgetTypeEnum
     # Владелец: devices.id или cameras.id (определяется type)
     entity_id: int
-    size: str = "md"
+    size: int = 12
     active: bool = True
     sort_order: int = 0
     items: list[WidgetItemModel] = []
@@ -80,7 +80,7 @@ class WidgetCreateModel(BaseModel):
     title: str
     type: WidgetTypeEnum
     entity_id: int
-    size: str = "md"
+    size: int = 12
     active: bool = True
     sort_order: int = 0
     items: list[WidgetItemCreateModel] = []

@@ -38,9 +38,11 @@ class WidgetBase:
         index=True,
         description="Владелец виджета: devices.id или cameras.id"
     )
-    size: str = Field(
-        default="md",
-        description="Размерный класс (WidgetSizeEnum: sm, md, lg, full)"
+    size: int = Field(
+        ge=1,
+        le=12,
+        default=12,
+        description="Размер по сетке (1-12)"
     )
     active: bool = Field(
         default=True

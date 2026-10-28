@@ -199,6 +199,12 @@ msgstr "Опасность"
 msgid "Delete"
 msgstr "Удалить"
 
+msgid "Delete widget"
+msgstr "Удаление виджета"
+
+msgid "Delete widget item"
+msgstr "Удаление элемента виджета"
+
 msgid "Deleting a rule"
 msgstr "Удаление правила"
 
@@ -931,6 +937,12 @@ msgstr "Видеонаблюдение"
 
 msgid "Webhook"
 msgstr "Веб-хук"
+
+msgid "Widget will be deleted"
+msgstr "Виджет будет удален"
+
+msgid "Widget item will be deleted"
+msgstr "Элемент виджета будет удален"
 
 msgid "Wireless sensor"
 msgstr "Беспроводной датчик"

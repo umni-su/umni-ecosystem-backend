@@ -199,7 +199,7 @@ class DeviceSynchronizer:
                                 identifier=identifier,
                                 name=s.label,
                                 capability=SettingCapability.AI.value,
-                                stype=DeviceSensorTypeEnum.NUMBER,
+                                stype=DeviceSensorTypeEnum.AI,
                                 active=s.active,
                                 options={'id': s.id}
                             )
@@ -214,7 +214,7 @@ class DeviceSynchronizer:
                                 identifier=identifier,
                                 name=s.label,
                                 capability=SettingCapability.NTC.value,
-                                stype=DeviceSensorTypeEnum.FLOAT,
+                                stype=DeviceSensorTypeEnum.NTC,
                                 active=s.active,
                                 options={'id': s.id}
                             )
